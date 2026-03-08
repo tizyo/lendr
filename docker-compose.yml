@@ -1,0 +1,97 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+    container_name: lendr_app
+    restart: unless-stopped
+    working_dir: /var/www
+    volumes:
+      - .:/var/www
+      - ./docker/php/local.ini:/usr/local/etc/php/conf.d/local.ini
+    environment:
+      - PHP_IDE_CONFIG=serverName=lendr
+    networks:
+      - lendr
+    depends_on:
+      - mysql
+      - redis
+
+  nginx:
+    image: nginx:1.25-alpine
+    container_name: lendr_nginx
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    volumes:
+      - .:/var/www
+      - ./docker/nginx/lendr.conf:/etc/nginx/conf.d/default.conf
+    networks:
+      - lendr
+    depends_on:
+      - app
+
+  mysql:
+    image: mysql:8.2
+    container_name: lendr_mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: ${DB_DATABASE:-lendr}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-root_secret}
+      MYSQL_USER: ${DB_USERNAME:-lendr}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-lendr_secret}
+    ports:
+      - "3307:3306"
+    volumes:
+      - lendr_mysql_data:/var/lib/mysql
+      - ./docker/mysql/my.cnf:/etc/mysql/conf.d/my.cnf
+    networks:
+      - lendr
+
+  redis:
+    image: redis:7.2-alpine
+    container_name: lendr_redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-redis_secret}
+    ports:
+      - "6380:6379"
+    volumes:
+      - lendr_redis_data:/data
+    networks:
+      - lendr
+
+  horizon:
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+    container_name: lendr_horizon
+    restart: unless-stopped
+    working_dir: /var/www
+    command: php artisan horizon
+    volumes:
+      - .:/var/www
+    networks:
+      - lendr
+    depends_on:
+      - mysql
+      - redis
+
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: lendr_mail
+    restart: unless-stopped
+    ports:
+      - "8025:8025"
+      - "1025:1025"
+    networks:
+      - lendr
+
+networks:
+  lendr:
+    driver: bridge
+
+volumes:
+  lendr_mysql_data:
+  lendr_redis_data:
