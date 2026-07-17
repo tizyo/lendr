@@ -10,6 +10,8 @@ enum PaymentMethod: string
     case MtnMomo      = 'mtn_momo';
     case ZamtelKwacha = 'zamtel_kwacha';
     case Cheque       = 'cheque';
+    case Flutterwave  = 'flutterwave';
+    case Pawapay      = 'pawapay';
 
     public function label(): string
     {
@@ -20,6 +22,8 @@ enum PaymentMethod: string
             self::MtnMomo      => 'MTN MoMo',
             self::ZamtelKwacha => 'Zamtel Kwacha',
             self::Cheque       => 'Cheque',
+            self::Flutterwave  => 'Flutterwave',
+            self::Pawapay      => 'PawaPay',
         };
     }
 
@@ -29,6 +33,8 @@ enum PaymentMethod: string
             self::AirtelMoney,
             self::MtnMomo,
             self::ZamtelKwacha,
+            self::Flutterwave,
+            self::Pawapay,
         ]);
     }
 }
