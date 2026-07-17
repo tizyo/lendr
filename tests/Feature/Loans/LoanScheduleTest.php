@@ -1,25 +1,6 @@
 <?php
 
-use App\Models\Tenant\LoanPlan;
-use App\Models\Tenant\LoanType;
 use App\Services\LoanCalculatorService;
-
-// ─── Helpers ─────────────────────────────────────────────────────────────────
-
-function makePlan(array $overrides = []): LoanPlan
-{
-    $lt = LoanType::factory()->create();
-
-    return LoanPlan::factory()->create(array_merge([
-        'loan_type_id'         => $lt->id,
-        'interest_rate'        => 10,          // 10%
-        'interest_type'        => 'flat',
-        'repayment_frequency'  => 'monthly',
-        'processing_fee'       => 2,           // 2%
-        'insurance_fee'        => 0,
-        'grace_period_days'    => 0,
-    ], $overrides));
-}
 
 // ─── Flat interest ────────────────────────────────────────────────────────────
 

@@ -7,5 +7,3 @@ parameters:
     level: 6
     ignoreErrors:
         - '#Unsafe usage of new static#'
-    excludePaths:
-        - app/Http/Middleware/RedirectIfAuthenticated.php

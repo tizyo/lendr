@@ -4,8 +4,6 @@ use App\Enums\LoanStatus;
 use App\Enums\UserRole;
 use App\Models\Tenant\Borrower;
 use App\Models\Tenant\Loan;
-use App\Models\Tenant\LoanPlan;
-use App\Models\Tenant\LoanType;
 use App\Models\Tenant\User;
 use Spatie\Permission\Models\Permission;
 
@@ -27,18 +25,6 @@ function loanUser(array $permissions = []): User
     }
 
     return $user;
-}
-
-function apiAs(User $user): \Illuminate\Testing\TestResponse
-{
-    // Return a partial — caller chains the HTTP verb
-    return app(\Illuminate\Foundation\Testing\TestCase::class);
-}
-
-function makePlan(): LoanPlan
-{
-    $type = LoanType::factory()->create();
-    return LoanPlan::factory()->create(['loan_type_id' => $type->id]);
 }
 
 // ─── Tests ───────────────────────────────────────────────────────────────────
