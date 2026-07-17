@@ -36,7 +36,9 @@ return new class extends Migration
             $table->string('provider'); // airtel, mtn, zamtel
             $table->string('transaction_id')->unique(); // provider's transaction ref
             $table->string('internal_ref')->unique(); // LENDR internal ref
-            $table->morphs('transactable'); // loan (disbursement) or payment
+            $table->string('transactable_type');
+            $table->unsignedBigInteger('transactable_id');
+            $table->index(['transactable_type', 'transactable_id'], 'mm_transactable_index'); // loan or payment
             $table->string('phone');
             $table->decimal('amount', 15, 2);
             $table->string('currency')->default('ZMW');

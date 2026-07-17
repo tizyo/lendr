@@ -12,7 +12,7 @@ return new class extends Migration
             $table->id();
             $table->string('borrower_number')->unique(); // LENDR-generated ref
             $table->string('first_name');
-            $table->string('last_name');
+            $table->string('last_name')->nullable();
             $table->string('other_names')->nullable();
             $table->string('email')->nullable()->unique();
             $table->string('phone')->unique();

@@ -38,7 +38,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('loan_id')->constrained()->cascadeOnDelete();
             $table->foreignId('changed_by')->nullable()->constrained('users')->nullOnDelete();
-            $table->string('from_status');
+            $table->string('from_status')->nullable();
             $table->string('to_status');
             $table->text('notes')->nullable();
             $table->timestamps();

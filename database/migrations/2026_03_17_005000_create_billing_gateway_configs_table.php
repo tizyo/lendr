@@ -1,0 +1,27 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        Schema::create('billing_gateway_configs', function (Blueprint $table) {
+            $table->id();
+            $table->string('gateway', 32)->unique(); // flutterwave|pawapay|lipila|stripe
+            $table->boolean('is_active')->default(false);
+            $table->text('public_key')->nullable();    // encrypted
+            $table->text('secret_key')->nullable();    // encrypted
+            $table->text('webhook_secret')->nullable(); // encrypted
+            $table->json('extra_config')->nullable();
+            $table->timestamps();
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::dropIfExists('billing_gateway_configs');
+    }
+};

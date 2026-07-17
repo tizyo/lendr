@@ -16,11 +16,12 @@ return new class extends Migration
             $table->string('file_name')->nullable();
             $table->string('file_size')->nullable();
             $table->string('mime_type')->nullable();
-            $table->enum('status', ['pending', 'verified', 'rejected', 'expired'])->default('pending');
+            $table->enum('status', ['pending', 'under_review', 'verified', 'rejected', 'expired'])->default('pending');
             $table->foreignId('reviewed_by')->nullable()->constrained('users')->nullOnDelete();
             $table->text('rejection_reason')->nullable();
             $table->timestamp('reviewed_at')->nullable();
             $table->timestamp('expires_at')->nullable();
+            $table->timestamp('expiry_notified_at')->nullable();
             $table->timestamps();
             $table->softDeletes();
 

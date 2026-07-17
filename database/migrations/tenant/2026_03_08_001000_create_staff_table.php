@@ -8,6 +8,11 @@ return new class extends Migration
 {
     public function up(): void
     {
+        // Guard prevents conflict when migrations are run alongside root migrations (e.g. in tests)
+        if (Schema::hasTable('users')) {
+            return;
+        }
+
         Schema::create('users', function (Blueprint $table) {
             $table->id();
             $table->string('name');
