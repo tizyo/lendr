@@ -45,6 +45,7 @@ return Application::configure(basePath: dirname(__DIR__))
         // API: SPA session auth (for Inertia admin axios calls) + tenant initialization
         $middleware->api(prepend: [EnsureFrontendRequestsAreStateful::class]);
         $middleware->api(append:  [InitializeTenancy::class]);
+        $middleware->throttleApi();
 
         $middleware->alias([
             'role'             => \Spatie\Permission\Middleware\RoleMiddleware::class,

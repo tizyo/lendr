@@ -7,6 +7,7 @@ use App\Http\Requests\Admin\LoginRequest;
 use App\Mail\TenantVerificationMail;
 use App\Models\Landlord\Tenant;
 use App\Models\Tenant\User;
+use Illuminate\Auth\Events\Lockout;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -14,6 +15,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Password;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rules\Password as PasswordRules;
 use Illuminate\Validation\ValidationException;
@@ -140,6 +142,8 @@ class AuthController extends Controller
             'password'  => ['required', 'string'],
         ]);
 
+        $this->ensurePortalLoginIsNotRateLimited($request);
+
         $tenant = Tenant::where('slug', $request->workspace)->first();
 
         if (! $tenant) {
@@ -181,11 +185,14 @@ class AuthController extends Controller
         tenancy()->initialize($tenant);
 
         if (! Auth::attempt(['email' => $request->email, 'password' => $request->password], $request->boolean('remember'))) {
+            RateLimiter::hit($this->portalThrottleKey($request));
             tenancy()->end();
             throw ValidationException::withMessages([
                 'email' => __('auth.failed'),
             ]);
         }
+
+        RateLimiter::clear($this->portalThrottleKey($request));
 
         /** @var User $user */
         $user = Auth::user();
@@ -203,6 +210,37 @@ class AuthController extends Controller
         $request->session()->put('tenant_slug', $tenant->slug);
 
         return redirect()->intended(route('portal.dashboard'));
+    }
+
+    /**
+     * Same throttle pattern as LoginRequest::ensureIsNotRateLimited(), keyed
+     * on workspace+email+ip since portal login also takes a workspace slug.
+     */
+    private function ensurePortalLoginIsNotRateLimited(Request $request): void
+    {
+        $key = $this->portalThrottleKey($request);
+
+        if (! RateLimiter::tooManyAttempts($key, 5)) {
+            return;
+        }
+
+        event(new Lockout($request));
+
+        $seconds = RateLimiter::availableIn($key);
+
+        throw ValidationException::withMessages([
+            'email' => __('auth.throttle', [
+                'seconds' => $seconds,
+                'minutes' => ceil($seconds / 60),
+            ]),
+        ]);
+    }
+
+    private function portalThrottleKey(Request $request): string
+    {
+        return Str::transliterate(
+            Str::lower($request->string('workspace').'|'.$request->string('email')).'|'.$request->ip()
+        );
     }
 
     public function portalLogout(Request $request): RedirectResponse

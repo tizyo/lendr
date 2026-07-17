@@ -3,6 +3,9 @@
 namespace App\Providers;
 
 use App\Models\Landlord\PlatformBranding;
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 
@@ -15,6 +18,10 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        RateLimiter::for('api', function (Request $request) {
+            return Limit::perMinute(120)->by($request->user()?->id ?: $request->ip());
+        });
+
         // Inject platform branding into all email + PDF views.
         View::composer(['emails.*', 'pdf.*'], function ($view) {
             try {

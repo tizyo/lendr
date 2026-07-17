@@ -22,6 +22,12 @@ class BorrowerAuthController extends BaseApiController
     // Max OTP requests per hour per phone
     private const OTP_RATE_LIMIT = 3;
 
+    // Max OTP verification / PIN login attempts before lockout
+    private const VERIFY_RATE_LIMIT = 5;
+
+    // Lockout window for a failed PIN login streak (seconds)
+    private const PIN_LOCKOUT_SECONDS = 900;
+
     // ─── Request OTP ──────────────────────────────────────────────────────────
 
     public function requestOtp(Request $request): JsonResponse
@@ -83,10 +89,20 @@ class BorrowerAuthController extends BaseApiController
             'otp'   => ['required', 'string', 'digits:6'],
         ]);
 
-        $phone    = $this->normalisePhone($request->phone);
+        $phone       = $this->normalisePhone($request->phone);
+        $throttleKey = 'otp-verify:'.$phone;
+
+        if (RateLimiter::tooManyAttempts($throttleKey, self::VERIFY_RATE_LIMIT)) {
+            $seconds = RateLimiter::availableIn($throttleKey);
+
+            return $this->error("Too many attempts. Try again in {$seconds} seconds.", 429);
+        }
+
         $borrower = Borrower::where('phone', $phone)->first();
 
         if (! $borrower) {
+            RateLimiter::hit($throttleKey, self::OTP_TTL_MINUTES * 60);
+
             return $this->error('Phone number not found.', 404);
         }
 
@@ -95,8 +111,12 @@ class BorrowerAuthController extends BaseApiController
         }
 
         if (! Hash::check($request->otp, $borrower->otp)) {
+            RateLimiter::hit($throttleKey, self::OTP_TTL_MINUTES * 60);
+
             return $this->error('Invalid OTP.', 422);
         }
+
+        RateLimiter::clear($throttleKey);
 
         // Invalidate the OTP after use
         $borrower->forceFill([
@@ -138,16 +158,28 @@ class BorrowerAuthController extends BaseApiController
             'pin'   => ['required', 'digits_between:4,6'],
         ]);
 
-        $phone    = $this->normalisePhone($request->phone);
+        $phone       = $this->normalisePhone($request->phone);
+        $throttleKey = 'pin-login:'.$phone;
+
+        if (RateLimiter::tooManyAttempts($throttleKey, self::VERIFY_RATE_LIMIT)) {
+            $seconds = RateLimiter::availableIn($throttleKey);
+
+            return $this->error("Too many attempts. Try again in {$seconds} seconds.", 429);
+        }
+
         $borrower = Borrower::where('phone', $phone)->first();
 
         if (! $borrower || ! $borrower->pin || ! Hash::check($request->pin, $borrower->pin)) {
+            RateLimiter::hit($throttleKey, self::PIN_LOCKOUT_SECONDS);
+
             return $this->error('Invalid phone number or PIN.', 401);
         }
 
         if (! $borrower->is_active || $borrower->is_blacklisted) {
             return $this->error('Account suspended. Contact support.', 403);
         }
+
+        RateLimiter::clear($throttleKey);
 
         $borrower->updateQuietly(['last_login_at' => now()]);
         $token = $borrower->createToken('pwa-pin-session')->plainTextToken;
