@@ -22,6 +22,7 @@
         "maatwebsite/excel": "^3.1",
         "pragmarx/google2fa": "^9.0",
         "predis/predis": "*",
+        "sentry/sentry-laravel": "^4.27",
         "spatie/laravel-activitylog": "*",
         "spatie/laravel-backup": "^10.0",
         "spatie/laravel-medialibrary": "^11.0",
@@ -32,7 +33,7 @@
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",
-        "knuckleswtf/scribe": "^4.0",
+        "knuckleswtf/scribe": "^5.0",
         "larastan/larastan": "^3.9",
         "laravel/pail": "^1.2.2",
         "laravel/pint": "^1.27",
