@@ -5,12 +5,14 @@ use App\Services\LoanCalculatorService;
 // ─── Flat interest ────────────────────────────────────────────────────────────
 
 test('flat interest calculation is correct', function () {
+    // interest_period defaults to 'monthly' — flat rate is per-period,
+    // scaled by the number of periods in the tenure (10%/month * 12 = 120%).
     $plan   = makePlan(['interest_type' => 'flat', 'interest_rate' => 10]);
     $svc    = new LoanCalculatorService;
     $result = $svc->calculateAmounts($plan, 10000, 12);
 
     expect($result['principal_amount'])->toBe(10000.0)
-        ->and($result['interest_amount'])->toBe(1000.0)   // 10% of 10000 flat
+        ->and($result['interest_amount'])->toBe(12000.0)  // 10%/month * 12 months
         ->and($result['processing_fee'])->toBe(200.0);    // 2%
 });
 
@@ -19,7 +21,7 @@ test('flat interest total payable equals principal plus interest plus fees', fun
     $svc    = new LoanCalculatorService;
     $result = $svc->calculateAmounts($plan, 5000, 6);
 
-    $expected = 5000 + (5000 * 0.15) + (5000 * 0.02) + (5000 * 0.01);
+    $expected = 5000 + (5000 * 0.15 * 6) + (5000 * 0.02) + (5000 * 0.01);
     expect($result['total_payable'])->toBe(round($expected, 2));
 });
 
@@ -47,26 +49,30 @@ test('reducing balance interest amount is positive', function () {
 // ─── Schedule generation ──────────────────────────────────────────────────────
 
 test('schedule row count matches tenure in months', function () {
-    $plan     = makePlan(['interest_type' => 'flat', 'repayment_frequency' => 'monthly']);
+    $plan     = makePlan(['interest_type' => 'flat', 'repayment_schedule' => 'monthly']);
     $svc      = new LoanCalculatorService;
     $result   = $svc->calculate($plan, 6000, 6, now()->toDateString());
 
     expect(count($result['schedule']))->toBe(6);
 });
 
-test('schedule instalment amounts sum to total payable', function () {
-    $plan   = makePlan(['interest_type' => 'flat', 'repayment_frequency' => 'monthly']);
+test('schedule instalment amounts sum to principal plus interest', function () {
+    // Processing/insurance fees are collected upfront at disbursement, not
+    // amortized into the repayment schedule — schedule rows carry principal
+    // + interest only, so they sum to less than total_payable by the fee amount.
+    $plan   = makePlan(['interest_type' => 'flat', 'repayment_schedule' => 'monthly']);
     $svc    = new LoanCalculatorService;
     $result = $svc->calculate($plan, 12000, 12, now()->toDateString());
 
     $scheduleSum = array_sum(array_column($result['schedule'], 'total_due'));
+    $expected    = $result['principal_amount'] + $result['interest_amount'];
 
     // Allow ±0.02 for rounding across instalments
-    expect(abs($scheduleSum - $result['total_payable']))->toBeLessThan(0.03);
+    expect(abs($scheduleSum - $expected))->toBeLessThan(0.03);
 });
 
 test('schedule due dates are sequential and monthly', function () {
-    $plan   = makePlan(['interest_type' => 'flat', 'repayment_frequency' => 'monthly']);
+    $plan   = makePlan(['interest_type' => 'flat', 'repayment_schedule' => 'monthly']);
     $svc    = new LoanCalculatorService;
     $result = $svc->calculate($plan, 6000, 3, '2026-01-01');
 
