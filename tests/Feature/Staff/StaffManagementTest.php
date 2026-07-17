@@ -5,7 +5,7 @@ use App\Models\Tenant\User;
 
 function adminUser(): User
 {
-    return User::factory()->create(['role' => UserRole::SuperAdmin, 'is_active' => true]);
+    return actingAsAdmin();
 }
 
 function makeStaff(array $attrs = []): User

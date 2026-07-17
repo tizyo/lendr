@@ -48,6 +48,11 @@ abstract class BaseWebhookController extends Controller
 
     public function handle(Request $request): Response
     {
+        if (! $this->ipAllowed($request)) {
+            Log::warning("[Webhook:{$this->providerName()}] Source IP not in configured allowlist", ['ip' => $request->ip()]);
+            return response()->noContent(403);
+        }
+
         if (! $this->verifySignature($request)) {
             Log::warning("[Webhook:{$this->providerName()}] Invalid signature", ['ip' => $request->ip()]);
             return response()->noContent(401);
@@ -176,6 +181,63 @@ abstract class BaseWebhookController extends Controller
             $order->recordFailure("Webhook reported failure for ref {$ref}");
             Log::info("[Webhook:{$this->providerName()}] Standing order debit failed", ['ref' => $ref, 'order_id' => $orderId]);
         }
+    }
+
+    /**
+     * Optional per-provider IP allowlist, configured via the tenant's
+     * settings table (comma-separated IPs/CIDRs, e.g. "41.223.1.0/24,102.66.0.5").
+     * Providers without a mobile-money publisher IP list configured pass
+     * through untouched — signature verification remains the primary control.
+     */
+    private function ipAllowed(Request $request): bool
+    {
+        $raw = DB::table('settings')->where('key', "{$this->providerName()}_webhook_ip_allowlist")->value('value');
+
+        if (! $raw) {
+            return true;
+        }
+
+        $ip = $request->ip();
+
+        foreach (array_filter(array_map('trim', explode(',', $raw))) as $entry) {
+            if (str_contains($entry, '/')) {
+                if ($this->ipInCidr($ip, $entry)) {
+                    return true;
+                }
+            } elseif (hash_equals($entry, $ip)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function ipInCidr(string $ip, string $cidr): bool
+    {
+        [$subnet, $bits] = explode('/', $cidr);
+        $bits = (int) $bits;
+
+        $ipBin     = @inet_pton($ip);
+        $subnetBin = @inet_pton($subnet);
+
+        if ($ipBin === false || $subnetBin === false || strlen($ipBin) !== strlen($subnetBin)) {
+            return false;
+        }
+
+        $bytes    = intdiv($bits, 8);
+        $remBits  = $bits % 8;
+
+        if ($bytes > 0 && substr($ipBin, 0, $bytes) !== substr($subnetBin, 0, $bytes)) {
+            return false;
+        }
+
+        if ($remBits === 0) {
+            return true;
+        }
+
+        $mask = 0xFF << (8 - $remBits) & 0xFF;
+
+        return (ord($ipBin[$bytes]) & $mask) === (ord($subnetBin[$bytes]) & $mask);
     }
 
     // ─── Helpers ─────────────────────────────────────────────────────────────

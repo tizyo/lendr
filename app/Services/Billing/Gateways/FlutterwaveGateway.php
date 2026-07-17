@@ -7,6 +7,7 @@ use App\Services\Billing\Contracts\BillingGatewayInterface;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use RuntimeException;
 
 class FlutterwaveGateway implements BillingGatewayInterface
@@ -67,7 +68,12 @@ class FlutterwaveGateway implements BillingGatewayInterface
     public function verifyWebhookSignature(Request $request): bool
     {
         $secret = $this->webhookSecret();
-        if (! $secret) return true; // not configured — allow through (dev mode)
+
+        if (! $secret) {
+            Log::warning('[BillingWebhook:flutterwave] No webhook secret configured — rejecting unsigned request', ['ip' => $request->ip()]);
+
+            return false;
+        }
 
         return hash_equals($secret, $request->header('verif-hash', ''));
     }

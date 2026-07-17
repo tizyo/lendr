@@ -33,12 +33,13 @@ function webhookActiveLoan(): Loan
 function createIntent(Loan $loan, float $amount, string $ref): MobileMoneyIntent
 {
     return MobileMoneyIntent::create([
-        'loan_id'   => $loan->id,
-        'reference' => $ref,
-        'amount'    => $amount,
-        'provider'  => 'pawapay',
-        'phone'     => '+260971000001',
-        'status'    => 'pending',
+        'loan_id'     => $loan->id,
+        'borrower_id' => $loan->borrower_id,
+        'reference'   => $ref,
+        'amount'      => $amount,
+        'provider'    => 'pawapay',
+        'phone'       => '+260971000001',
+        'status'      => 'pending',
     ]);
 }
 
@@ -51,7 +52,7 @@ test('flutterwave webhook records a payment on success', function () {
 
     DB::table('settings')->updateOrInsert(
         ['key' => 'flutterwave_webhook_secret'],
-        ['value' => '']  // empty = bypass signature check in dev
+        ['value' => 'test-secret']
     );
 
     $payload = [
@@ -65,7 +66,7 @@ test('flutterwave webhook records a payment on success', function () {
         ],
     ];
 
-    $this->postJson(route('webhooks.flutterwave'), $payload)
+    $this->postJson(route('api.v1.webhooks.flutterwave'), $payload, ['verif-hash' => 'test-secret'])
         ->assertStatus(204);
 
     expect(Payment::where('loan_id', $loan->id)->count())->toBe(1);
@@ -79,7 +80,7 @@ test('flutterwave webhook rejects invalid signature', function () {
     );
 
     $this->postJson(
-        route('webhooks.flutterwave'),
+        route('api.v1.webhooks.flutterwave'),
         ['event' => 'charge.completed', 'data' => []],
         ['verif-hash' => 'wrong-secret']
     )->assertStatus(401);
@@ -93,7 +94,7 @@ test('flutterwave webhook is idempotent for duplicate events', function () {
 
     DB::table('settings')->updateOrInsert(
         ['key' => 'flutterwave_webhook_secret'],
-        ['value' => '']
+        ['value' => 'test-secret']
     );
 
     $payload = [
@@ -107,8 +108,9 @@ test('flutterwave webhook is idempotent for duplicate events', function () {
         ],
     ];
 
-    $this->postJson(route('webhooks.flutterwave'), $payload)->assertStatus(204);
-    $this->postJson(route('webhooks.flutterwave'), $payload)->assertStatus(204); // duplicate
+    $headers = ['verif-hash' => 'test-secret'];
+    $this->postJson(route('api.v1.webhooks.flutterwave'), $payload, $headers)->assertStatus(204);
+    $this->postJson(route('api.v1.webhooks.flutterwave'), $payload, $headers)->assertStatus(204); // duplicate
 
     // Only one payment should be recorded
     expect(Payment::where('loan_id', $loan->id)->count())->toBe(1);
@@ -123,7 +125,7 @@ test('pawapay webhook records a payment on completed status', function () {
 
     DB::table('settings')->updateOrInsert(
         ['key' => 'pawapay_webhook_secret'],
-        ['value' => ''] // empty = dev bypass
+        ['value' => 'test-secret']
     );
 
     $payload = [
@@ -134,8 +136,9 @@ test('pawapay webhook records a payment on completed status', function () {
         'payer'                => ['address' => ['value' => '260971000001']],
     ];
 
-    $this->postJson(route('webhooks.pawapay'), $payload)
-        ->assertStatus(204);
+    $this->postJson(route('api.v1.webhooks.pawapay'), $payload, [
+        'X-PawaPay-Signature' => hash_hmac('sha256', json_encode($payload), 'test-secret'),
+    ])->assertStatus(204);
 
     expect(Payment::where('loan_id', $loan->id)->count())->toBe(1);
 });
@@ -147,7 +150,7 @@ test('pawapay webhook does not record payment on failed status', function () {
 
     DB::table('settings')->updateOrInsert(
         ['key' => 'pawapay_webhook_secret'],
-        ['value' => '']
+        ['value' => 'test-secret']
     );
 
     $payload = [
@@ -158,8 +161,9 @@ test('pawapay webhook does not record payment on failed status', function () {
         'payer'                => ['address' => ['value' => '260971000001']],
     ];
 
-    $this->postJson(route('webhooks.pawapay'), $payload)
-        ->assertStatus(204);
+    $this->postJson(route('api.v1.webhooks.pawapay'), $payload, [
+        'X-PawaPay-Signature' => hash_hmac('sha256', json_encode($payload), 'test-secret'),
+    ])->assertStatus(204);
 
     expect(Payment::where('loan_id', $loan->id)->count())->toBe(0);
     expect($intent->fresh()->status)->toBe('failed');
@@ -170,7 +174,7 @@ test('pawapay webhook does not record payment on failed status', function () {
 test('webhook with unknown internal ref is logged as skipped and returns 204', function () {
     DB::table('settings')->updateOrInsert(
         ['key' => 'pawapay_webhook_secret'],
-        ['value' => '']
+        ['value' => 'test-secret']
     );
 
     $payload = [
@@ -181,8 +185,9 @@ test('webhook with unknown internal ref is logged as skipped and returns 204', f
         'payer'                => ['address' => ['value' => '260971000001']],
     ];
 
-    $this->postJson(route('webhooks.pawapay'), $payload)
-        ->assertStatus(204);
+    $this->postJson(route('api.v1.webhooks.pawapay'), $payload, [
+        'X-PawaPay-Signature' => hash_hmac('sha256', json_encode($payload), 'test-secret'),
+    ])->assertStatus(204);
 
     // No payment should be created
     expect(Payment::count())->toBe(0);

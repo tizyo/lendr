@@ -30,7 +30,9 @@ class PawapayGateway implements BillingGatewayInterface
 
     public function verifyWebhookSignature(Request $request): bool
     {
-        return true;
+        // Stub gateway — no signature verification implemented yet, so fail
+        // closed rather than accepting unverified webhooks.
+        return false;
     }
 
     public function parseWebhookPayload(Request $request): array

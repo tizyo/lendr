@@ -30,16 +30,14 @@ expect()->extend('toBeZmwAmount', function () {
 */
 function actingAsAdmin(): \App\Models\Tenant\User
 {
-    $user = \App\Models\Tenant\User::factory()->create([
+    (new \Database\Seeders\RolesAndPermissionsSeeder)->run();
+
+    // role=SuperAdmin triggers User::booted()'s save hook, which syncs the
+    // matching (now-seeded, fully-permissioned) spatie role automatically.
+    return \App\Models\Tenant\User::factory()->create([
         'role'      => \App\Enums\UserRole::SuperAdmin,
         'is_active' => true,
     ]);
-
-    \Spatie\Permission\Models\Permission::all()->each(
-        fn ($perm) => \Spatie\Permission\Models\Permission::firstOrCreate(['name' => $perm->name])
-    );
-
-    return $user;
 }
 
 function makePlan(array $overrides = []): \App\Models\Tenant\LoanPlan

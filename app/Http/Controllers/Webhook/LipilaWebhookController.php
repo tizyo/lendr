@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Webhook;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Lipila webhook — HMAC-SHA256, header: X-Lipila-Signature.
@@ -15,7 +16,12 @@ class LipilaWebhookController extends BaseWebhookController
     protected function verifySignature(Request $request): bool
     {
         $secret = DB::table('settings')->where('key', 'lipila_webhook_secret')->value('value');
-        if (! $secret) return true;
+
+        if (! $secret) {
+            Log::warning('[Webhook:lipila] No webhook secret configured — rejecting unsigned request', ['ip' => $request->ip()]);
+
+            return false;
+        }
 
         return hash_equals(
             hash_hmac('sha256', $request->getContent(), $secret),

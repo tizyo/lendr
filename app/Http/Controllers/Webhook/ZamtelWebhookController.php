@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Webhook;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Zamtel Kwacha webhook — HMAC-SHA256, header: X-Zamtel-Signature.
@@ -16,7 +17,12 @@ class ZamtelWebhookController extends BaseWebhookController
     protected function verifySignature(Request $request): bool
     {
         $secret = DB::table('settings')->where('key', 'zamtel_webhook_secret')->value('value');
-        if (! $secret) return true;
+
+        if (! $secret) {
+            Log::warning('[Webhook:zamtel_kwacha] No webhook secret configured — rejecting unsigned request', ['ip' => $request->ip()]);
+
+            return false;
+        }
 
         return hash_equals(
             hash_hmac('sha256', $request->getContent(), $secret),

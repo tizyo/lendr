@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Webhook;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Flutterwave webhook — verif-hash header must equal the configured secret.
@@ -16,7 +17,12 @@ class FlutterwaveWebhookController extends BaseWebhookController
     protected function verifySignature(Request $request): bool
     {
         $secret = DB::table('settings')->where('key', 'flutterwave_webhook_secret')->value('value');
-        if (! $secret) return true;
+
+        if (! $secret) {
+            Log::warning('[Webhook:flutterwave] No webhook secret configured — rejecting unsigned request', ['ip' => $request->ip()]);
+
+            return false;
+        }
 
         return hash_equals($secret, $request->header('verif-hash', ''));
     }

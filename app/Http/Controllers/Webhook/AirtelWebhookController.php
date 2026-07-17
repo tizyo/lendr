@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Webhook;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Airtel Money webhook — HMAC-SHA256, header: X-Airtel-Signature.
@@ -16,7 +17,12 @@ class AirtelWebhookController extends BaseWebhookController
     protected function verifySignature(Request $request): bool
     {
         $secret = DB::table('settings')->where('key', 'airtel_webhook_secret')->value('value');
-        if (! $secret) return true;
+
+        if (! $secret) {
+            Log::warning('[Webhook:airtel_money] No webhook secret configured — rejecting unsigned request', ['ip' => $request->ip()]);
+
+            return false;
+        }
 
         return hash_equals(
             hash_hmac('sha256', $request->getContent(), $secret),
