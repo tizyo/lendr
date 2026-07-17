@@ -2,12 +2,14 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Enums\UserRole;
 use App\Http\Requests\Api\V1\Staff\StoreStaffRequest;
 use App\Http\Requests\Api\V1\Staff\UpdateStaffRequest;
 use App\Mail\StaffInvitationMail;
 use App\Models\Tenant\User;
 use App\Services\Mail\TenantMailService;
 use App\Services\PlanFeatureService;
+use App\Traits\GuardsStaffRoleAssignment;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Password;
@@ -16,6 +18,8 @@ use Spatie\Activitylog\Models\Activity;
 
 class StaffController extends BaseApiController
 {
+    use GuardsStaffRoleAssignment;
+
     public function index(Request $request): JsonResponse
     {
         $staff = User::query()
@@ -49,6 +53,8 @@ class StaffController extends BaseApiController
                 403
             );
         }
+
+        $this->assertCanGrantRole(UserRole::from($request->validated('role')));
 
         $token = Str::random(64);
 
@@ -84,7 +90,17 @@ class StaffController extends BaseApiController
 
     public function update(UpdateStaffRequest $request, User $staff): JsonResponse
     {
-        $staff->update($request->validated());
+        $data = $request->validated();
+
+        if (array_key_exists('role', $data)) {
+            $newRole = UserRole::from($data['role']);
+
+            if ($staff->role !== $newRole) {
+                $this->assertCanGrantRole($newRole);
+            }
+        }
+
+        $staff->update($data);
 
         return $this->success($this->formatStaff($staff), 'Staff member updated.');
     }

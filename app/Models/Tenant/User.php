@@ -12,6 +12,7 @@ use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
+use Spatie\Permission\Models\Role;
 use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable
@@ -57,6 +58,18 @@ class User extends Authenticatable
             'force_password_reset'   => 'boolean',
             'role'                   => UserRole::class,
         ];
+    }
+
+    protected static function booted(): void
+    {
+        // Keep the spatie role assignment in sync with the `role` enum column
+        // whenever it changes, regardless of which code path saved the model.
+        static::saved(function (self $user) {
+            if ($user->role instanceof UserRole) {
+                $role = Role::firstOrCreate(['name' => $user->role->value, 'guard_name' => 'web']);
+                $user->syncRoles([$role]);
+            }
+        });
     }
 
     public function getActivitylogOptions(): LogOptions

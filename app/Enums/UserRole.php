@@ -27,4 +27,20 @@ enum UserRole: string
     {
         return array_column(self::cases(), 'value');
     }
+
+    /**
+     * Relative privilege level, highest first. Used to stop a staff member
+     * from granting a role above their own (see StaffController).
+     */
+    public function level(): int
+    {
+        return match ($this) {
+            self::SuperAdmin    => 100,
+            self::BranchManager => 80,
+            self::Accountant    => 60,
+            self::Auditor       => 50,
+            self::LoanOfficer   => 40,
+            self::Cashier       => 30,
+        };
+    }
 }

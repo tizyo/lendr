@@ -8,15 +8,19 @@ use App\Mail\StaffInvitationMail;
 use App\Models\Tenant\User;
 use App\Services\Mail\TenantMailService;
 use App\Services\PlanFeatureService;
+use App\Traits\GuardsStaffRoleAssignment;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class StaffController extends Controller
 {
+    use GuardsStaffRoleAssignment;
+
     public function index(Request $request): Response
     {
         $staff = User::query()
@@ -70,9 +74,11 @@ class StaffController extends Controller
             'email'      => ['required', 'email', 'unique:users,email'],
             'username'   => ['nullable', 'string', 'max:50', 'unique:users,username'],
             'phone'      => ['nullable', 'string', 'max:20'],
-            'role'       => ['required', 'string'],
+            'role'       => ['required', Rule::enum(UserRole::class)],
             'department' => ['nullable', 'string', 'max:100'],
         ]);
+
+        $this->assertCanGrantRole(UserRole::from($data['role']));
 
         $token = Str::random(64);
 
@@ -104,9 +110,15 @@ class StaffController extends Controller
             'email'      => ['required', 'email', "unique:users,email,{$staff->id}"],
             'username'   => ['nullable', 'string', 'max:50', "unique:users,username,{$staff->id}"],
             'phone'      => ['nullable', 'string', 'max:20'],
-            'role'       => ['required', 'string'],
+            'role'       => ['required', Rule::enum(UserRole::class)],
             'department' => ['nullable', 'string', 'max:100'],
         ]);
+
+        $newRole = UserRole::from($data['role']);
+
+        if ($staff->role !== $newRole) {
+            $this->assertCanGrantRole($newRole);
+        }
 
         $staff->update($data);
 
