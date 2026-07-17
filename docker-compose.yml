@@ -78,6 +78,41 @@ services:
       - mysql
       - redis
 
+  reverb:
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+    container_name: lendr_reverb
+    restart: unless-stopped
+    working_dir: /var/www
+    command: php artisan reverb:start --host=0.0.0.0 --port=8080
+    volumes:
+      - .:/var/www
+    ports:
+      - "8081:8080"
+    networks:
+      - lendr
+    depends_on:
+      - mysql
+      - redis
+
+  scheduler:
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+    container_name: lendr_scheduler
+    restart: unless-stopped
+    working_dir: /var/www
+    command: >
+      sh -c "while true; do php artisan schedule:run --no-interaction; sleep 60; done"
+    volumes:
+      - .:/var/www
+    networks:
+      - lendr
+    depends_on:
+      - mysql
+      - redis
+
   mailpit:
     image: axllent/mailpit:latest
     container_name: lendr_mail

@@ -1,8 +1,12 @@
 ##############################################################################
-# LENDR — Production Docker Compose
+# LENDR — Docker Compose (containerized-deploy reference / local parity)
 #
-# Usage:
-#   docker compose -f docker-compose.prod.yml up -d
+# NOT the current production deploy path. Production deploys via SSH +
+# git pull directly on the host — see .github/workflows/cd-production.yml.
+# This file is a reference topology for a future move to containers, and
+# doubles as a local prod-parity harness (`docker compose -f
+# docker-compose.prod.yml up -d`) for testing config/scaling changes before
+# they land in the real (host-based) deploy.
 #
 # Required environment variables (pass via .env or secrets manager):
 #   APP_KEY, DB_PASSWORD, REDIS_PASSWORD, AWS_* , SENTRY_LARAVEL_DSN, etc.
@@ -34,9 +38,10 @@ services:
       REDIS_HOST:           redis
       REDIS_PORT:           6379
       REDIS_PASSWORD:       ${REDIS_PASSWORD}
-      CACHE_DRIVER:         redis
+      CACHE_STORE:          redis
       SESSION_DRIVER:       redis
       QUEUE_CONNECTION:     redis
+      BROADCAST_CONNECTION: reverb
 
       TENANCY_CENTRAL_CONNECTION: mysql
 
@@ -52,6 +57,12 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD", "php", "artisan", "--version"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
     networks:
       - internal
     # No src/ volume — code is baked into the image
@@ -75,6 +86,12 @@ services:
       LOG_CHANNEL:      stderr
       LOG_LEVEL:        warning
       SENTRY_LARAVEL_DSN: ${SENTRY_LARAVEL_DSN}
+    healthcheck:
+      test: ["CMD-SHELL", "pgrep -f 'queue:work' || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
     depends_on:
       - app
     networks:
@@ -99,6 +116,43 @@ services:
       LOG_CHANNEL:    stderr
       LOG_LEVEL:      warning
       SENTRY_LARAVEL_DSN: ${SENTRY_LARAVEL_DSN}
+    healthcheck:
+      test: ["CMD-SHELL", "pgrep -f 'while true' || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    depends_on:
+      - app
+    networks:
+      - internal
+
+  # ─── Laravel Reverb (WebSocket server for real-time broadcasting) ─────────
+  reverb:
+    image: ${APP_IMAGE:-lendr/app}:${APP_VERSION:-latest}
+    restart: unless-stopped
+    command: php artisan reverb:start --host=0.0.0.0 --port=8080
+    environment:
+      APP_ENV:              production
+      APP_DEBUG:            "false"
+      APP_KEY:              ${APP_KEY}
+      APP_URL:              ${APP_URL}
+      DB_HOST:              db
+      DB_DATABASE:          ${DB_DATABASE:-lendr}
+      DB_USERNAME:          ${DB_USERNAME:-lendr}
+      DB_PASSWORD:          ${DB_PASSWORD}
+      REDIS_HOST:           redis
+      REDIS_PASSWORD:       ${REDIS_PASSWORD}
+      BROADCAST_CONNECTION: reverb
+      LOG_CHANNEL:          stderr
+      LOG_LEVEL:            warning
+      SENTRY_LARAVEL_DSN:   ${SENTRY_LARAVEL_DSN}
+    healthcheck:
+      test: ["CMD-SHELL", "pgrep -f 'reverb:start' || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
     depends_on:
       - app
     networks:
@@ -115,6 +169,12 @@ services:
       - ./docker/nginx/prod.conf:/etc/nginx/conf.d/default.conf:ro
       - ./docker/nginx/certs:/etc/nginx/certs:ro        # mount TLS certs (or use certbot volume)
       - nginx_logs:/var/log/nginx
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost/up"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
     depends_on:
       - app
     networks:
