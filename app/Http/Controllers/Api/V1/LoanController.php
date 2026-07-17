@@ -358,6 +358,12 @@ class LoanController extends BaseApiController
 
             // Debit fund balance
             $this->fund->recordDisbursement($loan->fresh(), auth()->id());
+
+            try {
+                app(GlLedgerService::class)->postDisbursement($loan->fresh());
+            } catch (\Throwable) {
+                // GL accounts may not be seeded for this tenant; do not block disbursement
+            }
         });
 
         dispatch(new SendLoanEventNotificationJob($loan->id, 'disbursed'));

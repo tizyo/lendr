@@ -83,9 +83,9 @@ class GlLedgerService
             ['account_code' => '1001', 'side' => 'debit', 'amount' => $payment->amount],
         ];
 
-        $principal = (float) ($payment->principal_portion ?? $payment->amount);
-        $interest  = (float) ($payment->interest_portion ?? 0);
-        $fees      = (float) ($payment->fee_portion ?? 0);
+        $principal = (float) ($payment->principal_allocated ?? $payment->amount);
+        $interest  = (float) ($payment->interest_allocated ?? 0);
+        $fees      = (float) ($payment->fee_allocated ?? 0);
 
         if ($principal > 0) {
             $lines[] = ['account_code' => '1100', 'side' => 'credit', 'amount' => $principal];

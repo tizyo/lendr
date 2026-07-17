@@ -10,6 +10,7 @@ use App\Models\Tenant\LoanSchedule;
 use App\Models\Tenant\Payment;
 use App\Services\CrbService;
 use App\Services\FundService;
+use App\Services\GlLedgerService;
 use App\Services\NotificationService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -44,6 +45,13 @@ class PaymentService
     public function record(Loan $loan, array $attributes): Payment
     {
         return DB::transaction(function () use ($loan, $attributes) {
+            // Lock the loan row for the duration of this transaction so a
+            // concurrent payment (e.g. a retried webhook) can't read a stale
+            // balance and race this one — without this, two payments landing
+            // at the same time can both compute against the pre-payment
+            // balance and the second update silently clobbers the first.
+            $loan = Loan::where('id', $loan->id)->lockForUpdate()->firstOrFail();
+
             $amount = (float) $attributes['amount'];
 
             [$principalAllocated, $interestAllocated, $penaltyAllocated] = $this->allocate($loan, $amount);
@@ -86,6 +94,12 @@ class PaymentService
             ]);
 
             $this->applyToSchedule($loan, $principalAllocated, $interestAllocated, $attributes['payment_date']);
+
+            try {
+                app(GlLedgerService::class)->postPayment($payment);
+            } catch (\Throwable) {
+                // GL accounts may not be seeded for this tenant; do not block the payment
+            }
 
             $repaymentAmount = $principalAllocated + $interestAllocated;
             if ($repaymentAmount > 0) {
