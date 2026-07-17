@@ -54,3 +54,9 @@ jobs:
             php artisan horizon:terminate
             php artisan up
             echo "Production deploy complete $(date)"
+            # TODO: Reverb (WebSocket server for real-time broadcasting) has
+            # no supervised process on this host yet — Horizon gets restarted
+            # above via a process supervisor already managing it; Reverb
+            # needs the same (e.g. `php artisan reverb:restart` wired into
+            # whatever supervises horizon today) before real-time features
+            # will work in production.
