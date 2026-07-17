@@ -1,5 +1,6 @@
 <?php
 
+use App\Commands\BackupTenantDatabasesCommand;
 use App\Commands\ProcessOverdueLoansCommand;
 use App\Commands\ProcessTrialExpiryCommand;
 use App\Commands\ProcessUpcomingPaymentRemindersCommand;
@@ -56,3 +57,24 @@ Schedule::command(ExpireFeaturedItemsCommand::class)
     ->withoutOverlapping()
     ->runInBackground()
     ->appendOutputTo(storage_path('logs/featured-expiry.log'));
+
+// 02:00 daily — dump the landlord database and upload to the backup disk
+Schedule::command('backup:run --only-db')
+    ->dailyAt('02:00')
+    ->withoutOverlapping()
+    ->runInBackground()
+    ->appendOutputTo(storage_path('logs/backup.log'));
+
+// 02:30 daily — dump every tenant database and upload to the backup disk
+Schedule::command(BackupTenantDatabasesCommand::class)
+    ->dailyAt('02:30')
+    ->withoutOverlapping()
+    ->runInBackground()
+    ->appendOutputTo(storage_path('logs/backup-tenants.log'));
+
+// 03:00 daily — prune old backups per the retention policy in config/backup.php
+Schedule::command('backup:clean')
+    ->dailyAt('03:00')
+    ->withoutOverlapping()
+    ->runInBackground()
+    ->appendOutputTo(storage_path('logs/backup-clean.log'));
