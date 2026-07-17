@@ -10,9 +10,9 @@ use Spatie\Permission\Models\Permission;
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-function expUser(array $permissions = []): User
+function expUser(array $permissions = [], UserRole $role = UserRole::Accountant): User
 {
-    $user = User::factory()->create(['role' => UserRole::Accountant, 'is_active' => true]);
+    $user = User::factory()->create(['role' => $role, 'is_active' => true]);
 
     foreach ($permissions as $perm) {
         Permission::firstOrCreate(['name' => $perm, 'guard_name' => 'web']);
@@ -33,7 +33,7 @@ function makeCategory(): ExpenseCategory
 // ─── Create ───────────────────────────────────────────────────────────────────
 
 test('an expense can be created in draft status', function () {
-    $user = expUser();
+    $user = expUser(['expenses.create']);
     $cat  = makeCategory();
 
     $response = $this->actingAs($user)
@@ -51,7 +51,7 @@ test('an expense can be created in draft status', function () {
 });
 
 test('expense number is generated in EXP-YYYYMM-NNNNN format', function () {
-    $user = expUser();
+    $user = expUser(['expenses.create']);
     $cat  = makeCategory();
 
     $response = $this->actingAs($user)
@@ -68,7 +68,7 @@ test('expense number is generated in EXP-YYYYMM-NNNNN format', function () {
 });
 
 test('expense requires title, amount, date, and valid category', function () {
-    $user = expUser();
+    $user = expUser(['expenses.create']);
 
     $this->actingAs($user)
         ->withHeaders(['Accept' => 'application/json'])
@@ -104,7 +104,7 @@ test('expense detail can be fetched', function () {
 // ─── Update ───────────────────────────────────────────────────────────────────
 
 test('a draft expense can be updated', function () {
-    $user    = expUser();
+    $user    = expUser(['expenses.edit']);
     $expense = Expense::factory()->draft()->create(['submitted_by' => $user->id]);
 
     $this->actingAs($user)
@@ -115,7 +115,7 @@ test('a draft expense can be updated', function () {
 });
 
 test('a pending expense cannot be edited', function () {
-    $user    = expUser();
+    $user    = expUser(['expenses.edit']);
     $expense = Expense::factory()->pending()->create(['submitted_by' => $user->id]);
 
     $this->actingAs($user)
@@ -127,7 +127,7 @@ test('a pending expense cannot be edited', function () {
 // ─── Delete ───────────────────────────────────────────────────────────────────
 
 test('a draft expense can be deleted', function () {
-    $user    = expUser();
+    $user    = expUser(['expenses.delete']);
     $expense = Expense::factory()->draft()->create(['submitted_by' => $user->id]);
 
     $this->actingAs($user)
@@ -139,7 +139,7 @@ test('a draft expense can be deleted', function () {
 });
 
 test('an approved expense cannot be deleted', function () {
-    $user    = expUser();
+    $user    = expUser(['expenses.delete']);
     $expense = Expense::factory()->approved()->create(['submitted_by' => $user->id]);
 
     $this->actingAs($user)
@@ -151,7 +151,7 @@ test('an approved expense cannot be deleted', function () {
 // ─── Submit ───────────────────────────────────────────────────────────────────
 
 test('a draft expense can be submitted for approval', function () {
-    $user    = expUser();
+    $user    = expUser(['expenses.edit']);
     $expense = Expense::factory()->draft()->create(['submitted_by' => $user->id]);
 
     $this->actingAs($user)
@@ -164,7 +164,7 @@ test('a draft expense can be submitted for approval', function () {
 });
 
 test('a rejected expense can be resubmitted', function () {
-    $user    = expUser();
+    $user    = expUser(['expenses.edit']);
     $expense = Expense::factory()->rejected()->create(['submitted_by' => $user->id]);
 
     $this->actingAs($user)
@@ -211,7 +211,8 @@ test('approving an expense debits the fund balance', function () {
 });
 
 test('approving requires expenses.approve permission', function () {
-    $user    = expUser(); // no permission
+    // LoanOfficer has expenses.create/edit but not expenses.approve
+    $user    = expUser([], UserRole::LoanOfficer);
     $expense = Expense::factory()->pending()->create(['submitted_by' => $user->id]);
 
     $this->actingAs($user)

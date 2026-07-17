@@ -8,7 +8,8 @@ use App\Models\Tenant\User;
 
 function kycWorkflowUser(): User
 {
-    return User::factory()->create(['role' => UserRole::LoanOfficer, 'is_active' => true]);
+    // BranchManager has kyc.review (LoanOfficer only has kyc.view/kyc.upload)
+    return User::factory()->create(['role' => UserRole::BranchManager, 'is_active' => true]);
 }
 
 function kycDoc(Borrower $borrower, KycStatus $status = KycStatus::Pending): KycDocument

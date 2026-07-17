@@ -9,10 +9,10 @@ use Spatie\Permission\Models\Permission;
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-function loanUser(array $permissions = []): User
+function loanUser(array $permissions = [], UserRole $role = UserRole::LoanOfficer): User
 {
     $user = User::factory()->create([
-        'role'      => UserRole::LoanOfficer,
+        'role'      => $role,
         'is_active' => true,
     ]);
 
@@ -81,7 +81,8 @@ test('unauthenticated request to loans API returns 401', function () {
 });
 
 test('loan creation without permission returns 403', function () {
-    $user     = loanUser(); // no permissions
+    // Cashier role has no loans.create permission (LoanOfficer's default role does)
+    $user     = loanUser([], UserRole::Cashier);
     $borrower = Borrower::factory()->create();
     $plan     = makePlan();
 
@@ -159,7 +160,7 @@ test('an approved loan can be disbursed and generates a schedule', function () {
 });
 
 test('a submitted loan can be denied', function () {
-    $user = loanUser(['loans.approve']);
+    $user = loanUser(['loans.deny']);
     $loan = Loan::factory()->submitted()->create();
 
     $this->actingAs($user)
@@ -174,7 +175,7 @@ test('a submitted loan can be denied', function () {
 });
 
 test('denial requires a reason', function () {
-    $user = loanUser(['loans.approve']);
+    $user = loanUser(['loans.deny']);
     $loan = Loan::factory()->submitted()->create();
 
     $this->actingAs($user)
@@ -185,7 +186,7 @@ test('denial requires a reason', function () {
 });
 
 test('an active loan can be frozen with a reason', function () {
-    $user = loanUser();
+    $user = loanUser(['loans.freeze']);
     $loan = Loan::factory()->active()->create();
 
     $this->actingAs($user)
@@ -200,7 +201,7 @@ test('an active loan can be frozen with a reason', function () {
 });
 
 test('a frozen loan can be unfrozen back to active', function () {
-    $user = loanUser();
+    $user = loanUser(['loans.freeze']);
     $loan = Loan::factory()->create(['status' => LoanStatus::Frozen->value]);
 
     $this->actingAs($user)
@@ -230,7 +231,9 @@ test('loan schedule is returned for an active loan', function () {
 });
 
 test('only draft or submitted loans can be deleted', function () {
-    $user = loanUser();
+    // No seeded role includes loans.delete by default — deletion is
+    // intentionally SuperAdmin-only, so grant it explicitly for this test.
+    $user = loanUser(['loans.delete']);
 
     $denied = Loan::factory()->denied()->create();
     $this->actingAs($user)
