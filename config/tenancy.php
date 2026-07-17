@@ -20,6 +20,9 @@ return [
         '127.0.0.1',
         'localhost',
         env('CENTRAL_DOMAIN', 'lendr.app'),
+        // Shared portal — Starter/Trial tenants log in here
+        'app.localhost',
+        'app.' . env('CENTRAL_DOMAIN', 'lendr.app'),
     ],
 
     /**
@@ -186,8 +189,7 @@ return [
      */
     'migration_parameters' => [
         '--force' => true, // This needs to be true to run migrations in production.
-        '--path' => [database_path('migrations/tenant')],
-        '--realpath' => true,
+        '--path' => ['database/migrations/tenant'],
     ],
 
     /**

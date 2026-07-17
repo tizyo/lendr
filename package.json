@@ -1,36 +1,46 @@
 {
-    "$schema": "https://www.schemastore.org/package.json",
-    "private": true,
-    "type": "module",
-    "scripts": {
-        "build": "vite build",
-        "dev": "vite",
-        "test:unit": "vitest",
-        "test:unit:ui": "vitest --ui",
-        "test:coverage": "vitest --coverage"
-    },
-    "devDependencies": {
-        "@tailwindcss/forms": "^0.5.11",
-        "@tailwindcss/typography": "^0.5.19",
-        "@tailwindcss/vite": "^4.2.1",
-        "@vitest/ui": "^4.0.18",
-        "@vue/test-utils": "^2.4.6",
-        "autoprefixer": "^10.4.27",
-        "axios": "^1.13.6",
-        "concurrently": "^9.0.1",
-        "jsdom": "^28.1.0",
-        "laravel-vite-plugin": "^2.0.0",
-        "postcss": "^8.5.8",
-        "tailwindcss": "^4.2.1",
-        "vite": "^7.0.7",
-        "vitest": "^4.0.18"
-    },
-    "dependencies": {
-        "@inertiajs/vue3": "^2.3.17",
-        "@vitejs/plugin-vue": "^6.0.4",
-        "@vueuse/core": "^14.2.1",
-        "pinia": "^3.0.4",
-        "vue": "^3.5.29",
-        "ziggy-js": "^2.6.2"
-    }
+  "$schema": "https://www.schemastore.org/package.json",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "vite build",
+    "dev": "vite",
+    "test:unit": "vitest",
+    "test:unit:ui": "vitest --ui",
+    "test:coverage": "vitest --coverage"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.59.0",
+    "@tailwindcss/forms": "^0.5.11",
+    "@tailwindcss/typography": "^0.5.19",
+    "@tailwindcss/vite": "^4.2.1",
+    "@vitest/ui": "^4.0.18",
+    "@vue/test-utils": "^2.4.6",
+    "autoprefixer": "^10.4.27",
+    "axios": "^1.13.6",
+    "concurrently": "^9.0.1",
+    "jsdom": "^28.1.0",
+    "laravel-echo": "^2.3.1",
+    "laravel-vite-plugin": "^2.0.0",
+    "msw": "^2.12.14",
+    "postcss": "^8.5.8",
+    "pusher-js": "^8.4.0",
+    "tailwindcss": "^4.2.1",
+    "vite": "^7.0.7",
+    "vitest": "^4.0.18"
+  },
+  "dependencies": {
+    "@heroicons/vue": "^2.2.0",
+    "@inertiajs/vue3": "^2.3.17",
+    "@vitejs/plugin-vue": "^6.0.4",
+    "@vueuse/core": "^14.2.1",
+    "pinia": "^3.0.4",
+    "vue": "^3.5.29",
+    "ziggy-js": "^2.6.2"
+  },
+  "msw": {
+    "workerDirectory": [
+      "public"
+    ]
+  }
 }

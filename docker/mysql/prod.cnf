@@ -1,0 +1,26 @@
+[mysqld]
+# Character set
+character-set-server  = utf8mb4
+collation-server      = utf8mb4_unicode_ci
+
+# Performance
+innodb_buffer_pool_size        = 512M
+innodb_log_file_size           = 128M
+innodb_flush_log_at_trx_commit = 1
+innodb_flush_method            = O_DIRECT
+
+# Slow query log (tune query_time as needed)
+slow_query_log         = 1
+slow_query_log_file    = /var/lib/mysql/slow.log
+long_query_time        = 1
+log_queries_not_using_indexes = 1
+
+# Connection limits
+max_connections        = 200
+wait_timeout           = 600
+interactive_timeout    = 600
+
+# Binary log (for point-in-time recovery)
+log_bin                = mysql-bin
+expire_logs_days       = 7
+binlog_format          = ROW
