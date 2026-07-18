@@ -490,6 +490,7 @@ const formatKey = (key) => key.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUppe
 </script>
 
 <style scoped>
+@reference "../../../../css/app.css";
 .th { @apply px-5 py-3 text-left text-xs font-semibold text-neutral-500 uppercase tracking-wide; }
 .td { @apply px-5 py-3.5 text-sm text-neutral-700; }
 </style>

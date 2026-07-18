@@ -173,7 +173,7 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import PwaLayout from '@/pwa/layouts/PwaLayout.vue'
+import PwaLayout from '@/pwa/components/PwaLayout.vue'
 import axios from 'axios'
 
 const listings         = ref([])

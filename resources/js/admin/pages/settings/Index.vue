@@ -176,7 +176,6 @@
             </p>
           </div>
         </div>
-        </div>
       </template>
 
       <!-- ─── SMS ─── -->

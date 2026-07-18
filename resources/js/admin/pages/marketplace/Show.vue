@@ -207,7 +207,7 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import AppLayout from '@/admin/layouts/AppLayout.vue'
+import AppLayout from '@/admin/components/layout/AppLayout.vue'
 import axios from 'axios'
 
 const props = defineProps({ id: Number })

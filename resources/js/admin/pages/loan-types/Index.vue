@@ -85,7 +85,7 @@
               </div>
               <table v-else class="w-full text-sm">
                 <thead>
-                  <tr class="bg-gray-50 dark:bg-gray-750">
+                  <tr class="bg-gray-50 dark:bg-gray-700">
                     <th class="px-5 py-2.5 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Plan</th>
                     <th class="px-4 py-2.5 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Rate</th>
                     <th class="px-4 py-2.5 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Tenure</th>
@@ -99,7 +99,7 @@
                   <tr
                     v-for="plan in type.plans"
                     :key="plan.id"
-                    class="hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors"
+                    class="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                   >
                     <td class="px-5 py-3">
                       <div class="font-medium text-gray-900 dark:text-white">{{ plan.name }}</div>
@@ -657,11 +657,12 @@ async function executeDelete() {
 </script>
 
 <style scoped>
+@reference "../../../../css/app.css";
 .btn-primary {
   @apply inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed;
 }
 .btn-secondary {
-  @apply inline-flex items-center px-3 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-750 text-sm font-medium rounded-lg transition-colors;
+  @apply inline-flex items-center px-3 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-sm font-medium rounded-lg transition-colors;
 }
 .btn-danger {
   @apply inline-flex items-center px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed;
