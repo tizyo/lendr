@@ -45,6 +45,16 @@ function pdfPayment(Loan $loan, User $admin): Payment
 
 // ─── PDF endpoint tests ───────────────────────────────────────────────────────
 
+test('loan application PDF can be generated', function () {
+    $admin = pdfAdmin();
+    $loan = pdfLoan();
+
+    $resp = $this->actingAs($admin, 'web')
+        ->get(route('loans.pdf.application', $loan));
+
+    expect($resp->status())->toBeIn([200, 302]);
+})->group('pdf');
+
 test('loan agreement PDF returns PDF content-type', function () {
     $admin = pdfAdmin();
     $loan = pdfLoan();

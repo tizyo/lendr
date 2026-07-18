@@ -29,6 +29,69 @@ class PdfController extends Controller
         ];
     }
 
+    public function loanApplication(Loan $loan): Response
+    {
+        $loan->load([
+            'borrower',
+            'loanType:id,name',
+            'loanPlan:id,name',
+            'createdBy:id,name',
+        ]);
+
+        $borrower = $loan->borrower;
+
+        $loanData = [
+            'loan_number' => $loan->loan_number,
+            'loan_type' => $loan->loanType->name,
+            'loan_plan' => $loan->loanPlan->name,
+            'currency' => tenancy()->tenant?->currency ?? 'ZMW',
+            'principal_amount' => number_format((float) $loan->principal_amount, 2),
+            'tenure' => $loan->tenure,
+            'tenure_type' => $loan->tenure_type,
+            'repayment_schedule' => $loan->repayment_schedule,
+            'application_date' => $loan->application_date?->format('d M Y'),
+            'loan_purpose' => $loan->loan_purpose,
+            'collateral_description' => $loan->collateral_description,
+            'guarantor_name' => $loan->guarantor_name,
+            'guarantor_phone' => $loan->guarantor_phone,
+            'guarantor_relationship' => $loan->guarantor_relationship,
+            'created_by' => $loan->createdBy?->name,
+            'borrower' => [
+                'name' => $borrower->full_name,
+                'borrower_number' => $borrower->borrower_number,
+                'date_of_birth' => $borrower->date_of_birth?->format('d M Y'),
+                'gender' => $borrower->gender,
+                'national_id' => $borrower->national_id,
+                'phone' => $borrower->phone,
+                'email' => $borrower->email,
+                'address' => $borrower->address,
+                'city' => $borrower->city,
+                'province' => $borrower->province,
+                'occupation' => $borrower->occupation,
+                'employer' => $borrower->employer,
+                'next_of_kin_name' => $borrower->next_of_kin_name,
+                'next_of_kin_phone' => $borrower->next_of_kin_phone,
+                'next_of_kin_relationship' => $borrower->next_of_kin_relationship,
+            ],
+        ];
+
+        $info = $this->companyInfo();
+
+        $pdf = Pdf::loadView('pdf.loan-application', [
+            'loan' => $loanData,
+            'company' => $info['company'],
+            'address' => $info['address'],
+            'phone' => $info['phone'],
+            'email' => $info['email'],
+            'website' => $info['website'],
+            'logo_url' => $info['logo_url'],
+            'invoice_footer' => $info['invoice_footer'],
+            'generatedAt' => now()->format('d M Y H:i'),
+        ])->setPaper('a4', 'portrait');
+
+        return $pdf->download("loan-application-{$loan->loan_number}.pdf");
+    }
+
     public function loanAgreement(Loan $loan): Response
     {
         $loan->load([
