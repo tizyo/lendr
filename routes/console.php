@@ -4,6 +4,7 @@ use App\Commands\BackupTenantDatabasesCommand;
 use App\Commands\ProcessOverdueLoansCommand;
 use App\Commands\ProcessTrialExpiryCommand;
 use App\Commands\ProcessUpcomingPaymentRemindersCommand;
+use App\Commands\RunReconciliationCommand;
 use App\Commands\SendBorrowerStatementsCommand;
 use App\Console\Commands\ExpireFeaturedItemsCommand;
 use Illuminate\Foundation\Inspiring;
@@ -78,3 +79,10 @@ Schedule::command('backup:clean')
     ->withoutOverlapping()
     ->runInBackground()
     ->appendOutputTo(storage_path('logs/backup-clean.log'));
+
+// 04:00 daily — auto-reconcile bank statements imported but not yet matched
+Schedule::command(RunReconciliationCommand::class)
+    ->dailyAt('04:00')
+    ->withoutOverlapping()
+    ->runInBackground()
+    ->appendOutputTo(storage_path('logs/reconciliation.log'));
