@@ -8,8 +8,8 @@ return [
      */
     'title' => 'LENDR API Documentation',
 
-    'description' => 'REST API for the LENDR multi-tenant loan management platform. ' .
-                     'All endpoints require a Bearer token obtained via POST /api/v1/auth/login, ' .
+    'description' => 'REST API for the LENDR multi-tenant loan management platform. '.
+                     'All endpoints require a Bearer token obtained via POST /api/v1/auth/login, '.
                      'except where noted as public.',
 
     'base_url' => env('APP_URL', 'https://app.lendr.app'),
@@ -26,14 +26,14 @@ return [
 
     'laravel' => [
         'add_routes' => true,
-        'docs_url'   => '/docs',
+        'docs_url' => '/docs',
         'middleware' => ['web'],
     ],
 
     'auth' => [
-        'enabled'   => true,
-        'in'        => 'bearer',
-        'name'      => 'Authorization',
+        'enabled' => true,
+        'in' => 'bearer',
+        'name' => 'Authorization',
         'use_value' => env('SCRIBE_AUTH_KEY', ''),
         'placeholder' => '{STAFF_TOKEN}',
         'extra_info' => 'Obtain a token via **POST /api/v1/auth/login**. Include it in the Authorization header as `Bearer {token}`.',
@@ -43,7 +43,7 @@ return [
         [
             'match' => [
                 'prefixes' => ['api/v1/*'],
-                'domains'  => ['*'],
+                'domains' => ['*'],
             ],
             'include' => [],
             'exclude' => [
@@ -71,18 +71,17 @@ return [
         ],
         'queryParameters' => [
             Strategies\QueryParameters\GetFromFormRequest::class,
-            Strategies\QueryParameters\GetFromInlineValidationRules::class,
+            Strategies\QueryParameters\GetFromInlineValidator::class,
             Strategies\QueryParameters\GetFromQueryParamAttribute::class,
             Strategies\QueryParameters\GetFromQueryParamTag::class,
         ],
         'headers' => [
-            Strategies\Headers\GetFromRouteRules::class,
             Strategies\Headers\GetFromHeaderAttribute::class,
             Strategies\Headers\GetFromHeaderTag::class,
         ],
         'bodyParameters' => [
             Strategies\BodyParameters\GetFromFormRequest::class,
-            Strategies\BodyParameters\GetFromInlineValidationRules::class,
+            Strategies\BodyParameters\GetFromInlineValidator::class,
             Strategies\BodyParameters\GetFromBodyParamAttribute::class,
             Strategies\BodyParameters\GetFromBodyParamTag::class,
         ],
@@ -100,18 +99,18 @@ return [
     ],
 
     'postman' => [
-        'enabled'     => true,
+        'enabled' => true,
         'overridden_values' => [],
     ],
 
     'openapi' => [
-        'enabled'     => true,
+        'enabled' => true,
         'overridden_values' => [],
     ],
 
     'groups' => [
         'default' => 'Endpoints',
-        'order'   => [
+        'order' => [
             'Authentication',
             'Borrowers',
             'Loans',
