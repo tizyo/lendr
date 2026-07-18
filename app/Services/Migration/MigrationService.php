@@ -28,10 +28,27 @@ class MigrationService
     /**
      * Returns a query builder against the VOZARA legacy database.
      * Reads from the 'vozara' connection defined in config/database.php.
+     *
+     * Connecting eagerly here (rather than letting the caller's first query
+     * trigger it lazily) means a failed connect is caught and purged in this
+     * tight scope. A broken PDO instance left cached on the connection
+     * resolver until later teardown has been observed to crash the process
+     * outright instead of raising a catchable exception - purging it
+     * immediately on failure avoids that.
      */
     public function legacy(): \Illuminate\Database\ConnectionInterface
     {
-        return DB::connection('vozara');
+        $connection = DB::connection('vozara');
+
+        try {
+            $connection->getPdo();
+        } catch (\Throwable $e) {
+            DB::purge('vozara');
+
+            throw $e;
+        }
+
+        return $connection;
     }
 
     // ─── Migration log ────────────────────────────────────────────────────────

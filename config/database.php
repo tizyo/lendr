@@ -125,6 +125,12 @@ return [
             'collation' => 'utf8mb4_unicode_ci',
             'prefix' => '',
             'strict' => false, // VOZARA may have legacy data that violates strict mode
+            // Legacy host may be unreachable (decommissioned, network change, a
+            // firewall that silently drops rather than refuses) - fail fast rather
+            // than hang on the OS-level TCP retransmission timeout.
+            'options' => [
+                \PDO::ATTR_TIMEOUT => 5,
+            ],
         ],
 
     ],

@@ -6,6 +6,8 @@ use App\Services\Migration\MigrationResult;
 use App\Services\Migration\MigrationService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
+use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Output\OutputInterface;
 
 /**
  * Base class for all migration:vozara:* commands.
@@ -28,6 +30,22 @@ abstract class BaseMigrationCommand extends Command
             ['batch',   null, \Symfony\Component\Console\Input\InputOption::VALUE_OPTIONAL, 'Chunk size for processing records', 100],
             ['tenant',  null, \Symfony\Component\Console\Input\InputOption::VALUE_OPTIONAL, 'Tenant ID to migrate into (defaults to first tenant)', null],
         ];
+    }
+
+    // ─── Connection safety ───────────────────────────────────────────────────
+
+    /**
+     * Purge the 'vozara' connection after every run, success or failure, so a
+     * failed connect attempt never leaves a broken PDO instance cached on the
+     * connection resolver past the life of this command.
+     */
+    protected function execute(InputInterface $input, OutputInterface $output): int
+    {
+        try {
+            return parent::execute($input, $output);
+        } finally {
+            DB::purge('vozara');
+        }
     }
 
     // ─── Helpers ─────────────────────────────────────────────────────────────

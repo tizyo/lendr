@@ -32,5 +32,11 @@
         <env name="PULSE_ENABLED" value="false"/>
         <env name="TELESCOPE_ENABLED" value="false"/>
         <env name="NIGHTWATCH_ENABLED" value="false"/>
+        <!-- Legacy VOZARA connection defaults to 127.0.0.1:3306, which on a dev
+             machine can coincide with an unrelated real MySQL server for another
+             project - point at a closed port so tests get an instant ECONNREFUSED
+             instead of a multi-second auth-handshake stall against a real server. -->
+        <env name="VOZARA_DB_HOST" value="127.0.0.1"/>
+        <env name="VOZARA_DB_PORT" value="1"/>
     </php>
 </phpunit>

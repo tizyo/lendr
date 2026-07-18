@@ -28,11 +28,31 @@ class MigrateReferenceDataCommand extends BaseMigrationCommand
         $migrated = 0;
         $skipped = 0;
 
+        // Resolve the legacy connection once and reuse it across every
+        // section below, rather than re-resolving per section - repeated
+        // connect attempts against an unreachable host within a single run
+        // add unnecessary latency and, in some environments, can leave the
+        // driver in a bad state after several failed reconnects in a row.
+        try {
+            $legacy = $svc->legacy();
+        } catch (\Throwable $e) {
+            $this->printResult(new MigrationResult(
+                step: 'reference-data',
+                migrated: 0,
+                skipped: 0,
+                failed: 1,
+                dryRun: $dryRun,
+                errors: ['legacy connection: '.$e->getMessage()],
+            ));
+
+            return self::FAILURE;
+        }
+
         // ── Loan types ────────────────────────────────────────────────────────
         $this->info('→ Migrating loan types…');
 
         try {
-            $rows = $svc->legacy()->table('loan_type')->get();
+            $rows = $legacy->table('loan_type')->get();
 
             foreach ($rows as $row) {
                 if ($svc->alreadyMigrated('loan_types', $row->id)) {
@@ -61,7 +81,7 @@ class MigrateReferenceDataCommand extends BaseMigrationCommand
         $this->info('→ Migrating loan plans…');
 
         try {
-            $rows = $svc->legacy()->table('loan_plan')->get();
+            $rows = $legacy->table('loan_plan')->get();
 
             foreach ($rows as $row) {
                 if ($svc->alreadyMigrated('loan_plans', $row->id)) {
@@ -108,7 +128,7 @@ class MigrateReferenceDataCommand extends BaseMigrationCommand
         $this->info('→ Migrating expense categories…');
 
         try {
-            $rows = $svc->legacy()->table('expense_categories')->get();
+            $rows = $legacy->table('expense_categories')->get();
 
             foreach ($rows as $row) {
                 if ($svc->alreadyMigrated('expense_categories', $row->id)) {
@@ -137,7 +157,7 @@ class MigrateReferenceDataCommand extends BaseMigrationCommand
         $this->info('→ Migrating system settings…');
 
         try {
-            $rows = $svc->legacy()->table('settings')->get();
+            $rows = $legacy->table('settings')->get();
 
             foreach ($rows as $row) {
                 if (! $dryRun) {
