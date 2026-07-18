@@ -23,14 +23,14 @@ class PlatformSettingsController extends BaseApiController
             $record = PlatformSmsConfig::where('provider', $provider)->first();
 
             return [
-                'provider'      => $provider,
-                'label'         => $provider === 'africas_talking' ? "Africa's Talking" : 'SMS.to',
-                'is_active'     => $record?->is_active ?? false,
+                'provider' => $provider,
+                'label' => $provider === 'africas_talking' ? "Africa's Talking" : 'SMS.to',
+                'is_active' => $record?->is_active ?? false,
                 'is_configured' => $record?->isConfigured() ?? false,
-                'has_api_key'   => ! empty($record?->api_key),
-                'sender_id'     => $record?->sender_id,
-                'username'      => $record?->username,
-                'sandbox'       => $record?->sandbox ?? false,
+                'has_api_key' => ! empty($record?->api_key),
+                'sender_id' => $record?->sender_id,
+                'username' => $record?->username,
+                'sandbox' => $record?->sandbox ?? false,
             ];
         });
 
@@ -43,7 +43,7 @@ class PlatformSettingsController extends BaseApiController
 
         $rules = [
             'sender_id' => ['nullable', 'string', 'max:32'],
-            'sandbox'   => ['nullable', 'boolean'],
+            'sandbox' => ['nullable', 'boolean'],
         ];
 
         if ($provider === 'africas_talking') {
@@ -61,8 +61,8 @@ class PlatformSettingsController extends BaseApiController
 
         $update = array_filter([
             'sender_id' => $data['sender_id'] ?? null,
-            'username'  => $data['username'] ?? null,
-            'sandbox'   => $data['sandbox'] ?? false,
+            'username' => $data['username'] ?? null,
+            'sandbox' => $data['sandbox'] ?? false,
         ], fn ($v) => $v !== null);
 
         if ($request->filled('api_key')) {
@@ -86,7 +86,7 @@ class PlatformSettingsController extends BaseApiController
 
         $config->activate();
 
-        return $this->success(null, ucfirst(str_replace('_', ' ', $provider)) . ' is now the active SMS provider.');
+        return $this->success(null, ucfirst(str_replace('_', ' ', $provider)).' is now the active SMS provider.');
     }
 
     public function smsDeactivate(string $provider): JsonResponse
@@ -109,27 +109,27 @@ class PlatformSettingsController extends BaseApiController
 
         if (! $config) {
             return $this->success([
-                'configured'   => false,
-                'is_active'    => false,
-                'host'         => null,
-                'port'         => 587,
-                'encryption'   => 'tls',
-                'username'     => null,
+                'configured' => false,
+                'is_active' => false,
+                'host' => null,
+                'port' => 587,
+                'encryption' => 'tls',
+                'username' => null,
                 'from_address' => null,
-                'from_name'    => null,
+                'from_name' => null,
                 'has_password' => false,
             ]);
         }
 
         return $this->success([
-            'configured'   => $config->isConfigured(),
-            'is_active'    => $config->is_active,
-            'host'         => $config->host,
-            'port'         => $config->port,
-            'encryption'   => $config->encryption,
-            'username'     => $config->username,
+            'configured' => $config->isConfigured(),
+            'is_active' => $config->is_active,
+            'host' => $config->host,
+            'port' => $config->port,
+            'encryption' => $config->encryption,
+            'username' => $config->username,
             'from_address' => $config->from_address,
-            'from_name'    => $config->from_name,
+            'from_name' => $config->from_name,
             'has_password' => ! empty($config->password),
         ]);
     }
@@ -137,12 +137,12 @@ class PlatformSettingsController extends BaseApiController
     public function emailUpdate(Request $request): JsonResponse
     {
         $data = $request->validate([
-            'host'         => ['nullable', 'string', 'max:255'],
-            'port'         => ['nullable', 'integer', 'between:1,65535'],
-            'encryption'   => ['nullable', 'in:tls,ssl,'],
-            'username'     => ['nullable', 'string', 'max:255'],
+            'host' => ['nullable', 'string', 'max:255'],
+            'port' => ['nullable', 'integer', 'between:1,65535'],
+            'encryption' => ['nullable', 'in:tls,ssl,'],
+            'username' => ['nullable', 'string', 'max:255'],
             'from_address' => ['nullable', 'email', 'max:255'],
-            'from_name'    => ['nullable', 'string', 'max:128'],
+            'from_name' => ['nullable', 'string', 'max:128'],
         ]);
 
         $config = PlatformEmailConfig::firstOrCreate([]);
@@ -180,12 +180,12 @@ class PlatformSettingsController extends BaseApiController
             $mailer = Mail::build($config->toMailerConfig());
             $mailer->raw(
                 'LENDR platform SMTP test — configuration is working.',
-                fn ($m) => $m->to($data['to'])->subject('LENDR — Platform SMTP Test')
+                fn ($m) => $m->to($data['to'])->subject('LENDR — Platform SMTP Test'),
             );
 
             return $this->success(null, "Test email sent to {$data['to']}.");
         } catch (\Throwable $e) {
-            return $this->error('SMTP error: ' . $e->getMessage(), 422);
+            return $this->error('SMTP error: '.$e->getMessage(), 422);
         }
     }
 
@@ -195,35 +195,35 @@ class PlatformSettingsController extends BaseApiController
 
     public function brandingIndex(): JsonResponse
     {
-        $b = PlatformBranding::current() ?? new PlatformBranding();
+        $b = PlatformBranding::current() ?? new PlatformBranding;
 
         return $this->success([
-            'company_name'   => $b->company_name   ?? 'LENDR',
-            'tagline'        => $b->tagline,
-            'address'        => $b->address,
-            'phone'          => $b->phone,
-            'email'          => $b->email,
-            'website'        => $b->website,
-            'primary_color'  => $b->primary_color  ?? '#059669',
+            'company_name' => $b->company_name ?? 'LENDR',
+            'tagline' => $b->tagline,
+            'address' => $b->address,
+            'phone' => $b->phone,
+            'email' => $b->email,
+            'website' => $b->website,
+            'primary_color' => $b->primary_color ?? '#059669',
             'invoice_footer' => $b->invoice_footer,
-            'email_footer'   => $b->email_footer,
-            'logo_url'       => $b->exists ? $b->logoUrl()    : null,
-            'favicon_url'    => $b->exists ? $b->faviconUrl() : null,
+            'email_footer' => $b->email_footer,
+            'logo_url' => $b->exists ? $b->logoUrl() : null,
+            'favicon_url' => $b->exists ? $b->faviconUrl() : null,
         ]);
     }
 
     public function brandingUpdate(Request $request): JsonResponse
     {
         $data = $request->validate([
-            'company_name'   => ['nullable', 'string', 'max:128'],
-            'tagline'        => ['nullable', 'string', 'max:255'],
-            'address'        => ['nullable', 'string', 'max:500'],
-            'phone'          => ['nullable', 'string', 'max:32'],
-            'email'          => ['nullable', 'email', 'max:255'],
-            'website'        => ['nullable', 'url', 'max:255'],
-            'primary_color'  => ['nullable', 'regex:/^#[0-9a-fA-F]{6}$/'],
+            'company_name' => ['nullable', 'string', 'max:128'],
+            'tagline' => ['nullable', 'string', 'max:255'],
+            'address' => ['nullable', 'string', 'max:500'],
+            'phone' => ['nullable', 'string', 'max:32'],
+            'email' => ['nullable', 'email', 'max:255'],
+            'website' => ['nullable', 'url', 'max:255'],
+            'primary_color' => ['nullable', 'regex:/^#[0-9a-fA-F]{6}$/'],
             'invoice_footer' => ['nullable', 'string', 'max:1000'],
-            'email_footer'   => ['nullable', 'string', 'max:1000'],
+            'email_footer' => ['nullable', 'string', 'max:1000'],
         ]);
 
         $branding = PlatformBranding::current() ?? PlatformBranding::firstOrCreate([]);

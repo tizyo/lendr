@@ -19,8 +19,8 @@ class CollectionLog extends Model
     ];
 
     protected $casts = [
-        'follow_up_date'   => 'date',
-        'amount_promised'  => 'decimal:2',
+        'follow_up_date' => 'date',
+        'amount_promised' => 'decimal:2',
         'amount_collected' => 'decimal:2',
     ];
 
@@ -39,27 +39,27 @@ class CollectionLog extends Model
     public function contactMethodLabel(): string
     {
         return match ($this->contact_method) {
-            'call'      => 'Phone Call',
-            'sms'       => 'SMS',
-            'visit'     => 'Field Visit',
-            'email'     => 'Email',
-            'whatsapp'  => 'WhatsApp',
-            default     => ucfirst($this->contact_method),
+            'call' => 'Phone Call',
+            'sms' => 'SMS',
+            'visit' => 'Field Visit',
+            'email' => 'Email',
+            'whatsapp' => 'WhatsApp',
+            default => ucfirst($this->contact_method),
         };
     }
 
     public function outcomeLabel(): string
     {
         return match ($this->outcome) {
-            'reached'          => 'Reached',
-            'no_answer'        => 'No Answer',
+            'reached' => 'Reached',
+            'no_answer' => 'No Answer',
             'promised_payment' => 'Promised Payment',
-            'partial_payment'  => 'Partial Payment',
-            'paid_up'          => 'Paid Up',
-            'refused'          => 'Refused',
-            'invalid_number'   => 'Invalid Number',
-            'rescheduled'      => 'Rescheduled',
-            default            => ucfirst(str_replace('_', ' ', $this->outcome)),
+            'partial_payment' => 'Partial Payment',
+            'paid_up' => 'Paid Up',
+            'refused' => 'Refused',
+            'invalid_number' => 'Invalid Number',
+            'rescheduled' => 'Rescheduled',
+            default => ucfirst(str_replace('_', ' ', $this->outcome)),
         };
     }
 
@@ -67,11 +67,11 @@ class CollectionLog extends Model
     {
         return match ($this->outcome) {
             'promised_payment', 'rescheduled' => 'amber',
-            'partial_payment', 'reached'      => 'blue',
-            'paid_up'                         => 'emerald',
-            'refused', 'invalid_number'       => 'red',
-            'no_answer'                       => 'neutral',
-            default                           => 'neutral',
+            'partial_payment', 'reached' => 'blue',
+            'paid_up' => 'emerald',
+            'refused', 'invalid_number' => 'red',
+            'no_answer' => 'neutral',
+            default => 'neutral',
         };
     }
 }

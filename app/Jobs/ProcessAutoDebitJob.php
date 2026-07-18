@@ -19,12 +19,13 @@ class ProcessAutoDebitJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    public int $tries   = 1; // retry logic is handled by StandingOrder::recordFailure()
+    public int $tries = 1; // retry logic is handled by StandingOrder::recordFailure()
+
     public int $timeout = 60;
 
     public function __construct(
         public readonly StandingOrder $order,
-        public readonly int           $walletId,
+        public readonly int $walletId,
     ) {}
 
     public function handle(AutoDebitService $service): void
@@ -34,6 +35,7 @@ class ProcessAutoDebitJob implements ShouldQueue
 
         if (! $wallet || ! $wallet->is_active || ! $wallet->debit_enabled) {
             $this->order->update(['status' => 'cancelled', 'failure_reason' => 'Wallet inactive or debit disabled.']);
+
             return;
         }
 

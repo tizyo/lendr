@@ -43,14 +43,14 @@ class Payment extends Model
     protected function casts(): array
     {
         return [
-            'payment_method'       => PaymentMethod::class,
-            'payment_date'         => 'date',
-            'amount'               => 'decimal:2',
-            'principal_allocated'  => 'decimal:2',
-            'interest_allocated'   => 'decimal:2',
-            'penalty_allocated'    => 'decimal:2',
-            'fee_allocated'        => 'decimal:2',
-            'is_overdue_payment'   => 'boolean',
+            'payment_method' => PaymentMethod::class,
+            'payment_date' => 'date',
+            'amount' => 'decimal:2',
+            'principal_allocated' => 'decimal:2',
+            'interest_allocated' => 'decimal:2',
+            'penalty_allocated' => 'decimal:2',
+            'fee_allocated' => 'decimal:2',
+            'is_overdue_payment' => 'boolean',
         ];
     }
 

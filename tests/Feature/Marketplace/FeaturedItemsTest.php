@@ -13,11 +13,11 @@ use Illuminate\Support\Str;
 function featTenant(string $plan = 'growth'): Tenant
 {
     return Tenant::create([
-        'id'       => (string) Str::uuid(),
-        'name'     => 'Lender ' . uniqid(),
-        'slug'     => 'ldr-' . uniqid(),
-        'plan'     => $plan,
-        'status'   => 'active',
+        'id' => (string) Str::uuid(),
+        'name' => 'Lender '.uniqid(),
+        'slug' => 'ldr-'.uniqid(),
+        'plan' => $plan,
+        'status' => 'active',
         'currency' => 'ZMW',
         'timezone' => 'Africa/Lusaka',
     ]);
@@ -26,14 +26,14 @@ function featTenant(string $plan = 'growth'): Tenant
 function featRepoItem(Tenant $tenant, bool $active = true): RepoItem
 {
     return RepoItem::create([
-        'tenant_id'   => $tenant->id,
+        'tenant_id' => $tenant->id,
         'tenant_name' => $tenant->name,
-        'title'       => 'Test Item ' . uniqid(),
-        'price'       => 5000,
-        'category'    => 'electronics',
-        'condition'   => 'good',
-        'is_active'   => $active,
-        'is_sold'     => false,
+        'title' => 'Test Item '.uniqid(),
+        'price' => 5000,
+        'category' => 'electronics',
+        'condition' => 'good',
+        'is_active' => $active,
+        'is_sold' => false,
     ]);
 }
 
@@ -51,27 +51,27 @@ afterEach(function () {
 
 it('public featured-items returns active featured slots only', function () {
     $tenant = featTenant();
-    $item   = featRepoItem($tenant);
+    $item = featRepoItem($tenant);
 
     // Active slot
     FeaturedRepoItem::create([
-        'repo_item_id'   => $item->id,
-        'tenant_id'      => $tenant->id,
-        'type'           => 'paid',
+        'repo_item_id' => $item->id,
+        'tenant_id' => $tenant->id,
+        'type' => 'paid',
         'payment_status' => 'confirmed',
-        'is_active'      => true,
-        'starts_at'      => now()->subDay(),
-        'expires_at'     => now()->addDays(5),
+        'is_active' => true,
+        'starts_at' => now()->subDay(),
+        'expires_at' => now()->addDays(5),
     ]);
 
     // Inactive (expired) slot — should NOT appear
     FeaturedRepoItem::create([
-        'repo_item_id'   => $item->id,
-        'tenant_id'      => $tenant->id,
-        'type'           => 'paid',
+        'repo_item_id' => $item->id,
+        'tenant_id' => $tenant->id,
+        'type' => 'paid',
         'payment_status' => 'confirmed',
-        'is_active'      => false,
-        'expires_at'     => now()->subDay(),
+        'is_active' => false,
+        'expires_at' => now()->subDay(),
     ]);
 
     $this->getJson('/api/v1/public/featured-items')
@@ -97,7 +97,7 @@ it('costForDays calculates K50 per day', function () {
 
 it('activePaidCountForTenant counts only active paid slots', function () {
     $tenant = featTenant();
-    $item   = featRepoItem($tenant);
+    $item = featRepoItem($tenant);
 
     // Active paid
     FeaturedRepoItem::create([
@@ -132,13 +132,13 @@ it('daysRemaining returns -1 for indefinite manual slots', function () {
 
 it('landlord can manually feature a repo item', function () {
     $landlord = LandlordUser::factory()->create();
-    $tenant   = featTenant();
-    $item     = featRepoItem($tenant);
+    $tenant = featTenant();
+    $item = featRepoItem($tenant);
 
     $this->actingAs($landlord, 'sanctum')
         ->postJson('/api/v1/landlord/featured-items', [
             'repo_item_id' => $item->id,
-            'note'         => 'Great listing!',
+            'note' => 'Great listing!',
         ])
         ->assertCreated()
         ->assertJsonPath('data.type', 'manual')
@@ -150,8 +150,8 @@ it('landlord can manually feature a repo item', function () {
 
 it('landlord cannot feature the same item twice (manual)', function () {
     $landlord = LandlordUser::factory()->create();
-    $tenant   = featTenant();
-    $item     = featRepoItem($tenant);
+    $tenant = featTenant();
+    $item = featRepoItem($tenant);
 
     FeaturedRepoItem::create([
         'repo_item_id' => $item->id, 'tenant_id' => $tenant->id,
@@ -166,8 +166,8 @@ it('landlord cannot feature the same item twice (manual)', function () {
 
 it('landlord can remove a featured slot', function () {
     $landlord = LandlordUser::factory()->create();
-    $tenant   = featTenant();
-    $item     = featRepoItem($tenant);
+    $tenant = featTenant();
+    $item = featRepoItem($tenant);
 
     $slot = FeaturedRepoItem::create([
         'repo_item_id' => $item->id, 'tenant_id' => $tenant->id,
@@ -184,18 +184,18 @@ it('landlord can remove a featured slot', function () {
 
 it('landlord can confirm a pending tenant payment', function () {
     $landlord = LandlordUser::factory()->create();
-    $tenant   = featTenant();
-    $item     = featRepoItem($tenant);
+    $tenant = featTenant();
+    $item = featRepoItem($tenant);
 
     $slot = FeaturedRepoItem::create([
-        'repo_item_id'      => $item->id,
-        'tenant_id'         => $tenant->id,
-        'type'              => 'paid',
-        'payment_status'    => 'pending',
-        'amount_paid'       => 350.00,
-        'days_paid'         => 7,
+        'repo_item_id' => $item->id,
+        'tenant_id' => $tenant->id,
+        'type' => 'paid',
+        'payment_status' => 'pending',
+        'amount_paid' => 350.00,
+        'days_paid' => 7,
         'payment_reference' => 'FEAT-TESTREF01',
-        'is_active'         => false,
+        'is_active' => false,
     ]);
 
     $this->actingAs($landlord, 'sanctum')
@@ -212,8 +212,8 @@ it('landlord can confirm a pending tenant payment', function () {
 
 it('landlord can view all featured slots', function () {
     $landlord = LandlordUser::factory()->create();
-    $tenant   = featTenant();
-    $item     = featRepoItem($tenant);
+    $tenant = featTenant();
+    $item = featRepoItem($tenant);
 
     FeaturedRepoItem::create([
         'repo_item_id' => $item->id, 'tenant_id' => $tenant->id,
@@ -235,20 +235,20 @@ it('public hot-deals returns active deals', function () {
     $tenant = featTenant();
 
     HotDeal::create([
-        'tenant_id'   => $tenant->id,
+        'tenant_id' => $tenant->id,
         'tenant_name' => $tenant->name,
-        'title'       => 'Quick Cash Loan',
-        'is_active'   => true,
-        'starts_at'   => now(),
+        'title' => 'Quick Cash Loan',
+        'is_active' => true,
+        'starts_at' => now(),
     ]);
 
     // Inactive deal — should NOT appear
     HotDeal::create([
-        'tenant_id'   => $tenant->id,
+        'tenant_id' => $tenant->id,
         'tenant_name' => $tenant->name,
-        'title'       => 'Old Deal',
-        'is_active'   => false,
-        'starts_at'   => now()->subMonth(),
+        'title' => 'Old Deal',
+        'is_active' => false,
+        'starts_at' => now()->subMonth(),
     ]);
 
     $this->getJson('/api/v1/public/hot-deals')
@@ -259,19 +259,19 @@ it('public hot-deals returns active deals', function () {
 it('public hot-deals enquire captures a lead', function () {
     $tenant = featTenant();
     $deal = HotDeal::create([
-        'tenant_id'   => $tenant->id,
+        'tenant_id' => $tenant->id,
         'tenant_name' => $tenant->name,
-        'title'       => 'Quick Cash Loan',
-        'is_active'   => true,
-        'starts_at'   => now(),
+        'title' => 'Quick Cash Loan',
+        'is_active' => true,
+        'starts_at' => now(),
     ]);
 
     $this->postJson("/api/v1/public/hot-deals/{$deal->id}/enquire", [
         'full_name' => 'John Banda',
-        'phone'     => '+260971234567',
-        'message'   => 'I need a loan urgently.',
+        'phone' => '+260971234567',
+        'message' => 'I need a loan urgently.',
     ])
-    ->assertOk();
+        ->assertOk();
 
     expect(HotDealLead::where('hot_deal_id', $deal->id)->count())->toBe(1);
     expect($deal->fresh()->leads_count)->toBe(1);
@@ -294,16 +294,16 @@ it('public hot-deals enquire validates required fields', function () {
 
 it('expire-featured-items command deactivates expired slots', function () {
     $tenant = featTenant();
-    $item   = featRepoItem($tenant);
+    $item = featRepoItem($tenant);
 
     $slot = FeaturedRepoItem::create([
-        'repo_item_id'   => $item->id,
-        'tenant_id'      => $tenant->id,
-        'type'           => 'paid',
+        'repo_item_id' => $item->id,
+        'tenant_id' => $tenant->id,
+        'type' => 'paid',
         'payment_status' => 'confirmed',
-        'is_active'      => true,
-        'starts_at'      => now()->subDays(5),
-        'expires_at'     => now()->subHour(), // already expired
+        'is_active' => true,
+        'starts_at' => now()->subDays(5),
+        'expires_at' => now()->subHour(), // already expired
     ]);
 
     $this->artisan('lendr:expire-featured-items')
@@ -316,12 +316,12 @@ it('expire-featured-items command deactivates expired hot deals', function () {
     $tenant = featTenant();
 
     $deal = HotDeal::create([
-        'tenant_id'   => $tenant->id,
+        'tenant_id' => $tenant->id,
         'tenant_name' => $tenant->name,
-        'title'       => 'Expired Deal',
-        'is_active'   => true,
-        'starts_at'   => now()->subDays(3),
-        'expires_at'  => now()->subHour(),
+        'title' => 'Expired Deal',
+        'is_active' => true,
+        'starts_at' => now()->subDays(3),
+        'expires_at' => now()->subHour(),
     ]);
 
     $this->artisan('lendr:expire-featured-items')
@@ -332,15 +332,15 @@ it('expire-featured-items command deactivates expired hot deals', function () {
 
 it('expire-featured-items dry-run does not modify records', function () {
     $tenant = featTenant();
-    $item   = featRepoItem($tenant);
+    $item = featRepoItem($tenant);
 
     $slot = FeaturedRepoItem::create([
-        'repo_item_id'   => $item->id,
-        'tenant_id'      => $tenant->id,
-        'type'           => 'paid',
+        'repo_item_id' => $item->id,
+        'tenant_id' => $tenant->id,
+        'type' => 'paid',
         'payment_status' => 'confirmed',
-        'is_active'      => true,
-        'expires_at'     => now()->subHour(),
+        'is_active' => true,
+        'expires_at' => now()->subHour(),
     ]);
 
     $this->artisan('lendr:expire-featured-items --dry-run')

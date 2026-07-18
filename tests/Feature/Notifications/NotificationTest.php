@@ -13,9 +13,9 @@ function makeNotification(User $user, array $attrs = []): InAppNotification
 {
     return InAppNotification::create(array_merge([
         'user_id' => $user->id,
-        'type'    => 'test',
-        'title'   => 'Test Notification',
-        'body'    => 'This is a test.',
+        'type' => 'test',
+        'title' => 'Test Notification',
+        'body' => 'This is a test.',
     ], $attrs));
 }
 
@@ -34,7 +34,7 @@ test('notification list returns notifications for authenticated user', function 
         ->getJson(route('api.v1.notifications.index'));
 
     $response->assertOk()
-             ->assertJsonStructure(['data' => ['notifications', 'unread_count']]);
+        ->assertJsonStructure(['data' => ['notifications', 'unread_count']]);
 
     expect($response->json('data.notifications'))->toHaveCount(2);
 });
@@ -67,21 +67,21 @@ test('notification structure includes required fields', function () {
 
 test('a notification can be marked as read', function () {
     $user = notifUser();
-    $n    = makeNotification($user);
+    $n = makeNotification($user);
 
     $response = $this->actingAs($user)
         ->withHeaders(['Accept' => 'application/json'])
         ->putJson(route('api.v1.notifications.read', $n->id));
 
     $response->assertOk()
-             ->assertJsonPath('data.is_read', true);
+        ->assertJsonPath('data.is_read', true);
 
     expect($n->fresh()->read_at)->not->toBeNull();
 });
 
 test('marking an already-read notification is idempotent', function () {
     $user = notifUser();
-    $n    = makeNotification($user, ['read_at' => now()->subMinute()]);
+    $n = makeNotification($user, ['read_at' => now()->subMinute()]);
 
     $this->actingAs($user)
         ->withHeaders(['Accept' => 'application/json'])
@@ -90,9 +90,9 @@ test('marking an already-read notification is idempotent', function () {
 });
 
 test('cannot mark another user notification as read', function () {
-    $user  = notifUser();
+    $user = notifUser();
     $other = notifUser();
-    $n     = makeNotification($other);
+    $n = makeNotification($other);
 
     $this->actingAs($user)
         ->withHeaders(['Accept' => 'application/json'])
@@ -113,14 +113,14 @@ test('mark all read sets read_at on all unread notifications', function () {
         ->putJson(route('api.v1.notifications.read-all'));
 
     $response->assertOk()
-             ->assertJsonPath('data.updated', 2);
+        ->assertJsonPath('data.updated', 2);
 
     $unread = InAppNotification::where('user_id', $user->id)->whereNull('read_at')->count();
     expect($unread)->toBe(0);
 });
 
 test('mark all read only affects the authenticated user', function () {
-    $user  = notifUser();
+    $user = notifUser();
     $other = notifUser();
     makeNotification($user);
     makeNotification($other); // should NOT be touched

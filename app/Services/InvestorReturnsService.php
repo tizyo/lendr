@@ -5,7 +5,6 @@ namespace App\Services;
 use App\Models\Tenant\Investor;
 use App\Models\Tenant\InvestorAllocation;
 use App\Models\Tenant\InvestorDividend;
-use Carbon\Carbon;
 
 class InvestorReturnsService
 {
@@ -31,19 +30,19 @@ class InvestorReturnsService
 
         // Monthly gross dividend = principal × annual_rate / 12
         $grossDividend = round($totalPrincipal * ($annualRatePct / 100) / 12, 2);
-        $taxWithheld   = round($grossDividend * self::TAX_RATE, 2);
-        $netDividend   = round($grossDividend - $taxWithheld, 2);
+        $taxWithheld = round($grossDividend * self::TAX_RATE, 2);
+        $netDividend = round($grossDividend - $taxWithheld, 2);
 
         return InvestorDividend::create([
-            'investor_id'    => $investor->id,
-            'allocation_id'  => $allocationId,
-            'period'         => $period,
-            'principal'      => $totalPrincipal,
-            'return_rate'    => $annualRatePct,
+            'investor_id' => $investor->id,
+            'allocation_id' => $allocationId,
+            'period' => $period,
+            'principal' => $totalPrincipal,
+            'return_rate' => $annualRatePct,
             'gross_dividend' => $grossDividend,
-            'tax_withheld'   => $taxWithheld,
-            'net_dividend'   => $netDividend,
-            'status'         => 'pending',
+            'tax_withheld' => $taxWithheld,
+            'net_dividend' => $netDividend,
+            'status' => 'pending',
         ]);
     }
 
@@ -53,8 +52,8 @@ class InvestorReturnsService
     public function markPaid(InvestorDividend $dividend, int $processedBy): InvestorDividend
     {
         $dividend->update([
-            'status'       => 'paid',
-            'paid_date'    => now()->toDateString(),
+            'status' => 'paid',
+            'paid_date' => now()->toDateString(),
             'processed_by' => $processedBy,
         ]);
 
@@ -86,11 +85,11 @@ class InvestorReturnsService
         $dividends = $investor->dividends;
 
         return [
-            'total_paid'    => (float) $dividends->where('status', 'paid')->sum('net_dividend'),
+            'total_paid' => (float) $dividends->where('status', 'paid')->sum('net_dividend'),
             'total_pending' => (float) $dividends->where('status', 'pending')->sum('net_dividend'),
-            'total_gross'   => (float) $dividends->sum('gross_dividend'),
-            'total_tax'     => (float) $dividends->sum('tax_withheld'),
-            'count'         => $dividends->count(),
+            'total_gross' => (float) $dividends->sum('gross_dividend'),
+            'total_tax' => (float) $dividends->sum('tax_withheld'),
+            'count' => $dividends->count(),
         ];
     }
 }

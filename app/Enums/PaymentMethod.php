@@ -4,26 +4,26 @@ namespace App\Enums;
 
 enum PaymentMethod: string
 {
-    case Cash         = 'cash';
+    case Cash = 'cash';
     case BankTransfer = 'bank_transfer';
-    case AirtelMoney  = 'airtel_money';
-    case MtnMomo      = 'mtn_momo';
+    case AirtelMoney = 'airtel_money';
+    case MtnMomo = 'mtn_momo';
     case ZamtelKwacha = 'zamtel_kwacha';
-    case Cheque       = 'cheque';
-    case Flutterwave  = 'flutterwave';
-    case Pawapay      = 'pawapay';
+    case Cheque = 'cheque';
+    case Flutterwave = 'flutterwave';
+    case Pawapay = 'pawapay';
 
     public function label(): string
     {
-        return match($this) {
-            self::Cash         => 'Cash',
+        return match ($this) {
+            self::Cash => 'Cash',
             self::BankTransfer => 'Bank Transfer',
-            self::AirtelMoney  => 'Airtel Money',
-            self::MtnMomo      => 'MTN MoMo',
+            self::AirtelMoney => 'Airtel Money',
+            self::MtnMomo => 'MTN MoMo',
             self::ZamtelKwacha => 'Zamtel Kwacha',
-            self::Cheque       => 'Cheque',
-            self::Flutterwave  => 'Flutterwave',
-            self::Pawapay      => 'PawaPay',
+            self::Cheque => 'Cheque',
+            self::Flutterwave => 'Flutterwave',
+            self::Pawapay => 'PawaPay',
         };
     }
 

@@ -5,7 +5,7 @@ use App\Http\Controllers\Admin\ExpenseController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('permission:expenses.view')->group(function () {
-    Route::get('expenses',                              [ExpenseController::class, 'index'])->name('expenses.index');
-    Route::get('expenses/{expense}',                    [ExpenseController::class, 'show'])->name('expenses.show');
-    Route::get('expense-categories',                    [ExpenseCategoryController::class, 'index'])->name('expense-categories.index');
+    Route::get('expenses', [ExpenseController::class, 'index'])->name('expenses.index');
+    Route::get('expenses/{expense}', [ExpenseController::class, 'show'])->name('expenses.show');
+    Route::get('expense-categories', [ExpenseCategoryController::class, 'index'])->name('expense-categories.index');
 });

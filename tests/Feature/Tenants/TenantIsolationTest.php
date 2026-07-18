@@ -1,12 +1,10 @@
 <?php
 
-use App\Enums\LoanStatus;
 use App\Enums\UserRole;
 use App\Models\Tenant\Borrower;
 use App\Models\Tenant\Loan;
 use App\Models\Tenant\LoanPlan;
 use App\Models\Tenant\LoanType;
-use App\Models\Tenant\Payment;
 use App\Models\Tenant\User;
 
 /**
@@ -36,7 +34,7 @@ function foreignBorrower(): Borrower
 // ─── Borrower isolation ───────────────────────────────────────────────────────
 
 test('authenticated staff can list borrowers', function () {
-    $officer  = isolationOfficer();
+    $officer = isolationOfficer();
     $borrower = Borrower::factory()->create(['is_active' => true]);
 
     $response = $this->actingAs($officer)
@@ -62,10 +60,10 @@ test('staff cannot record a payment on a non-existent loan', function () {
 
     $this->actingAs($officer)
         ->postJson(route('api.v1.payments.store'), [
-            'loan_id'        => 999999,
-            'amount'         => 500,
+            'loan_id' => 999999,
+            'amount' => 500,
             'payment_method' => 'cash',
-            'payment_date'   => now()->toDateString(),
+            'payment_date' => now()->toDateString(),
         ])
         ->assertStatus(422); // validation: loan_id must exist
 });
@@ -99,10 +97,10 @@ test('unauthenticated requests to api are rejected', function () {
 
 test('unauthenticated payment recording is rejected', function () {
     $this->postJson(route('api.v1.payments.store'), [
-        'loan_id'        => 1,
-        'amount'         => 500,
+        'loan_id' => 1,
+        'amount' => 500,
         'payment_method' => 'cash',
-        'payment_date'   => now()->toDateString(),
+        'payment_date' => now()->toDateString(),
     ])->assertStatus(401);
 });
 
@@ -116,22 +114,22 @@ test('unauthenticated fund access is rejected', function () {
 test('read_only user cannot record a payment', function () {
     $readOnly = User::factory()->create(['role' => UserRole::ReadOnly, 'is_active' => true]);
 
-    $lt   = LoanType::factory()->create();
+    $lt = LoanType::factory()->create();
     $plan = LoanPlan::factory()->create(['loan_type_id' => $lt->id]);
     $loan = Loan::factory()->active()->create([
-        'loan_type_id'        => $lt->id,
-        'loan_plan_id'        => $plan->id,
+        'loan_type_id' => $lt->id,
+        'loan_plan_id' => $plan->id,
         'outstanding_balance' => 5000,
-        'total_paid'          => 0,
-        'penalty_balance'     => 0,
+        'total_paid' => 0,
+        'penalty_balance' => 0,
     ]);
 
     $this->actingAs($readOnly)
         ->postJson(route('api.v1.payments.store'), [
-            'loan_id'        => $loan->id,
-            'amount'         => 500,
+            'loan_id' => $loan->id,
+            'amount' => 500,
             'payment_method' => 'cash',
-            'payment_date'   => now()->toDateString(),
+            'payment_date' => now()->toDateString(),
         ])
         ->assertStatus(403);
 });

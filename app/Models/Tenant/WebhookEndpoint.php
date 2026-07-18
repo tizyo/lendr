@@ -21,10 +21,10 @@ class WebhookEndpoint extends Model
     protected function casts(): array
     {
         return [
-            'events'            => 'array',
-            'is_active'         => 'boolean',
+            'events' => 'array',
+            'is_active' => 'boolean',
             'last_triggered_at' => 'datetime',
-            'last_success_at'   => 'datetime',
+            'last_success_at' => 'datetime',
         ];
     }
 

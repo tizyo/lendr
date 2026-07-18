@@ -15,7 +15,7 @@ class CollateralController extends BaseApiController
     public function index(Loan $loan): JsonResponse
     {
         return $this->success(
-            $loan->collateralItems()->get()->map(fn ($c) => $this->format($c))
+            $loan->collateralItems()->get()->map(fn ($c) => $this->format($c)),
         );
     }
 
@@ -25,13 +25,13 @@ class CollateralController extends BaseApiController
     public function store(Request $request, Loan $loan): JsonResponse
     {
         $data = $request->validate([
-            'type'            => ['required', 'in:property,vehicle,equipment,land,savings,other'],
-            'description'     => ['required', 'string', 'max:500'],
+            'type' => ['required', 'in:property,vehicle,equipment,land,savings,other'],
+            'description' => ['required', 'string', 'max:500'],
             'estimated_value' => ['nullable', 'numeric', 'min:0'],
-            'assessed_value'  => ['nullable', 'numeric', 'min:0'],
+            'assessed_value' => ['nullable', 'numeric', 'min:0'],
             'assessment_date' => ['nullable', 'date'],
-            'location'        => ['nullable', 'string'],
-            'notes'           => ['nullable', 'string'],
+            'location' => ['nullable', 'string'],
+            'notes' => ['nullable', 'string'],
         ]);
 
         $item = $loan->collateralItems()->create($data);
@@ -53,14 +53,14 @@ class CollateralController extends BaseApiController
     public function update(Request $request, CollateralItem $collateral): JsonResponse
     {
         $data = $request->validate([
-            'type'            => ['sometimes', 'required', 'in:property,vehicle,equipment,land,savings,other'],
-            'description'     => ['sometimes', 'required', 'string', 'max:500'],
+            'type' => ['sometimes', 'required', 'in:property,vehicle,equipment,land,savings,other'],
+            'description' => ['sometimes', 'required', 'string', 'max:500'],
             'estimated_value' => ['nullable', 'numeric', 'min:0'],
-            'assessed_value'  => ['nullable', 'numeric', 'min:0'],
+            'assessed_value' => ['nullable', 'numeric', 'min:0'],
             'assessment_date' => ['nullable', 'date'],
-            'location'        => ['nullable', 'string'],
-            'status'          => ['sometimes', 'in:pending,verified,released'],
-            'notes'           => ['nullable', 'string'],
+            'location' => ['nullable', 'string'],
+            'status' => ['sometimes', 'in:pending,verified,released'],
+            'notes' => ['nullable', 'string'],
         ]);
 
         $collateral->update($data);
@@ -83,19 +83,19 @@ class CollateralController extends BaseApiController
     private function format(CollateralItem $c): array
     {
         return [
-            'id'              => $c->id,
-            'loan_id'         => $c->loan_id,
-            'type'            => $c->type,
-            'type_label'      => $c->typeLabel(),
-            'description'     => $c->description,
+            'id' => $c->id,
+            'loan_id' => $c->loan_id,
+            'type' => $c->type,
+            'type_label' => $c->typeLabel(),
+            'description' => $c->description,
             'estimated_value' => $c->estimated_value ? (float) $c->estimated_value : null,
-            'assessed_value'  => $c->assessed_value  ? (float) $c->assessed_value  : null,
+            'assessed_value' => $c->assessed_value ? (float) $c->assessed_value : null,
             'assessment_date' => $c->assessment_date?->toDateString(),
-            'location'        => $c->location,
-            'status'          => $c->status,
-            'status_badge'    => $c->statusBadge(),
-            'notes'           => $c->notes,
-            'created_at'      => $c->created_at?->toDateString(),
+            'location' => $c->location,
+            'status' => $c->status,
+            'status_badge' => $c->statusBadge(),
+            'notes' => $c->notes,
+            'created_at' => $c->created_at?->toDateString(),
         ];
     }
 }

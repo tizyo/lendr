@@ -3,7 +3,6 @@
 namespace App\Models\Tenant;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 class MobileMoneyTransaction extends Model
@@ -28,8 +27,8 @@ class MobileMoneyTransaction extends Model
     protected function casts(): array
     {
         return [
-            'amount'       => 'decimal:2',
-            'retry_count'  => 'integer',
+            'amount' => 'decimal:2',
+            'retry_count' => 'integer',
             'processed_at' => 'datetime',
         ];
     }

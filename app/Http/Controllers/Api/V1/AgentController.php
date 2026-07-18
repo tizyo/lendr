@@ -20,7 +20,7 @@ class AgentController extends BaseApiController
                 ->where('first_name', 'like', "%{$s}%")
                 ->orWhere('last_name', 'like', "%{$s}%")
                 ->orWhere('phone', 'like', "%{$s}%")
-                ->orWhere('agent_number', 'like', "%{$s}%")
+                ->orWhere('agent_number', 'like', "%{$s}%"),
             ))
             ->latest()
             ->paginate(25);
@@ -32,23 +32,23 @@ class AgentController extends BaseApiController
     public function store(Request $request): JsonResponse
     {
         $data = $request->validate([
-            'first_name'       => 'required|string|max:100',
-            'last_name'        => 'nullable|string|max:100',
-            'phone'            => 'required|string|max:30|unique:agents,phone',
-            'email'            => 'nullable|email|max:150|unique:agents,email',
-            'national_id'      => 'nullable|string|max:50',
-            'address'          => 'nullable|string',
-            'commission_rate'  => 'nullable|numeric|min:0|max:100',
-            'commission_type'  => 'nullable|in:percentage,fixed',
+            'first_name' => 'required|string|max:100',
+            'last_name' => 'nullable|string|max:100',
+            'phone' => 'required|string|max:30|unique:agents,phone',
+            'email' => 'nullable|email|max:150|unique:agents,email',
+            'national_id' => 'nullable|string|max:50',
+            'address' => 'nullable|string',
+            'commission_rate' => 'nullable|numeric|min:0|max:100',
+            'commission_type' => 'nullable|in:percentage,fixed',
             'fixed_commission' => 'nullable|numeric|min:0',
-            'status'           => 'nullable|in:'.implode(',', Agent::statuses()),
-            'managed_by'       => 'nullable|exists:users,id',
-            'notes'            => 'nullable|string',
+            'status' => 'nullable|in:'.implode(',', Agent::statuses()),
+            'managed_by' => 'nullable|exists:users,id',
+            'notes' => 'nullable|string',
         ]);
 
         $agent = Agent::create(array_merge($data, [
             'agent_number' => Agent::generateAgentNumber(),
-            'status'       => $data['status'] ?? 'active',
+            'status' => $data['status'] ?? 'active',
         ]));
 
         return $this->success(['agent' => $agent->load('managedBy:id,name')], 'Agent created.', 201);
@@ -67,18 +67,18 @@ class AgentController extends BaseApiController
     public function update(Request $request, Agent $agent): JsonResponse
     {
         $data = $request->validate([
-            'first_name'       => 'sometimes|string|max:100',
-            'last_name'        => 'nullable|string|max:100',
-            'phone'            => 'sometimes|string|max:30|unique:agents,phone,'.$agent->id,
-            'email'            => 'nullable|email|max:150|unique:agents,email,'.$agent->id,
-            'national_id'      => 'nullable|string|max:50',
-            'address'          => 'nullable|string',
-            'commission_rate'  => 'nullable|numeric|min:0|max:100',
-            'commission_type'  => 'nullable|in:percentage,fixed',
+            'first_name' => 'sometimes|string|max:100',
+            'last_name' => 'nullable|string|max:100',
+            'phone' => 'sometimes|string|max:30|unique:agents,phone,'.$agent->id,
+            'email' => 'nullable|email|max:150|unique:agents,email,'.$agent->id,
+            'national_id' => 'nullable|string|max:50',
+            'address' => 'nullable|string',
+            'commission_rate' => 'nullable|numeric|min:0|max:100',
+            'commission_type' => 'nullable|in:percentage,fixed',
             'fixed_commission' => 'nullable|numeric|min:0',
-            'status'           => 'nullable|in:'.implode(',', Agent::statuses()),
-            'managed_by'       => 'nullable|exists:users,id',
-            'notes'            => 'nullable|string',
+            'status' => 'nullable|in:'.implode(',', Agent::statuses()),
+            'managed_by' => 'nullable|exists:users,id',
+            'notes' => 'nullable|string',
         ]);
 
         $agent->update($data);
@@ -113,7 +113,7 @@ class AgentController extends BaseApiController
         }
 
         $agentCommission->update([
-            'status'      => 'approved',
+            'status' => 'approved',
             'approved_by' => auth()->id(),
         ]);
 
@@ -128,12 +128,12 @@ class AgentController extends BaseApiController
         }
 
         $data = $request->validate([
-            'paid_date'         => 'required|date',
+            'paid_date' => 'required|date',
             'payment_reference' => 'nullable|string|max:100',
         ]);
 
         $agentCommission->update(array_merge($data, [
-            'status'  => 'paid',
+            'status' => 'paid',
             'paid_by' => auth()->id(),
         ]));
 

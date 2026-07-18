@@ -136,19 +136,19 @@ class AppController extends Controller
         $borrower = Auth::guard('borrower')->user();
 
         $kycDocuments = [];
-        $kycVerified  = false;
+        $kycVerified = false;
 
         if ($borrower) {
             $kycDocuments = $borrower->kycDocuments()
                 ->orderByDesc('created_at')
                 ->get()
                 ->map(fn ($d) => [
-                    'id'               => $d->id,
-                    'document_type'    => $d->document_type,
-                    'status'           => $d->status->value,
-                    'status_label'     => $d->status->label(),
+                    'id' => $d->id,
+                    'document_type' => $d->document_type,
+                    'status' => $d->status->value,
+                    'status_label' => $d->status->label(),
                     'rejection_reason' => $d->rejection_reason,
-                    'created_at'       => $d->created_at->diffForHumans(),
+                    'created_at' => $d->created_at->diffForHumans(),
                 ])
                 ->toArray();
 
@@ -157,7 +157,7 @@ class AppController extends Controller
 
         return Inertia::render('kyc/Status', [
             'kycDocuments' => $kycDocuments,
-            'kycVerified'  => $kycVerified,
+            'kycVerified' => $kycVerified,
         ]);
     }
 }

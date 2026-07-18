@@ -2,7 +2,6 @@
 
 use App\Enums\UserRole;
 use App\Models\Tenant\GlAccount;
-use App\Models\Tenant\GlJournalEntry;
 use App\Models\Tenant\User;
 use App\Services\GlLedgerService;
 
@@ -110,8 +109,8 @@ test('can post a balanced journal entry', function () {
     $this->actingAs($admin)
         ->postJson(route('api.v1.gl.entries.create'), [
             'description' => 'Test disbursement entry',
-            'entry_date'  => now()->toDateString(),
-            'lines'       => [
+            'entry_date' => now()->toDateString(),
+            'lines' => [
                 ['account_code' => '1100', 'side' => 'debit',  'amount' => 5000],
                 ['account_code' => '1001', 'side' => 'credit', 'amount' => 5000],
             ],
@@ -130,8 +129,8 @@ test('posting unbalanced entry returns error', function () {
     $this->actingAs($admin)
         ->postJson(route('api.v1.gl.entries.create'), [
             'description' => 'Unbalanced entry',
-            'entry_date'  => now()->toDateString(),
-            'lines'       => [
+            'entry_date' => now()->toDateString(),
+            'lines' => [
                 ['account_code' => '1100', 'side' => 'debit',  'amount' => 5000],
                 ['account_code' => '1001', 'side' => 'credit', 'amount' => 4000],
             ],
@@ -188,8 +187,8 @@ test('journal entry requires at least 2 lines', function () {
     $this->actingAs($admin)
         ->postJson(route('api.v1.gl.entries.create'), [
             'description' => 'Too few lines',
-            'entry_date'  => now()->toDateString(),
-            'lines'       => [
+            'entry_date' => now()->toDateString(),
+            'lines' => [
                 ['account_code' => '1100', 'side' => 'debit', 'amount' => 5000],
             ],
         ])
@@ -203,8 +202,8 @@ test('journal entry rejects unknown account code', function () {
     $this->actingAs($admin)
         ->postJson(route('api.v1.gl.entries.create'), [
             'description' => 'Unknown account',
-            'entry_date'  => now()->toDateString(),
-            'lines'       => [
+            'entry_date' => now()->toDateString(),
+            'lines' => [
                 ['account_code' => 'XXXX', 'side' => 'debit',  'amount' => 1000],
                 ['account_code' => 'YYYY', 'side' => 'credit', 'amount' => 1000],
             ],
@@ -265,12 +264,12 @@ test('GlLedgerService::post creates balanced entry', function () {
     seedDefaultAccounts();
 
     $ledger = app(GlLedgerService::class);
-    $entry  = $ledger->post(
+    $entry = $ledger->post(
         'Manual test entry',
         [
             ['account_code' => '1002', 'side' => 'debit',  'amount' => 2000],
             ['account_code' => '3001', 'side' => 'credit', 'amount' => 2000],
-        ]
+        ],
     );
 
     expect($entry->isBalanced())->toBeTrue();
@@ -287,7 +286,7 @@ test('GlLedgerService::post throws on unbalanced entry', function () {
         [
             ['account_code' => '1002', 'side' => 'debit',  'amount' => 2000],
             ['account_code' => '3001', 'side' => 'credit', 'amount' => 1000],
-        ]
+        ],
     ))->toThrow(\RuntimeException::class);
 })->group('gl');
 
@@ -295,11 +294,11 @@ test('journal entry references are sequential and unique', function () {
     seedDefaultAccounts();
 
     $ledger = app(GlLedgerService::class);
-    $e1     = $ledger->post('Entry 1', [
+    $e1 = $ledger->post('Entry 1', [
         ['account_code' => '1100', 'side' => 'debit',  'amount' => 100],
         ['account_code' => '1001', 'side' => 'credit', 'amount' => 100],
     ]);
-    $e2     = $ledger->post('Entry 2', [
+    $e2 = $ledger->post('Entry 2', [
         ['account_code' => '1100', 'side' => 'debit',  'amount' => 200],
         ['account_code' => '1001', 'side' => 'credit', 'amount' => 200],
     ]);

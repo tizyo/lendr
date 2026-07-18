@@ -14,7 +14,7 @@ class WriteoffAdminController extends Controller
     {
         $query = LoanWriteoff::with(['loan.borrower', 'writtenOffBy'])
             ->when($request->date_from, fn ($q, $d) => $q->whereDate('created_at', '>=', $d))
-            ->when($request->date_to,   fn ($q, $d) => $q->whereDate('created_at', '<=', $d))
+            ->when($request->date_to, fn ($q, $d) => $q->whereDate('created_at', '<=', $d))
             ->orderByDesc('created_at');
 
         return Inertia::render('writeoffs/Index', [

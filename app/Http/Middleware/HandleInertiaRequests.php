@@ -33,12 +33,12 @@ class HandleInertiaRequests extends Middleware
 
             'auth' => fn () => [
                 'user' => $request->user() ? [
-                    'id'     => $request->user()->id,
-                    'name'   => $request->user()->name,
-                    'email'  => $request->user()->email,
-                    'role'   => $request->user()->role,
+                    'id' => $request->user()->id,
+                    'name' => $request->user()->name,
+                    'email' => $request->user()->email,
+                    'role' => $request->user()->role,
                     'avatar' => $request->user()->avatar,
-                    'permissions'          => $request->user()->getAllPermissions()->pluck('name'),
+                    'permissions' => $request->user()->getAllPermissions()->pluck('name'),
                     'unread_notifications' => InAppNotification::where('user_id', $request->user()->id)
                         ->whereNull('read_at')
                         ->count(),
@@ -46,21 +46,21 @@ class HandleInertiaRequests extends Middleware
             ],
 
             'tenant' => fn () => tenancy()->tenant ? [
-                'id'                  => tenancy()->tenant->id,
-                'name'                => tenancy()->tenant->name,
-                'currency'            => tenancy()->tenant->currency,
-                'logo'                => tenancy()->tenant->logo,
-                'plan'                => tenancy()->tenant->plan,
-                'status'              => tenancy()->tenant->status,
-                'trial_days_remaining'=> tenancy()->tenant->trialDaysRemaining(),
-                'features'            => PlanConfig::forPlan(tenancy()->tenant->plan)?->features ?? [],
+                'id' => tenancy()->tenant->id,
+                'name' => tenancy()->tenant->name,
+                'currency' => tenancy()->tenant->currency,
+                'logo' => tenancy()->tenant->logo,
+                'plan' => tenancy()->tenant->plan,
+                'status' => tenancy()->tenant->status,
+                'trial_days_remaining' => tenancy()->tenant->trialDaysRemaining(),
+                'features' => PlanConfig::forPlan(tenancy()->tenant->plan)?->features ?? [],
             ] : null,
 
             'flash' => [
                 'success' => fn () => $request->session()->get('success'),
-                'error'   => fn () => $request->session()->get('error'),
+                'error' => fn () => $request->session()->get('error'),
                 'warning' => fn () => $request->session()->get('warning'),
-                'info'    => fn () => $request->session()->get('info'),
+                'info' => fn () => $request->session()->get('info'),
             ],
         ];
     }

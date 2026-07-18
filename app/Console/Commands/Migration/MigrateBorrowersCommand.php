@@ -26,13 +26,13 @@ class MigrateBorrowersCommand extends BaseMigrationCommand
 
     public function handle(): int
     {
-        $svc      = $this->makeService();
-        $dryRun   = $this->isDryRun();
-        $batch    = $this->batchSize();
-        $errors   = [];
+        $svc = $this->makeService();
+        $dryRun = $this->isDryRun();
+        $batch = $this->batchSize();
+        $errors = [];
         $migrated = 0;
-        $skipped  = 0;
-        $merged   = 0;
+        $skipped = 0;
+        $merged = 0;
 
         // VOZARA may store borrowers in `customers` or `borrowers` table — try both
         $legacyTable = $svc->legacy()->getSchemaBuilder()->hasTable('borrowers')
@@ -47,6 +47,7 @@ class MigrateBorrowersCommand extends BaseMigrationCommand
             foreach ($rows as $row) {
                 if ($svc->alreadyMigrated($legacyTable, $row->id)) {
                     $skipped++;
+
                     continue;
                 }
 
@@ -60,29 +61,30 @@ class MigrateBorrowersCommand extends BaseMigrationCommand
                         $svc->logSkipped($legacyTable, $row->id, "duplicate phone merged into borrower_id={$existing->id}");
                         $skipped++;
                         $merged++;
+
                         continue;
                     }
 
                     if (! $dryRun) {
                         $newId = DB::table('borrowers')->insertGetId([
-                            'first_name'         => $row->first_name ?? ($row->name ? explode(' ', $row->name)[0] : 'Unknown'),
-                            'last_name'          => $row->last_name  ?? (isset($row->name) ? (explode(' ', $row->name)[1] ?? '') : ''),
-                            'email'              => $row->email ?? null,
-                            'phone'              => $phone,
-                            'national_id'        => $row->national_id ?? $row->nrc ?? null,
-                            'date_of_birth'      => $row->dob ?? $row->date_of_birth ?? null,
-                            'gender'             => $row->gender ?? null,
-                            'address'            => $row->address ?? null,
-                            'next_of_kin'        => $row->next_of_kin ?? null,
-                            'next_of_kin_phone'  => $row->next_of_kin_phone ?? null,
-                            'employment_status'  => $row->employment_status ?? 'employed',
-                            'employer_name'      => $row->employer ?? $row->employer_name ?? null,
-                            'monthly_income'     => $row->monthly_income ?? $row->income ?? null,
-                            'pin'                => Hash::make($row->pin ?? $row->password ?? 'vozara'),
-                            'is_active'          => (bool) ($row->status ?? 1),
-                            'is_blacklisted'     => (bool) ($row->blacklisted ?? 0),
-                            'created_at'         => $row->created_at ?? now(),
-                            'updated_at'         => $row->updated_at ?? now(),
+                            'first_name' => $row->first_name ?? ($row->name ? explode(' ', $row->name)[0] : 'Unknown'),
+                            'last_name' => $row->last_name ?? (isset($row->name) ? (explode(' ', $row->name)[1] ?? '') : ''),
+                            'email' => $row->email ?? null,
+                            'phone' => $phone,
+                            'national_id' => $row->national_id ?? $row->nrc ?? null,
+                            'date_of_birth' => $row->dob ?? $row->date_of_birth ?? null,
+                            'gender' => $row->gender ?? null,
+                            'address' => $row->address ?? null,
+                            'next_of_kin' => $row->next_of_kin ?? null,
+                            'next_of_kin_phone' => $row->next_of_kin_phone ?? null,
+                            'employment_status' => $row->employment_status ?? 'employed',
+                            'employer_name' => $row->employer ?? $row->employer_name ?? null,
+                            'monthly_income' => $row->monthly_income ?? $row->income ?? null,
+                            'pin' => Hash::make($row->pin ?? $row->password ?? 'vozara'),
+                            'is_active' => (bool) ($row->status ?? 1),
+                            'is_blacklisted' => (bool) ($row->blacklisted ?? 0),
+                            'created_at' => $row->created_at ?? now(),
+                            'updated_at' => $row->updated_at ?? now(),
                         ]);
                         $svc->logSuccess($legacyTable, $row->id, $newId);
 
@@ -100,12 +102,12 @@ class MigrateBorrowersCommand extends BaseMigrationCommand
         $this->line("<fg=cyan>Merged duplicates: {$merged}</>");
 
         $result = new MigrationResult(
-            step:     'borrowers',
+            step: 'borrowers',
             migrated: $migrated,
-            skipped:  $skipped,
-            failed:   count($errors),
-            dryRun:   $dryRun,
-            errors:   $errors,
+            skipped: $skipped,
+            failed: count($errors),
+            dryRun: $dryRun,
+            errors: $errors,
         );
 
         $this->printResult($result);
@@ -117,10 +119,10 @@ class MigrateBorrowersCommand extends BaseMigrationCommand
     {
         $kycMap = [
             'national_id_verified' => 'national_id',
-            'payslip_verified'     => 'payslip',
+            'payslip_verified' => 'payslip',
             'bank_statement_verified' => 'bank_statement',
-            'utility_bill_verified'   => 'utility_bill',
-            'photo_verified'          => 'photo',
+            'utility_bill_verified' => 'utility_bill',
+            'photo_verified' => 'photo',
         ];
 
         foreach ($kycMap as $legacyField => $docType) {
@@ -128,11 +130,11 @@ class MigrateBorrowersCommand extends BaseMigrationCommand
                 DB::table('kyc_documents')->insert([
                     'borrower_id' => $borrowerId,
                     'document_type' => $docType,
-                    'status'        => 'approved',
-                    'file_path'     => null, // files migrated separately by migration:vozara:documents
-                    'notes'         => 'Migrated from VOZARA legacy KYC flag',
-                    'created_at'    => now(),
-                    'updated_at'    => now(),
+                    'status' => 'approved',
+                    'file_path' => null, // files migrated separately by migration:vozara:documents
+                    'notes' => 'Migrated from VOZARA legacy KYC flag',
+                    'created_at' => now(),
+                    'updated_at' => now(),
                 ]);
             }
         }
@@ -143,11 +145,11 @@ class MigrateBorrowersCommand extends BaseMigrationCommand
         $phone = preg_replace('/\D/', '', $phone);
 
         if (str_starts_with($phone, '0') && strlen($phone) === 10) {
-            return '+260' . substr($phone, 1);
+            return '+260'.substr($phone, 1);
         }
 
         if (str_starts_with($phone, '260') && strlen($phone) === 12) {
-            return '+' . $phone;
+            return '+'.$phone;
         }
 
         if (str_starts_with($phone, '+')) {

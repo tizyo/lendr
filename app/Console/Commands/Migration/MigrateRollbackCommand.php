@@ -27,7 +27,7 @@ class MigrateRollbackCommand extends Command
     /** Rollback order respects FK constraints — children before parents */
     private const ROLLBACK_STEPS = [
         ['log_table' => 'documents',              'lendr_table' => null],          // files: no DB rows to delete
-        ['log_table' => 'fund_transactions_legacy','lendr_table' => 'fund_transactions'],
+        ['log_table' => 'fund_transactions_legacy', 'lendr_table' => 'fund_transactions'],
         ['log_table' => 'fund_deposits',           'lendr_table' => 'fund_transactions'],
         ['log_table' => 'fund_balances',           'lendr_table' => 'fund_balances'],
         ['log_table' => 'expense_budgets',         'lendr_table' => 'expense_budgets'],
@@ -55,6 +55,7 @@ class MigrateRollbackCommand extends Command
 
         if (! $tenantId) {
             $this->error('No tenants found. Pass --tenant=<id>.');
+
             return self::FAILURE;
         }
 
@@ -64,14 +65,15 @@ class MigrateRollbackCommand extends Command
             $scope = $stepFilter ? "step={$stepFilter}" : 'ALL STEPS';
             if (! $this->confirm(
                 "This will DELETE all VOZARA-migrated data for tenant={$tenantId} ({$scope}). Proceed?",
-                false
+                false,
             )) {
                 $this->line('Rollback cancelled.');
+
                 return self::SUCCESS;
             }
         }
 
-        $svc     = new MigrationService((string) $tenantId);
+        $svc = new MigrationService((string) $tenantId);
         $deleted = 0;
 
         $steps = $stepFilter
@@ -79,7 +81,7 @@ class MigrateRollbackCommand extends Command
             : self::ROLLBACK_STEPS;
 
         foreach ($steps as $step) {
-            $logTable   = $step['log_table'];
+            $logTable = $step['log_table'];
             $lendrTable = $step['lendr_table'];
 
             // Collect new_ids from migration_log for this step
@@ -95,6 +97,7 @@ class MigrateRollbackCommand extends Command
             if (empty($newIds) || ! $lendrTable) {
                 // Clean log entry even if no rows to delete
                 $svc->clearLog($logTable);
+
                 continue;
             }
 
@@ -122,7 +125,7 @@ class MigrateRollbackCommand extends Command
 
         $this->newLine();
         $this->line("<fg=yellow>Rollback complete. {$deleted} total rows removed from LENDR.</>");
-        $this->line("The VOZARA legacy database was NOT modified.");
+        $this->line('The VOZARA legacy database was NOT modified.');
         $this->newLine();
 
         return self::SUCCESS;

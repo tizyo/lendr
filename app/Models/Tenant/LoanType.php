@@ -32,9 +32,9 @@ class LoanType extends Model
     {
         return [
             'requires_collateral' => 'boolean',
-            'requires_guarantor'  => 'boolean',
-            'required_documents'  => 'array',
-            'is_active'           => 'boolean',
+            'requires_guarantor' => 'boolean',
+            'required_documents' => 'array',
+            'is_active' => 'boolean',
         ];
     }
 

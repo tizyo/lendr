@@ -33,12 +33,14 @@ class SubscriptionWebhookController extends Controller
             $driver = $this->gateways->driver($gateway);
         } catch (\Throwable $e) {
             Log::warning("[SubWebhook] Unknown gateway: {$gateway}");
+
             return response()->noContent(400);
         }
 
         // Signature verification
         if (! $driver->verifyWebhookSignature($request)) {
             Log::warning("[SubWebhook:{$gateway}] Invalid signature", ['ip' => $request->ip()]);
+
             return response()->noContent(401);
         }
 
@@ -57,14 +59,14 @@ class SubscriptionWebhookController extends Controller
 
         try {
             $this->billing->handleWebhook(
-                txRef:         $payload['tx_ref'],
+                txRef: $payload['tx_ref'],
                 transactionId: $payload['transaction_id'],
-                status:        $payload['status'],
-                amount:        $payload['amount'],
+                status: $payload['status'],
+                amount: $payload['amount'],
             );
         } catch (\Throwable $e) {
             Log::error("[SubWebhook:{$gateway}] Error processing webhook", [
-                'error'  => $e->getMessage(),
+                'error' => $e->getMessage(),
                 'tx_ref' => $payload['tx_ref'],
             ]);
         }

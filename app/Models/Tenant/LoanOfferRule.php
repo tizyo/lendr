@@ -24,7 +24,7 @@ class LoanOfferRule extends Model
         return [
             'min_offered_amount' => 'float',
             'max_offered_amount' => 'float',
-            'is_active'          => 'boolean',
+            'is_active' => 'boolean',
         ];
     }
 

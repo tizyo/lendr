@@ -19,16 +19,16 @@ class StaffLoginRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'login'    => ['required', 'string'],  // email or username
+            'login' => ['required', 'string'],  // email or username
             'password' => ['required', 'string'],
-            'device'   => ['nullable', 'string', 'max:255'],
+            'device' => ['nullable', 'string', 'max:255'],
         ];
     }
 
     public function messages(): array
     {
         return [
-            'login.required'    => 'Email or username is required.',
+            'login.required' => 'Email or username is required.',
             'password.required' => 'Password is required.',
         ];
     }

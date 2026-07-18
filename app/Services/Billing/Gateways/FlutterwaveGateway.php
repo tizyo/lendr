@@ -4,7 +4,6 @@ namespace App\Services\Billing\Gateways;
 
 use App\Models\Landlord\BillingGatewayConfig;
 use App\Services\Billing\Contracts\BillingGatewayInterface;
-use Illuminate\Http\Client\RequestException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -16,7 +15,10 @@ class FlutterwaveGateway implements BillingGatewayInterface
 
     public function __construct(private readonly BillingGatewayConfig $config) {}
 
-    public function getName(): string { return 'flutterwave'; }
+    public function getName(): string
+    {
+        return 'flutterwave';
+    }
 
     /**
      * Create a hosted payment link via Flutterwave Standard checkout.
@@ -24,13 +26,13 @@ class FlutterwaveGateway implements BillingGatewayInterface
     public function initiatePayment(array $payload): string
     {
         $response = Http::withToken($this->secretKey())
-            ->post(self::BASE . '/payments', $payload)
+            ->post(self::BASE.'/payments', $payload)
             ->throw();
 
         $data = $response->json();
 
         if (($data['status'] ?? '') !== 'success') {
-            throw new RuntimeException('Flutterwave payment initiation failed: ' . ($data['message'] ?? 'Unknown error'));
+            throw new RuntimeException('Flutterwave payment initiation failed: '.($data['message'] ?? 'Unknown error'));
         }
 
         return $data['data']['link'];
@@ -42,7 +44,7 @@ class FlutterwaveGateway implements BillingGatewayInterface
     public function verifyPayment(string $transactionId): array
     {
         $response = Http::withToken($this->secretKey())
-            ->get(self::BASE . "/transactions/{$transactionId}/verify")
+            ->get(self::BASE."/transactions/{$transactionId}/verify")
             ->throw();
 
         $data = $response->json('data', []);
@@ -50,15 +52,15 @@ class FlutterwaveGateway implements BillingGatewayInterface
         $rawStatus = strtolower($data['status'] ?? '');
         $status = match ($rawStatus) {
             'successful', 'success' => 'success',
-            'failed'                => 'failed',
-            default                 => 'pending',
+            'failed' => 'failed',
+            default => 'pending',
         };
 
         return [
-            'status'   => $status,
-            'amount'   => (float) ($data['amount'] ?? 0),
+            'status' => $status,
+            'amount' => (float) ($data['amount'] ?? 0),
             'currency' => $data['currency'] ?? 'ZMW',
-            'tx_ref'   => $data['tx_ref'] ?? '',
+            'tx_ref' => $data['tx_ref'] ?? '',
         ];
     }
 
@@ -89,18 +91,18 @@ class FlutterwaveGateway implements BillingGatewayInterface
         $rawStatus = strtolower($data['status'] ?? '');
         $status = match ($rawStatus) {
             'successful', 'success' => 'success',
-            'failed'                => 'failed',
-            default                 => 'pending',
+            'failed' => 'failed',
+            default => 'pending',
         };
 
         return [
-            'event_id'       => (string) ($data['id'] ?? uniqid('fw-', true)),
-            'event_type'     => $body['event'] ?? 'charge.' . $status,
-            'tx_ref'         => $data['tx_ref'] ?? '',
+            'event_id' => (string) ($data['id'] ?? uniqid('fw-', true)),
+            'event_type' => $body['event'] ?? 'charge.'.$status,
+            'tx_ref' => $data['tx_ref'] ?? '',
             'transaction_id' => (string) ($data['id'] ?? ''),
-            'amount'         => (float) ($data['amount'] ?? 0),
-            'status'         => $status,
-            'raw'            => $body,
+            'amount' => (float) ($data['amount'] ?? 0),
+            'status' => $status,
+            'raw' => $body,
         ];
     }
 

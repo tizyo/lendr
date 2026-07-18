@@ -20,16 +20,16 @@ function fieldOfficer(): User
 
 function fieldLoan(): Loan
 {
-    $type     = LoanType::factory()->create();
-    $plan     = LoanPlan::factory()->create(['loan_type_id' => $type->id]);
+    $type = LoanType::factory()->create();
+    $plan = LoanPlan::factory()->create(['loan_type_id' => $type->id]);
     $borrower = Borrower::factory()->create(['phone' => '0971000001']);
 
     return Loan::factory()->create([
-        'borrower_id'  => $borrower->id,
+        'borrower_id' => $borrower->id,
         'loan_type_id' => $type->id,
         'loan_plan_id' => $plan->id,
-        'status'       => LoanStatus::Active,
-        'loan_number'  => 'LN-FIELD-001',
+        'status' => LoanStatus::Active,
+        'loan_number' => 'LN-FIELD-001',
     ]);
 }
 
@@ -40,11 +40,11 @@ test('field officer can record a GPS check-in', function () {
 
     $resp = $this->actingAs($officer)
         ->postJson(route('api.v1.field.check-in'), [
-            'latitude'  => -15.4167,
+            'latitude' => -15.4167,
             'longitude' => 28.2833,
-            'accuracy'  => 10.5,
-            'address'   => '123 Cairo Road, Lusaka',
-            'notes'     => 'Visiting borrower',
+            'accuracy' => 10.5,
+            'address' => '123 Cairo Road, Lusaka',
+            'notes' => 'Visiting borrower',
         ])
         ->assertCreated();
 
@@ -68,15 +68,15 @@ test('officer can list their check-ins', function () {
     $officer = fieldOfficer();
 
     FieldCheckIn::create([
-        'user_id'       => $officer->id,
-        'latitude'      => -15.4,
-        'longitude'     => 28.3,
+        'user_id' => $officer->id,
+        'latitude' => -15.4,
+        'longitude' => 28.3,
         'checked_in_at' => now(),
     ]);
     FieldCheckIn::create([
-        'user_id'       => $officer->id,
-        'latitude'      => -15.5,
-        'longitude'     => 28.4,
+        'user_id' => $officer->id,
+        'latitude' => -15.5,
+        'longitude' => 28.4,
         'checked_in_at' => now()->subHour(),
     ]);
 
@@ -91,16 +91,16 @@ test('officer can list their check-ins', function () {
 
 test('field officer can record a cash collection', function () {
     $officer = fieldOfficer();
-    $loan    = fieldLoan();
+    $loan = fieldLoan();
 
     $resp = $this->actingAs($officer)
         ->postJson(route('api.v1.field.collect'), [
-            'loan_id'           => $loan->id,
-            'amount'            => 500.00,
+            'loan_id' => $loan->id,
+            'amount' => 500.00,
             'collection_method' => 'cash',
-            'latitude'          => -15.4167,
-            'longitude'         => 28.2833,
-            'notes'             => 'Collected at borrower home',
+            'latitude' => -15.4167,
+            'longitude' => 28.2833,
+            'notes' => 'Collected at borrower home',
         ])
         ->assertCreated();
 
@@ -114,14 +114,14 @@ test('field officer can record a cash collection', function () {
 
 test('collection creates a linked payment record', function () {
     $officer = fieldOfficer();
-    $loan    = fieldLoan();
+    $loan = fieldLoan();
 
     $resp = $this->actingAs($officer)
         ->postJson(route('api.v1.field.collect'), [
-            'loan_id'           => $loan->id,
-            'amount'            => 300.00,
+            'loan_id' => $loan->id,
+            'amount' => 300.00,
             'collection_method' => 'mobile_money',
-            'reference_number'  => 'MM-REF-12345',
+            'reference_number' => 'MM-REF-12345',
         ])
         ->assertCreated();
 
@@ -137,8 +137,8 @@ test('collection validates invalid loan_id', function () {
 
     $this->actingAs($officer)
         ->postJson(route('api.v1.field.collect'), [
-            'loan_id'           => 99999,
-            'amount'            => 100,
+            'loan_id' => 99999,
+            'amount' => 100,
             'collection_method' => 'cash',
         ])
         ->assertUnprocessable()
@@ -147,12 +147,12 @@ test('collection validates invalid loan_id', function () {
 
 test('collection rejects invalid collection method', function () {
     $officer = fieldOfficer();
-    $loan    = fieldLoan();
+    $loan = fieldLoan();
 
     $this->actingAs($officer)
         ->postJson(route('api.v1.field.collect'), [
-            'loan_id'           => $loan->id,
-            'amount'            => 100,
+            'loan_id' => $loan->id,
+            'amount' => 100,
             'collection_method' => 'crypto',
         ])
         ->assertUnprocessable()
@@ -161,12 +161,12 @@ test('collection rejects invalid collection method', function () {
 
 test('officer can list their collections', function () {
     $officer = fieldOfficer();
-    $loan    = fieldLoan();
+    $loan = fieldLoan();
 
     $this->actingAs($officer)
         ->postJson(route('api.v1.field.collect'), [
-            'loan_id'           => $loan->id,
-            'amount'            => 200.00,
+            'loan_id' => $loan->id,
+            'amount' => 200.00,
             'collection_method' => 'cash',
         ]);
 
@@ -202,10 +202,10 @@ test('can submit offline check-in via sync batch', function () {
         ->postJson(route('api.v1.field.sync'), [
             'items' => [
                 [
-                    'action'  => 'check_in',
+                    'action' => 'check_in',
                     'payload' => [
-                        'latitude'      => -15.4167,
-                        'longitude'     => 28.2833,
+                        'latitude' => -15.4167,
+                        'longitude' => 28.2833,
                         'checked_in_at' => now()->toDateTimeString(),
                     ],
                 ],
@@ -221,18 +221,18 @@ test('can submit offline check-in via sync batch', function () {
 
 test('can submit offline payment collection via sync batch', function () {
     $officer = fieldOfficer();
-    $loan    = fieldLoan();
+    $loan = fieldLoan();
 
     $resp = $this->actingAs($officer)
         ->postJson(route('api.v1.field.sync'), [
             'items' => [
                 [
-                    'action'  => 'collect_payment',
+                    'action' => 'collect_payment',
                     'payload' => [
-                        'loan_id'           => $loan->id,
-                        'amount'            => 400.00,
+                        'loan_id' => $loan->id,
+                        'amount' => 400.00,
                         'collection_method' => 'cash',
-                        'collected_at'      => now()->toDateString(),
+                        'collected_at' => now()->toDateString(),
                     ],
                 ],
             ],
@@ -252,10 +252,10 @@ test('sync batch marks invalid items as failed', function () {
         ->postJson(route('api.v1.field.sync'), [
             'items' => [
                 [
-                    'action'  => 'collect_payment',
+                    'action' => 'collect_payment',
                     'payload' => [
-                        'loan_id'           => 99999, // non-existent
-                        'amount'            => 100,
+                        'loan_id' => 99999, // non-existent
+                        'amount' => 100,
                         'collection_method' => 'cash',
                     ],
                 ],
@@ -282,9 +282,9 @@ test('can retrieve pending sync items', function () {
 
     OfflineSyncItem::create([
         'user_id' => $officer->id,
-        'action'  => 'check_in',
+        'action' => 'check_in',
         'payload' => ['latitude' => -15.4, 'longitude' => 28.3],
-        'status'  => 'pending',
+        'status' => 'pending',
     ]);
 
     $resp = $this->actingAs($officer)

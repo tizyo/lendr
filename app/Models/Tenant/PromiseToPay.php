@@ -16,7 +16,18 @@ class PromiseToPay extends Model
         return ['promise_date' => 'date', 'promise_amount' => 'decimal:2'];
     }
 
-    public function collectionCase(): BelongsTo { return $this->belongsTo(CollectionCase::class); }
-    public function loan(): BelongsTo           { return $this->belongsTo(Loan::class); }
-    public function creator(): BelongsTo        { return $this->belongsTo(User::class, 'created_by'); }
+    public function collectionCase(): BelongsTo
+    {
+        return $this->belongsTo(CollectionCase::class);
+    }
+
+    public function loan(): BelongsTo
+    {
+        return $this->belongsTo(Loan::class);
+    }
+
+    public function creator(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
 }

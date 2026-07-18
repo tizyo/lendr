@@ -32,7 +32,7 @@ test('settings returns stored values', function () {
 
     DB::table('settings')->updateOrInsert(
         ['key' => 'company_name'],
-        ['value' => 'Test MFI', 'updated_at' => now()]
+        ['value' => 'Test MFI', 'updated_at' => now()],
     );
 
     $response = $this->actingAs($user)
@@ -47,7 +47,7 @@ test('masked keys are not returned in plaintext', function () {
 
     DB::table('settings')->updateOrInsert(
         ['key' => 'smtp_password'],
-        ['value' => 'super_secret_123', 'updated_at' => now()]
+        ['value' => 'super_secret_123', 'updated_at' => now()],
     );
 
     $response = $this->actingAs($user)
@@ -68,8 +68,8 @@ test('settings can be updated', function () {
         ->withHeaders(['Accept' => 'application/json'])
         ->putJson(route('api.v1.settings.update'), [
             'settings' => [
-                'company_name'  => 'Lendr MFI',
-                'currency'      => 'ZMW',
+                'company_name' => 'Lendr MFI',
+                'currency' => 'ZMW',
                 'company_email' => 'admin@lendr.zm',
             ],
         ])
@@ -94,7 +94,7 @@ test('masked placeholder value does not overwrite stored secret', function () {
 
     DB::table('settings')->updateOrInsert(
         ['key' => 'smtp_password'],
-        ['value' => 'real_secret', 'updated_at' => now()]
+        ['value' => 'real_secret', 'updated_at' => now()],
     );
 
     $this->actingAs($user)

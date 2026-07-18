@@ -29,14 +29,14 @@ class OnboardingController extends Controller
 
     public function show(): Response
     {
-        $centralDomain    = env('CENTRAL_DOMAIN', 'localhost');
-        $sharedPortalHost = 'app.' . $centralDomain;
+        $centralDomain = env('CENTRAL_DOMAIN', 'localhost');
+        $sharedPortalHost = 'app.'.$centralDomain;
 
         $configs = PlanConfig::allKeyed();
 
         return Inertia::render('onboarding/Index', [
             'sharedPortalHost' => $sharedPortalHost,
-            'plans'            => $this->buildPlanCards($configs),
+            'plans' => $this->buildPlanCards($configs),
             'currencies' => [
                 ['code' => 'ZMW', 'label' => 'ZMW — Zambian Kwacha'],
                 ['code' => 'USD', 'label' => 'USD — US Dollar'],
@@ -56,7 +56,7 @@ class OnboardingController extends Controller
                 ['value' => 'Africa/Johannesburg', 'label' => 'Africa/Johannesburg (SAST)'],
                 ['value' => 'Africa/Cairo',        'label' => 'Africa/Cairo (EET)'],
                 ['value' => 'Africa/Accra',        'label' => 'Africa/Accra (GMT)'],
-                ['value' => 'Africa/Dar_es_Salaam','label' => 'Africa/Dar es Salaam (EAT)'],
+                ['value' => 'Africa/Dar_es_Salaam', 'label' => 'Africa/Dar es Salaam (EAT)'],
                 ['value' => 'Africa/Kampala',      'label' => 'Africa/Kampala (EAT)'],
                 ['value' => 'Africa/Harare',       'label' => 'Africa/Harare (CAT)'],
                 ['value' => 'Africa/Maputo',       'label' => 'Africa/Maputo (CAT)'],
@@ -67,14 +67,14 @@ class OnboardingController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
-        $centralDomain    = env('CENTRAL_DOMAIN', 'localhost');
-        $sharedPortalHost = 'app.' . $centralDomain;
+        $centralDomain = env('CENTRAL_DOMAIN', 'localhost');
+        $sharedPortalHost = 'app.'.$centralDomain;
 
         $usesSharedPortal = in_array($request->input('plan'), self::SHARED_PORTAL_PLANS);
 
         $rules = [
-            'org_name'       => ['required', 'string', 'max:100'],
-            'slug'           => [
+            'org_name' => ['required', 'string', 'max:100'],
+            'slug' => [
                 'required',
                 'regex:/^[a-z0-9][a-z0-9\-]{1,28}[a-z0-9]$/',
                 'max:30',
@@ -84,12 +84,12 @@ class OnboardingController extends Controller
                     }
                 },
             ],
-            'plan'           => ['required', Rule::in(['starter', 'growth', 'enterprise'])],
-            'currency'       => ['required', 'string', 'size:3'],
-            'timezone'       => ['required', 'string', 'max:60'],
-            'admin_name'     => ['required', 'string', 'max:100'],
-            'admin_email'    => ['required', 'email', 'max:191'],
-            'admin_phone'    => ['nullable', 'string', 'max:20'],
+            'plan' => ['required', Rule::in(['starter', 'growth', 'enterprise'])],
+            'currency' => ['required', 'string', 'size:3'],
+            'timezone' => ['required', 'string', 'max:60'],
+            'admin_name' => ['required', 'string', 'max:100'],
+            'admin_email' => ['required', 'email', 'max:191'],
+            'admin_phone' => ['nullable', 'string', 'max:20'],
             'admin_password' => ['required', 'string', 'min:8', 'confirmed'],
         ];
 
@@ -102,9 +102,10 @@ class OnboardingController extends Controller
                 function ($attr, $value, $fail) use ($centralDomain) {
                     if (in_array(strtolower($value), self::RESERVED_SUBDOMAINS)) {
                         $fail('This subdomain is reserved. Please choose a different one.');
+
                         return;
                     }
-                    $domain = $value . '.' . $centralDomain;
+                    $domain = $value.'.'.$centralDomain;
                     if (DB::table('domains')->where('domain', $domain)->exists()) {
                         $fail('This subdomain is already taken.');
                     }
@@ -120,29 +121,29 @@ class OnboardingController extends Controller
 
         // Create tenant (TenancyServiceProvider creates DB + runs tenant migrations automatically).
         $tenant = Tenant::create([
-            'id'                       => Str::uuid()->toString(),
-            'name'                     => $data['org_name'],
-            'slug'                     => $slug,
-            'plan'                     => $data['plan'],
-            'status'                   => 'trial',
-            'currency'                 => strtoupper($data['currency']),
-            'timezone'                 => $data['timezone'],
-            'admin_email'              => $data['admin_email'],
+            'id' => Str::uuid()->toString(),
+            'name' => $data['org_name'],
+            'slug' => $slug,
+            'plan' => $data['plan'],
+            'status' => 'trial',
+            'currency' => strtoupper($data['currency']),
+            'timezone' => $data['timezone'],
+            'admin_email' => $data['admin_email'],
             'email_verification_token' => $verificationToken,
-            'trial_ends_at'            => now()->addDays(14),
+            'trial_ends_at' => now()->addDays(14),
         ]);
 
         $loginUrl = null;
 
         if ($usesSharedPortal) {
             // Starter/Trial: shared portal, no subdomain record needed.
-            $loginUrl = 'http://' . $sharedPortalHost . '/portal/login';
+            $loginUrl = 'http://'.$sharedPortalHost.'/portal/login';
         } else {
             // Growth/Enterprise: custom subdomain.
             $subdomain = strtolower($data['subdomain']);
-            $domain    = $subdomain . '.' . $centralDomain;
+            $domain = $subdomain.'.'.$centralDomain;
             $tenant->domains()->create(['domain' => $domain]);
-            $loginUrl = 'http://' . $domain . '/login';
+            $loginUrl = 'http://'.$domain.'/login';
         }
 
         // Switch into tenant context and create the SuperAdmin.
@@ -152,11 +153,11 @@ class OnboardingController extends Controller
         try {
             User::withoutEvents(function () use ($data) {
                 User::create([
-                    'name'      => $data['admin_name'],
-                    'email'     => $data['admin_email'],
-                    'phone'     => $data['admin_phone'] ?? null,
-                    'password'  => $data['admin_password'],
-                    'role'      => UserRole::SuperAdmin,
+                    'name' => $data['admin_name'],
+                    'email' => $data['admin_email'],
+                    'phone' => $data['admin_phone'] ?? null,
+                    'password' => $data['admin_password'],
+                    'role' => UserRole::SuperAdmin,
                     'is_active' => false, // activated after email verification
                 ]);
             });
@@ -184,11 +185,11 @@ class OnboardingController extends Controller
         }
 
         return Inertia::render('onboarding/Success', [
-            'slug'             => session('slug'),
-            'plan'             => session('plan'),
-            'loginUrl'         => session('login_url'),
-            'orgName'          => session('org_name'),
-            'adminEmail'       => session('admin_email'),
+            'slug' => session('slug'),
+            'plan' => session('plan'),
+            'loginUrl' => session('login_url'),
+            'orgName' => session('org_name'),
+            'adminEmail' => session('admin_email'),
             'needsVerification' => session('needs_verification', false),
         ]);
     }
@@ -208,7 +209,7 @@ class OnboardingController extends Controller
 
         // Activate the tenant and mark email as verified.
         $tenant->update([
-            'email_verified_at'        => now(),
+            'email_verified_at' => now(),
             'email_verification_token' => null,
         ]);
 
@@ -222,7 +223,7 @@ class OnboardingController extends Controller
 
         $loginUrl = $tenant->usesSharedPortal()
             ? route('portal.login')
-            : 'http://' . optional($tenant->domains->first())->domain . '/login';
+            : 'http://'.optional($tenant->domains->first())->domain.'/login';
 
         return redirect($loginUrl)->with('success', 'Email verified! Your account is now active. Please log in.');
     }
@@ -238,48 +239,50 @@ class OnboardingController extends Controller
     private function buildPlanCards(array $configs): array
     {
         $boolLabels = [
-            'pwa'                       => 'Borrower self-service PWA',
-            'custom_domain'             => 'Custom subdomain',
-            'bulk_operations'           => 'Bulk operations',
-            'advanced_reports'          => 'Advanced reports',
-            'collection_management'     => 'Collection management',
-            'marketplace'               => 'Marketplace',
+            'pwa' => 'Borrower self-service PWA',
+            'custom_domain' => 'Custom subdomain',
+            'bulk_operations' => 'Bulk operations',
+            'advanced_reports' => 'Advanced reports',
+            'collection_management' => 'Collection management',
+            'marketplace' => 'Marketplace',
             'disbursement_mobile_money' => 'Mobile money disbursement',
-            'tenant_website'            => 'Tenant website',
-            'api_access'                => 'API access',
-            'exchange_rates'            => 'Exchange rates',
-            'audit_log'                 => 'Audit log',
+            'tenant_website' => 'Tenant website',
+            'api_access' => 'API access',
+            'exchange_rates' => 'Exchange rates',
+            'audit_log' => 'Audit log',
         ];
 
         $plans = [];
 
         foreach (['starter', 'growth', 'enterprise'] as $planKey) {
             /** @var PlanConfig|null $cfg */
-            $cfg      = $configs[$planKey] ?? null;
+            $cfg = $configs[$planKey] ?? null;
             $features = $cfg?->features ?? [];
 
             // Build human-readable feature list (enabled booleans + limits)
-            $featureList   = [];
+            $featureList = [];
             $unavailableList = [];
 
             if (isset($features['max_borrowers'])) {
                 $featureList[] = $features['max_borrowers'] === -1
                     ? 'Unlimited borrowers'
-                    : 'Up to ' . number_format($features['max_borrowers']) . ' borrowers';
+                    : 'Up to '.number_format($features['max_borrowers']).' borrowers';
             }
             if (isset($features['max_branches'])) {
                 $featureList[] = $features['max_branches'] === -1
                     ? 'Unlimited branches'
-                    : $features['max_branches'] . ' branch' . ($features['max_branches'] > 1 ? 'es' : '');
+                    : $features['max_branches'].' branch'.($features['max_branches'] > 1 ? 'es' : '');
             }
             if (isset($features['max_users'])) {
                 $featureList[] = $features['max_users'] === -1
                     ? 'Unlimited staff'
-                    : 'Up to ' . $features['max_users'] . ' staff';
+                    : 'Up to '.$features['max_users'].' staff';
             }
 
             foreach ($boolLabels as $key => $label) {
-                if (!isset($features[$key])) continue;
+                if (! isset($features[$key])) {
+                    continue;
+                }
                 if ($features[$key]) {
                     $featureList[] = $label;
                 } else {
@@ -294,16 +297,16 @@ class OnboardingController extends Controller
             } elseif ((float) ($cfg?->price_zmw ?? 0) === 0.0) {
                 $price = 'Free';
             } else {
-                $price = 'ZMW ' . number_format((float) $cfg->price_zmw, 2) . '/mo';
+                $price = 'ZMW '.number_format((float) $cfg->price_zmw, 2).'/mo';
             }
 
             $plans[] = [
-                'key'         => $planKey,
-                'label'       => $cfg?->label ?? ucfirst($planKey),
-                'price'       => $price,
-                'subdomain'   => $subdomain,
+                'key' => $planKey,
+                'label' => $cfg?->label ?? ucfirst($planKey),
+                'price' => $price,
+                'subdomain' => $subdomain,
                 'description' => $cfg?->description ?? '',
-                'features'    => $featureList,
+                'features' => $featureList,
                 'unavailable' => $unavailableList,
             ];
         }

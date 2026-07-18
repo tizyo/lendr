@@ -64,6 +64,7 @@ class MultiCurrencyService
     {
         if ($loan->currency === $loan->base_currency) {
             $loan->update(['fx_rate' => 1.0]);
+
             return;
         }
 
@@ -97,21 +98,21 @@ class MultiCurrencyService
         $breakdown = [];
 
         foreach ($loans->groupBy('currency') as $currency => $group) {
-            $rate    = $this->rateFor($currency, $baseCurrency);
+            $rate = $this->rateFor($currency, $baseCurrency);
             $subtotal = $group->sum(fn ($l) => (float) $l->outstanding_balance * $rate);
-            $total   += $subtotal;
+            $total += $subtotal;
             $breakdown[$currency] = [
-                'count'        => $group->count(),
-                'outstanding'  => round($group->sum('outstanding_balance'), 2),
-                'in_base'      => round($subtotal, 2),
-                'rate'         => $rate,
+                'count' => $group->count(),
+                'outstanding' => round($group->sum('outstanding_balance'), 2),
+                'in_base' => round($subtotal, 2),
+                'rate' => $rate,
             ];
         }
 
         return [
-            'base_currency'     => $baseCurrency,
+            'base_currency' => $baseCurrency,
             'total_outstanding' => round($total, 2),
-            'by_currency'       => $breakdown,
+            'by_currency' => $breakdown,
         ];
     }
 }

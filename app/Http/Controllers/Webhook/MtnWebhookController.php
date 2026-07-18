@@ -12,7 +12,10 @@ use Illuminate\Support\Facades\Log;
  */
 class MtnWebhookController extends BaseWebhookController
 {
-    protected function providerName(): string { return 'mtn_momo'; }
+    protected function providerName(): string
+    {
+        return 'mtn_momo';
+    }
 
     protected function verifySignature(Request $request): bool
     {
@@ -35,19 +38,19 @@ class MtnWebhookController extends BaseWebhookController
         $rawStatus = strtolower($body['status'] ?? '');
         $status = match ($rawStatus) {
             'successful', 'success' => 'success',
-            'failed'                => 'failed',
-            default                 => 'pending',
+            'failed' => 'failed',
+            default => 'pending',
         };
 
         return [
-            'event_id'       => $body['financialTransactionId'] ?? $body['referenceId'] ?? null,
-            'event_type'     => 'payment.' . $status,
-            'internal_ref'   => $body['externalId']            ?? null,
+            'event_id' => $body['financialTransactionId'] ?? $body['referenceId'] ?? null,
+            'event_type' => 'payment.'.$status,
+            'internal_ref' => $body['externalId'] ?? null,
             'transaction_id' => $body['financialTransactionId'] ?? $body['referenceId'] ?? '',
-            'amount'         => (float) ($body['amount']       ?? 0),
-            'phone'          => $body['payer']['partyId']      ?? '',
-            'status'         => $status,
-            'raw'            => $body,
+            'amount' => (float) ($body['amount'] ?? 0),
+            'phone' => $body['payer']['partyId'] ?? '',
+            'status' => $status,
+            'raw' => $body,
         ];
     }
 }

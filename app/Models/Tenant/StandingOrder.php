@@ -28,12 +28,12 @@ class StandingOrder extends Model
     protected function casts(): array
     {
         return [
-            'amount'         => 'decimal:2',
-            'due_date'       => 'date',
+            'amount' => 'decimal:2',
+            'due_date' => 'date',
             'next_attempt_at' => 'datetime',
-            'processed_at'   => 'datetime',
-            'retry_count'    => 'integer',
-            'max_retries'    => 'integer',
+            'processed_at' => 'datetime',
+            'retry_count' => 'integer',
+            'max_retries' => 'integer',
         ];
     }
 
@@ -64,15 +64,15 @@ class StandingOrder extends Model
 
         if ($newCount >= $this->max_retries) {
             $this->update([
-                'status'         => 'failed',
-                'retry_count'    => $newCount,
+                'status' => 'failed',
+                'retry_count' => $newCount,
                 'failure_reason' => $reason,
             ]);
         } else {
             $this->update([
-                'status'          => 'pending',
-                'retry_count'     => $newCount,
-                'failure_reason'  => $reason,
+                'status' => 'pending',
+                'retry_count' => $newCount,
+                'failure_reason' => $reason,
                 'next_attempt_at' => now()->addDays($newCount),
             ]);
         }

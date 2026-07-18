@@ -24,10 +24,10 @@ class FundTransaction extends Model
     protected function casts(): array
     {
         return [
-            'type'           => FundTransactionType::class,
-            'amount'         => 'decimal:2',
+            'type' => FundTransactionType::class,
+            'amount' => 'decimal:2',
             'balance_before' => 'decimal:2',
-            'balance_after'  => 'decimal:2',
+            'balance_after' => 'decimal:2',
         ];
     }
 

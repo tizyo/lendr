@@ -21,8 +21,8 @@ class SavingsTransaction extends Model
     protected function casts(): array
     {
         return [
-            'amount'           => 'decimal:2',
-            'balance_after'    => 'decimal:2',
+            'amount' => 'decimal:2',
+            'balance_after' => 'decimal:2',
             'transaction_date' => 'date',
         ];
     }

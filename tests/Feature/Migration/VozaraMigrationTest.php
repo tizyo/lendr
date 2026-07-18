@@ -71,14 +71,14 @@ test('validation report checks are keyed by name', function () {
 
 test('migration service idempotency check returns false for unknown record', function () {
     $tenantId = DB::table('tenants')->orderBy('id')->value('id') ?? 'test-tenant';
-    $svc      = new MigrationService((string) $tenantId);
+    $svc = new MigrationService((string) $tenantId);
 
     expect($svc->alreadyMigrated('users', 999999))->toBeFalse();
 });
 
 test('migration service logs success and idempotency check then returns true', function () {
     $tenantId = DB::table('tenants')->orderBy('id')->value('id') ?? 'test-tenant';
-    $svc      = new MigrationService((string) $tenantId);
+    $svc = new MigrationService((string) $tenantId);
 
     $svc->logSuccess('users', 1001, 2001, 'test');
 
@@ -88,7 +88,7 @@ test('migration service logs success and idempotency check then returns true', f
 
 test('migration service clear log removes entries', function () {
     $tenantId = DB::table('tenants')->orderBy('id')->value('id') ?? 'test-tenant';
-    $svc      = new MigrationService((string) $tenantId);
+    $svc = new MigrationService((string) $tenantId);
 
     $svc->logSuccess('loan_types', 5001, 6001);
     $svc->clearLog('loan_types');
@@ -98,7 +98,7 @@ test('migration service clear log removes entries', function () {
 
 test('migration service progress summary groups by table and status', function () {
     $tenantId = DB::table('tenants')->orderBy('id')->value('id') ?? 'test-tenant';
-    $svc      = new MigrationService((string) $tenantId);
+    $svc = new MigrationService((string) $tenantId);
 
     $svc->logSuccess('loan_plans', 7001, 8001);
     $svc->logSkipped('loan_plans', 7002, 'already migrated');
@@ -114,7 +114,7 @@ test('migration:vozara:reference-data --dry-run does not write to db', function 
 
     // Run with --dry-run — should not create any rows (legacy DB not connected in tests, so it just exits cleanly)
     $this->artisan('migration:vozara:reference-data', ['--dry-run' => true])
-         ->assertExitCode(0);
+        ->assertExitCode(0);
 
     expect(DB::table('loan_types')->count())->toBe($countBefore);
 });
@@ -123,16 +123,16 @@ test('migration:vozara:validate command exits 0 when no legacy db configured', f
     // When VOZARA DB is unreachable, validate should report all checks as failed
     // but must NOT throw an unhandled exception
     $this->artisan('migration:vozara:validate')
-         ->assertExitCode(in_array(0, [0, 1]) ? 1 : 0); // either pass or fail — no crash
+        ->assertExitCode(in_array(0, [0, 1]) ? 1 : 0); // either pass or fail — no crash
 });
 
 test('migration:vozara:rollback --force clears migration_log', function () {
     $tenantId = DB::table('tenants')->orderBy('id')->value('id') ?? 'test-tenant';
-    $svc      = new MigrationService((string) $tenantId);
+    $svc = new MigrationService((string) $tenantId);
     $svc->logSuccess('expenses', 9001, 10001);
 
     $this->artisan('migration:vozara:rollback', ['--force' => true])
-         ->assertExitCode(0);
+        ->assertExitCode(0);
 
     expect($svc->alreadyMigrated('expenses', 9001))->toBeFalse();
 });

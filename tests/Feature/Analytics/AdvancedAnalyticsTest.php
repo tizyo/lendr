@@ -18,14 +18,14 @@ function analyticsAdmin(): User
 function analyticsLoan(array $attrs = []): Loan
 {
     $borrower = Borrower::factory()->create();
-    $type     = LoanType::first() ?? LoanType::factory()->create();
-    $plan     = LoanPlan::first() ?? LoanPlan::factory()->create(['loan_type_id' => $type->id]);
+    $type = LoanType::first() ?? LoanType::factory()->create();
+    $plan = LoanPlan::first() ?? LoanPlan::factory()->create(['loan_type_id' => $type->id]);
 
     return Loan::factory()->create(array_merge([
-        'borrower_id'      => $borrower->id,
-        'loan_type_id'     => $type->id,
-        'loan_plan_id'     => $plan->id,
-        'status'           => LoanStatus::Active,
+        'borrower_id' => $borrower->id,
+        'loan_type_id' => $type->id,
+        'loan_plan_id' => $plan->id,
+        'status' => LoanStatus::Active,
         'disbursement_date' => now()->subDays(10)->toDateString(),
     ], $attrs));
 }
@@ -146,16 +146,16 @@ test('officer league rows have required keys', function () {
 // ─── Geographic tests ─────────────────────────────────────────────────────────
 
 test('geographic report returns city breakdown', function () {
-    $admin    = analyticsAdmin();
+    $admin = analyticsAdmin();
     $borrower = Borrower::factory()->create(['city' => 'Ndola']);
-    $type     = LoanType::first() ?? LoanType::factory()->create();
-    $plan     = LoanPlan::first() ?? LoanPlan::factory()->create(['loan_type_id' => $type->id]);
+    $type = LoanType::first() ?? LoanType::factory()->create();
+    $plan = LoanPlan::first() ?? LoanPlan::factory()->create(['loan_type_id' => $type->id]);
 
     Loan::factory()->create([
-        'borrower_id'  => $borrower->id,
+        'borrower_id' => $borrower->id,
         'loan_type_id' => $type->id,
         'loan_plan_id' => $plan->id,
-        'status'       => LoanStatus::Active,
+        'status' => LoanStatus::Active,
     ]);
 
     $resp = $this->actingAs($admin)
@@ -167,16 +167,16 @@ test('geographic report returns city breakdown', function () {
 })->group('analytics');
 
 test('geographic rows have city and outstanding', function () {
-    $admin    = analyticsAdmin();
+    $admin = analyticsAdmin();
     $borrower = Borrower::factory()->create(['city' => 'Kitwe']);
-    $type     = LoanType::first() ?? LoanType::factory()->create();
-    $plan     = LoanPlan::first() ?? LoanPlan::factory()->create(['loan_type_id' => $type->id]);
+    $type = LoanType::first() ?? LoanType::factory()->create();
+    $plan = LoanPlan::first() ?? LoanPlan::factory()->create(['loan_type_id' => $type->id]);
 
     Loan::factory()->create([
-        'borrower_id'       => $borrower->id,
-        'loan_type_id'      => $type->id,
-        'loan_plan_id'      => $plan->id,
-        'status'            => LoanStatus::Active,
+        'borrower_id' => $borrower->id,
+        'loan_type_id' => $type->id,
+        'loan_plan_id' => $plan->id,
+        'status' => LoanStatus::Active,
         'outstanding_balance' => 5000,
     ]);
 

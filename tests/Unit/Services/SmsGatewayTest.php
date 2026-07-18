@@ -85,10 +85,10 @@ test('africas talking driver returns true on success', function () {
     ]);
 
     $driver = new AfrikasTalkingDriver(
-        apiKey:   'test-key',
+        apiKey: 'test-key',
         username: 'sandbox',
         senderId: 'LENDR',
-        sandbox:  true,
+        sandbox: true,
     );
 
     expect($driver->send('+260971000000', 'Hello'))->toBeTrue();
@@ -106,10 +106,10 @@ test('africas talking driver returns false on delivery failure', function () {
     ]);
 
     $driver = new AfrikasTalkingDriver(
-        apiKey:   'test-key',
+        apiKey: 'test-key',
         username: 'sandbox',
         senderId: 'LENDR',
-        sandbox:  true,
+        sandbox: true,
     );
 
     expect($driver->send('+260971000000', 'Hello'))->toBeFalse();
@@ -122,7 +122,7 @@ test('twilio driver normalises zambian number formats to e164', function () {
     $driver = new TwilioDriver(sid: 'ACtest', authToken: 'token', fromNumber: '+12125551234');
 
     $reflect = new ReflectionClass($driver);
-    $method  = $reflect->getMethod('formatE164');
+    $method = $reflect->getMethod('formatE164');
     $method->setAccessible(true);
 
     expect($method->invoke($driver, '0971234567'))->toBe('+260971234567')

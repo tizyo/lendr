@@ -12,13 +12,14 @@ use Illuminate\Support\Facades\Log;
 class AfrikasTalkingDriver
 {
     private const API_URL = 'https://api.africastalking.com/version1/messaging';
+
     private const SANDBOX_URL = 'https://api.sandbox.africastalking.com/version1/messaging';
 
     public function __construct(
         private readonly string $apiKey,
         private readonly string $username,
         private readonly string $senderId,
-        private readonly bool   $sandbox = false,
+        private readonly bool $sandbox = false,
     ) {}
 
     public function send(string $phone, string $message): bool
@@ -31,17 +32,18 @@ class AfrikasTalkingDriver
                 'Accept' => 'application/json',
             ])->asForm()->post($url, [
                 'username' => $this->username,
-                'to'       => $phone,
-                'message'  => $message,
-                'from'     => $this->senderId ?: null,
+                'to' => $phone,
+                'message' => $message,
+                'from' => $this->senderId ?: null,
             ]);
 
             if (! $response->successful()) {
                 Log::warning('[SMS:AfrikasTalking] Send failed', [
-                    'phone'  => $phone,
+                    'phone' => $phone,
                     'status' => $response->status(),
-                    'body'   => $response->body(),
+                    'body' => $response->body(),
                 ]);
+
                 return false;
             }
 
@@ -51,6 +53,7 @@ class AfrikasTalkingDriver
             foreach ($recipients as $recipient) {
                 if (($recipient['statusCode'] ?? 0) !== 101) {
                     Log::warning('[SMS:AfrikasTalking] Delivery failed', $recipient);
+
                     return false;
                 }
             }
@@ -59,6 +62,7 @@ class AfrikasTalkingDriver
 
         } catch (\Throwable $e) {
             Log::error('[SMS:AfrikasTalking] Exception', ['error' => $e->getMessage(), 'phone' => $phone]);
+
             return false;
         }
     }

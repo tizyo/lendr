@@ -2,9 +2,9 @@
 
 use App\Enums\UserRole;
 use App\Jobs\DeliverWebhookJob;
+use App\Models\Tenant\User;
 use App\Models\Tenant\WebhookDelivery;
 use App\Models\Tenant\WebhookEndpoint;
-use App\Models\Tenant\User;
 use Illuminate\Support\Facades\Queue;
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -17,10 +17,10 @@ function webhookAdmin(): User
 function createEndpoint(array $attrs = []): WebhookEndpoint
 {
     return WebhookEndpoint::create(array_merge([
-        'url'         => 'https://example.com/webhook',
-        'secret'      => 'test-secret-32-chars-long-12345678',
-        'events'      => ['loan.created', 'payment.recorded'],
-        'is_active'   => true,
+        'url' => 'https://example.com/webhook',
+        'secret' => 'test-secret-32-chars-long-12345678',
+        'events' => ['loan.created', 'payment.recorded'],
+        'is_active' => true,
         'failure_count' => 0,
     ], $attrs));
 }
@@ -32,7 +32,7 @@ test('can create a webhook endpoint', function () {
 
     $this->actingAs($admin)
         ->postJson(route('api.v1.webhook-endpoints.store'), [
-            'url'    => 'https://myapp.com/hooks',
+            'url' => 'https://myapp.com/hooks',
             'events' => ['loan.created', 'payment.recorded'],
         ])
         ->assertStatus(201)
@@ -46,7 +46,7 @@ test('endpoint is created with random secret', function () {
 
     $resp = $this->actingAs($admin)
         ->postJson(route('api.v1.webhook-endpoints.store'), [
-            'url'    => 'https://example.com/hook',
+            'url' => 'https://example.com/hook',
             'events' => ['loan.created'],
         ])
         ->assertStatus(201);
@@ -71,7 +71,7 @@ test('events must be from allowed list', function () {
 
     $this->actingAs($admin)
         ->postJson(route('api.v1.webhook-endpoints.store'), [
-            'url'    => 'https://example.com/hook',
+            'url' => 'https://example.com/hook',
             'events' => ['invalid.event'],
         ])
         ->assertJsonValidationErrors(['events.0']);
@@ -79,7 +79,8 @@ test('events must be from allowed list', function () {
 
 test('can list webhook endpoints', function () {
     $admin = webhookAdmin();
-    createEndpoint(); createEndpoint(['url' => 'https://second.com/hook']);
+    createEndpoint();
+    createEndpoint(['url' => 'https://second.com/hook']);
 
     $resp = $this->actingAs($admin)
         ->getJson(route('api.v1.webhook-endpoints.index'))
@@ -99,20 +100,20 @@ test('response includes available events list', function () {
 })->group('webhooks');
 
 test('can update endpoint', function () {
-    $admin    = webhookAdmin();
+    $admin = webhookAdmin();
     $endpoint = createEndpoint();
 
     $this->actingAs($admin)
         ->putJson(route('api.v1.webhook-endpoints.update', $endpoint), [
             'is_active' => false,
-            'events'    => ['loan.created'],
+            'events' => ['loan.created'],
         ])
         ->assertOk()
         ->assertJsonPath('data.endpoint.is_active', false);
 })->group('webhooks');
 
 test('can delete an endpoint', function () {
-    $admin    = webhookAdmin();
+    $admin = webhookAdmin();
     $endpoint = createEndpoint();
 
     $this->actingAs($admin)
@@ -123,7 +124,7 @@ test('can delete an endpoint', function () {
 })->group('webhooks');
 
 test('can rotate endpoint secret', function () {
-    $admin    = webhookAdmin();
+    $admin = webhookAdmin();
     $endpoint = createEndpoint(['secret' => 'old-secret']);
 
     $resp = $this->actingAs($admin)
@@ -139,7 +140,7 @@ test('can rotate endpoint secret', function () {
 
 test('dispatch service creates a delivery and queues job', function () {
     Queue::fake();
-    $admin    = webhookAdmin();
+    $admin = webhookAdmin();
     $endpoint = createEndpoint(['events' => ['loan.created']]);
 
     app(\App\Services\WebhookDispatchService::class)
@@ -147,8 +148,8 @@ test('dispatch service creates a delivery and queues job', function () {
 
     $this->assertDatabaseHas('webhook_deliveries', [
         'webhook_endpoint_id' => $endpoint->id,
-        'event'               => 'loan.created',
-        'status'              => 'pending',
+        'event' => 'loan.created',
+        'status' => 'pending',
     ]);
 
     Queue::assertPushed(DeliverWebhookJob::class);
@@ -179,7 +180,7 @@ test('dispatch skips inactive endpoints', function () {
 })->group('webhooks');
 
 test('can list deliveries for an endpoint', function () {
-    $admin    = webhookAdmin();
+    $admin = webhookAdmin();
     $endpoint = createEndpoint();
 
     WebhookDelivery::create(['webhook_endpoint_id' => $endpoint->id, 'event' => 'loan.created', 'payload' => [], 'status' => 'success', 'attempts' => 1]);
@@ -193,7 +194,7 @@ test('can list deliveries for an endpoint', function () {
 })->group('webhooks');
 
 test('deliveries can be filtered by status', function () {
-    $admin    = webhookAdmin();
+    $admin = webhookAdmin();
     $endpoint = createEndpoint();
 
     WebhookDelivery::create(['webhook_endpoint_id' => $endpoint->id, 'event' => 'loan.created', 'payload' => [], 'status' => 'success', 'attempts' => 1]);
@@ -208,15 +209,15 @@ test('deliveries can be filtered by status', function () {
 
 test('can queue a retry for a failed delivery', function () {
     Queue::fake();
-    $admin    = webhookAdmin();
+    $admin = webhookAdmin();
     $endpoint = createEndpoint();
 
     $delivery = WebhookDelivery::create([
         'webhook_endpoint_id' => $endpoint->id,
-        'event'               => 'loan.created',
-        'payload'             => [],
-        'status'              => 'failed',
-        'attempts'            => 3,
+        'event' => 'loan.created',
+        'payload' => [],
+        'status' => 'failed',
+        'attempts' => 3,
     ]);
 
     $this->actingAs($admin)
@@ -230,7 +231,7 @@ test('can queue a retry for a failed delivery', function () {
 
 test('signature is computed correctly', function () {
     $endpoint = createEndpoint(['secret' => 'my-secret']);
-    $payload  = '{"event":"test"}';
+    $payload = '{"event":"test"}';
 
     $sig = $endpoint->sign($payload);
     expect($sig)->toBe(hash_hmac('sha256', $payload, 'my-secret'));

@@ -6,7 +6,6 @@ use App\Http\Controllers\Api\V1\BaseApiController;
 use App\Models\Landlord\BillingGatewayConfig;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
 
 class BillingSettingsController extends BaseApiController
 {
@@ -22,6 +21,7 @@ class BillingSettingsController extends BaseApiController
 
         $data = collect(self::GATEWAYS)->map(function (string $gateway) use ($configs) {
             $config = $configs[$gateway] ?? null;
+
             return $this->format($gateway, $config);
         });
 
@@ -39,10 +39,10 @@ class BillingSettingsController extends BaseApiController
         }
 
         $data = $request->validate([
-            'public_key'     => ['sometimes', 'nullable', 'string'],
-            'secret_key'     => ['sometimes', 'nullable', 'string'],
+            'public_key' => ['sometimes', 'nullable', 'string'],
+            'secret_key' => ['sometimes', 'nullable', 'string'],
             'webhook_secret' => ['sometimes', 'nullable', 'string'],
-            'extra_config'   => ['sometimes', 'nullable', 'array'],
+            'extra_config' => ['sometimes', 'nullable', 'array'],
         ]);
 
         $config = BillingGatewayConfig::updateOrCreate(
@@ -71,7 +71,7 @@ class BillingSettingsController extends BaseApiController
             ['is_active' => true],
         );
 
-        return $this->success($this->format($gateway, $config), ucfirst($gateway) . ' set as active billing gateway.');
+        return $this->success($this->format($gateway, $config), ucfirst($gateway).' set as active billing gateway.');
     }
 
     /**
@@ -80,6 +80,7 @@ class BillingSettingsController extends BaseApiController
     public function deactivate(string $gateway): JsonResponse
     {
         BillingGatewayConfig::where('gateway', $gateway)->update(['is_active' => false]);
+
         return $this->success(null, 'Gateway deactivated.');
     }
 
@@ -88,13 +89,13 @@ class BillingSettingsController extends BaseApiController
     private function format(string $gateway, ?BillingGatewayConfig $config): array
     {
         return [
-            'gateway'         => $gateway,
-            'is_active'       => $config?->is_active ?? false,
-            'has_public_key'  => ! empty($config?->public_key),
-            'has_secret_key'  => ! empty($config?->secret_key),
+            'gateway' => $gateway,
+            'is_active' => $config?->is_active ?? false,
+            'has_public_key' => ! empty($config?->public_key),
+            'has_secret_key' => ! empty($config?->secret_key),
             'has_webhook_secret' => ! empty($config?->webhook_secret),
-            'extra_config'    => $config?->extra_config ?? [],
-            'configured'      => ! empty($config?->secret_key),
+            'extra_config' => $config?->extra_config ?? [],
+            'configured' => ! empty($config?->secret_key),
         ];
     }
 }

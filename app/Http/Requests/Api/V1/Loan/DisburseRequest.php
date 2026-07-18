@@ -22,12 +22,12 @@ class DisburseRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'disbursement_method'    => ['required', 'in:cash,bank_transfer,airtel_money,mtn_momo,zamtel_kwacha'],
-            'disbursement_account'   => ['nullable', 'string', 'max:100'],
+            'disbursement_method' => ['required', 'in:cash,bank_transfer,airtel_money,mtn_momo,zamtel_kwacha'],
+            'disbursement_account' => ['nullable', 'string', 'max:100'],
             'disbursement_reference' => ['nullable', 'string', 'max:100'],
-            'disbursement_date'      => ['required', 'date'],
-            'first_repayment_date'   => ['nullable', 'date', 'after:disbursement_date'],
-            'notes'                  => ['nullable', 'string', 'max:1000'],
+            'disbursement_date' => ['required', 'date'],
+            'first_repayment_date' => ['nullable', 'date', 'after:disbursement_date'],
+            'notes' => ['nullable', 'string', 'max:1000'],
         ];
     }
 }

@@ -15,18 +15,18 @@ class ExpenseFactory extends Factory
     public function definition(): array
     {
         static $seq = 1;
-        $year  = now()->format('Ym');
-        $num   = "EXP-{$year}-".str_pad($seq++, 5, '0', STR_PAD_LEFT);
+        $year = now()->format('Ym');
+        $num = "EXP-{$year}-".str_pad($seq++, 5, '0', STR_PAD_LEFT);
 
         return [
-            'expense_number'      => $num,
+            'expense_number' => $num,
             'expense_category_id' => ExpenseCategory::factory(),
-            'submitted_by'        => User::factory(),
-            'title'               => fake()->sentence(4),
-            'amount'              => fake()->randomFloat(2, 50, 5000),
-            'currency'            => 'ZMW',
-            'expense_date'        => now()->toDateString(),
-            'status'              => ExpenseStatus::Draft->value,
+            'submitted_by' => User::factory(),
+            'title' => fake()->sentence(4),
+            'amount' => fake()->randomFloat(2, 50, 5000),
+            'currency' => 'ZMW',
+            'expense_date' => now()->toDateString(),
+            'status' => ExpenseStatus::Draft->value,
         ];
     }
 
@@ -38,7 +38,7 @@ class ExpenseFactory extends Factory
     public function pending(): static
     {
         return $this->state([
-            'status'       => ExpenseStatus::Pending->value,
+            'status' => ExpenseStatus::Pending->value,
             'submitted_at' => now(),
         ]);
     }
@@ -46,7 +46,7 @@ class ExpenseFactory extends Factory
     public function approved(): static
     {
         return $this->state([
-            'status'      => ExpenseStatus::Approved->value,
+            'status' => ExpenseStatus::Approved->value,
             'submitted_at' => now()->subDay(),
             'approved_at' => now(),
         ]);
@@ -55,7 +55,7 @@ class ExpenseFactory extends Factory
     public function rejected(): static
     {
         return $this->state([
-            'status'           => ExpenseStatus::Rejected->value,
+            'status' => ExpenseStatus::Rejected->value,
             'rejection_reason' => 'Insufficient documentation.',
         ]);
     }

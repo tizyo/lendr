@@ -53,16 +53,16 @@ test('OTP phone normalises +260 prefix to 0', function () {
 
 test('borrower can verify OTP and receive token', function () {
     $borrower = Borrower::factory()->create([
-        'phone'          => '0971234567',
-        'otp'            => Hash::make('123456'),
+        'phone' => '0971234567',
+        'otp' => Hash::make('123456'),
         'otp_expires_at' => now()->addMinutes(5),
-        'is_active'      => true,
+        'is_active' => true,
         'is_blacklisted' => false,
     ]);
 
     $this->postJson(route('api.v1.borrower.auth.verify-otp'), [
         'phone' => '0971234567',
-        'otp'   => '123456',
+        'otp' => '123456',
     ])
         ->assertOk()
         ->assertJsonStructure(['data' => ['token', 'borrower']])
@@ -75,14 +75,14 @@ test('borrower can verify OTP and receive token', function () {
 
 test('verify OTP fails with wrong OTP', function () {
     Borrower::factory()->create([
-        'phone'          => '0971234567',
-        'otp'            => Hash::make('123456'),
+        'phone' => '0971234567',
+        'otp' => Hash::make('123456'),
         'otp_expires_at' => now()->addMinutes(5),
     ]);
 
     $this->postJson(route('api.v1.borrower.auth.verify-otp'), [
         'phone' => '0971234567',
-        'otp'   => '999999',
+        'otp' => '999999',
     ])
         ->assertUnprocessable()
         ->assertJsonPath('message', 'Invalid OTP.');
@@ -90,14 +90,14 @@ test('verify OTP fails with wrong OTP', function () {
 
 test('verify OTP fails when OTP is expired', function () {
     Borrower::factory()->create([
-        'phone'          => '0971234567',
-        'otp'            => Hash::make('123456'),
+        'phone' => '0971234567',
+        'otp' => Hash::make('123456'),
         'otp_expires_at' => now()->subMinutes(10), // expired
     ]);
 
     $this->postJson(route('api.v1.borrower.auth.verify-otp'), [
         'phone' => '0971234567',
-        'otp'   => '123456',
+        'otp' => '123456',
     ])
         ->assertUnprocessable()
         ->assertJsonPath('message', 'OTP has expired. Please request a new one.');
@@ -110,7 +110,7 @@ test('borrower can set a PIN when authenticated', function () {
 
     $this->actingAs($borrower, 'sanctum')
         ->postJson(route('api.v1.borrower.auth.set-pin'), [
-            'pin'              => '1234',
+            'pin' => '1234',
             'pin_confirmation' => '1234',
         ])
         ->assertOk()
@@ -125,7 +125,7 @@ test('set PIN fails when confirmation does not match', function () {
 
     $this->actingAs($borrower, 'sanctum')
         ->postJson(route('api.v1.borrower.auth.set-pin'), [
-            'pin'              => '1234',
+            'pin' => '1234',
             'pin_confirmation' => '5678',
         ])
         ->assertUnprocessable()
@@ -134,15 +134,15 @@ test('set PIN fails when confirmation does not match', function () {
 
 test('borrower can login with PIN', function () {
     $borrower = Borrower::factory()->create([
-        'phone'          => '0971234567',
-        'pin'            => Hash::make('4321'),
-        'is_active'      => true,
+        'phone' => '0971234567',
+        'pin' => Hash::make('4321'),
+        'is_active' => true,
         'is_blacklisted' => false,
     ]);
 
     $this->postJson(route('api.v1.borrower.auth.login-pin'), [
         'phone' => '0971234567',
-        'pin'   => '4321',
+        'pin' => '4321',
     ])
         ->assertOk()
         ->assertJsonStructure(['data' => ['token', 'borrower']]);
@@ -151,27 +151,27 @@ test('borrower can login with PIN', function () {
 test('PIN login fails with wrong PIN', function () {
     Borrower::factory()->create([
         'phone' => '0971234567',
-        'pin'   => Hash::make('4321'),
+        'pin' => Hash::make('4321'),
     ]);
 
     $this->postJson(route('api.v1.borrower.auth.login-pin'), [
         'phone' => '0971234567',
-        'pin'   => '0000',
+        'pin' => '0000',
     ])
         ->assertUnauthorized();
 })->group('borrower-auth');
 
 test('PIN login is rejected for suspended borrower', function () {
     Borrower::factory()->create([
-        'phone'          => '0971234567',
-        'pin'            => Hash::make('4321'),
+        'phone' => '0971234567',
+        'pin' => Hash::make('4321'),
         'is_blacklisted' => true,
-        'is_active'      => true,
+        'is_active' => true,
     ]);
 
     $this->postJson(route('api.v1.borrower.auth.login-pin'), [
         'phone' => '0971234567',
-        'pin'   => '4321',
+        'pin' => '4321',
     ])
         ->assertForbidden();
 })->group('borrower-auth');

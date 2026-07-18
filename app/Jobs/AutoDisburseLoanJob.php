@@ -21,12 +21,13 @@ class AutoDisburseLoanJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    public int $tries   = 3;
+    public int $tries = 3;
+
     public int $backoff = 30;
 
     public function __construct(
         public readonly Loan $loan,
-        public readonly int  $walletId,
+        public readonly int $walletId,
     ) {}
 
     public function handle(AutoDisbursementService $service): void

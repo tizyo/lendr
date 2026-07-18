@@ -25,9 +25,9 @@ class ApiClient extends Model
     protected function casts(): array
     {
         return [
-            'scopes'          => 'array',
-            'is_active'       => 'boolean',
-            'last_used_at'    => 'datetime',
+            'scopes' => 'array',
+            'is_active' => 'boolean',
+            'last_used_at' => 'datetime',
         ];
     }
 
@@ -43,7 +43,7 @@ class ApiClient extends Model
 
     public static function generateKey(): string
     {
-        return 'lndr_' . Str::random(40);
+        return 'lndr_'.Str::random(40);
     }
 
     public function hasScope(string $scope): bool

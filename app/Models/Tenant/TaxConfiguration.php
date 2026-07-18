@@ -19,10 +19,10 @@ class TaxConfiguration extends Model
     protected function casts(): array
     {
         return [
-            'rate'                => 'float',
+            'rate' => 'float',
             'applies_to_interest' => 'boolean',
-            'applies_to_fees'     => 'boolean',
-            'is_active'           => 'boolean',
+            'applies_to_fees' => 'boolean',
+            'is_active' => 'boolean',
         ];
     }
 

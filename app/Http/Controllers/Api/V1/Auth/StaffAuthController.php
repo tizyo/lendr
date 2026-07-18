@@ -15,16 +15,17 @@ use PragmaRX\Google2FA\Google2FA;
 
 class StaffAuthController extends BaseApiController
 {
-    private const MAX_ATTEMPTS    = 5;
+    private const MAX_ATTEMPTS = 5;
+
     private const LOCKOUT_MINUTES = 15;
 
     // ─── Login ────────────────────────────────────────────────────────────────
 
     public function login(StaffLoginRequest $request): JsonResponse
     {
-        $login       = $request->input('login');
-        $password    = $request->input('password');
-        $device      = $request->input('device', $request->userAgent() ?? 'api');
+        $login = $request->input('login');
+        $password = $request->input('password');
+        $device = $request->input('device', $request->userAgent() ?? 'api');
         $throttleKey = $this->throttleKey($login, $request->ip());
 
         if (RateLimiter::tooManyAttempts($throttleKey, self::MAX_ATTEMPTS)) {
@@ -52,14 +53,14 @@ class StaffAuthController extends BaseApiController
             $preAuthToken = $user->createToken(
                 '2fa-pre-auth',
                 ['2fa-challenge'],
-                now()->addMinutes(10)
+                now()->addMinutes(10),
             )->plainTextToken;
 
             return response()->json([
-                'success'        => true,
-                'two_factor'     => true,
+                'success' => true,
+                'two_factor' => true,
                 'pre_auth_token' => $preAuthToken,
-                'message'        => 'Two-factor authentication required.',
+                'message' => 'Two-factor authentication required.',
             ]);
         }
 
@@ -68,7 +69,7 @@ class StaffAuthController extends BaseApiController
 
         return $this->success([
             'token' => $token,
-            'user'  => $this->formatUser($user),
+            'user' => $this->formatUser($user),
         ], 'Login successful.');
     }
 
@@ -86,7 +87,7 @@ class StaffAuthController extends BaseApiController
     public function refresh(Request $request): JsonResponse
     {
         /** @var User $user */
-        $user   = $request->user();
+        $user = $request->user();
         $device = $request->input('device', $request->userAgent() ?? 'api');
 
         $request->user()->currentAccessToken()->delete();
@@ -110,19 +111,19 @@ class StaffAuthController extends BaseApiController
     public function setup2fa(Request $request): JsonResponse
     {
         /** @var User $user */
-        $user      = $request->user();
+        $user = $request->user();
         $google2fa = new Google2FA;
-        $secret    = $google2fa->generateSecretKey();
+        $secret = $google2fa->generateSecretKey();
 
         $user->forceFill([
-            'two_factor_secret'       => $secret,
+            'two_factor_secret' => $secret,
             'two_factor_confirmed_at' => null,
         ])->save();
 
         $qrCodeUrl = $google2fa->getQRCodeUrl(config('app.name'), $user->email, $secret);
 
         return $this->success([
-            'secret'      => $secret,
+            'secret' => $secret,
             'qr_code_url' => $qrCodeUrl,
         ], 'Scan the QR code with your authenticator app, then confirm with /2fa/verify.');
     }
@@ -159,7 +160,7 @@ class StaffAuthController extends BaseApiController
         $user = $request->user();
 
         $user->forceFill([
-            'two_factor_secret'       => null,
+            'two_factor_secret' => null,
             'two_factor_confirmed_at' => null,
         ])->save();
 
@@ -188,13 +189,13 @@ class StaffAuthController extends BaseApiController
         // Revoke pre-auth token → issue full-access token
         $request->user()->currentAccessToken()->delete();
         $device = $request->input('device', $request->userAgent() ?? 'api');
-        $token  = $user->createToken($device)->plainTextToken;
+        $token = $user->createToken($device)->plainTextToken;
 
         $user->updateQuietly(['last_login_at' => now()]);
 
         return $this->success([
             'token' => $token,
-            'user'  => $this->formatUser($user),
+            'user' => $this->formatUser($user),
         ], 'Login successful.');
     }
 
@@ -218,9 +219,9 @@ class StaffAuthController extends BaseApiController
     public function resetPassword(Request $request): JsonResponse
     {
         $request->validate([
-            'token'                 => ['required', 'string'],
-            'email'                 => ['required', 'email'],
-            'password'              => ['required', 'string', 'min:8', 'confirmed'],
+            'token' => ['required', 'string'],
+            'email' => ['required', 'email'],
+            'password' => ['required', 'string', 'min:8', 'confirmed'],
             'password_confirmation' => ['required', 'string'],
         ]);
 
@@ -228,12 +229,12 @@ class StaffAuthController extends BaseApiController
             $request->only('email', 'password', 'password_confirmation', 'token'),
             function (User $user, string $password) {
                 $user->forceFill([
-                    'password'             => Hash::make($password),
+                    'password' => Hash::make($password),
                     'force_password_reset' => false,
                 ])->save();
 
                 $user->tokens()->delete();
-            }
+            },
         );
 
         if ($status !== Password::PASSWORD_RESET) {
@@ -253,20 +254,20 @@ class StaffAuthController extends BaseApiController
     private function formatUser(User $user, bool $withPermissions = false): array
     {
         $data = [
-            'id'         => $user->id,
-            'name'       => $user->name,
-            'email'      => $user->email,
-            'username'   => $user->username,
-            'phone'      => $user->phone,
-            'role'       => $user->role?->value,
+            'id' => $user->id,
+            'name' => $user->name,
+            'email' => $user->email,
+            'username' => $user->username,
+            'phone' => $user->phone,
+            'role' => $user->role?->value,
             'department' => $user->department,
             'avatar_url' => $user->avatar_url,
-            'is_active'  => $user->is_active,
+            'is_active' => $user->is_active,
             'two_factor' => $user->hasRole2faEnabled(),
         ];
 
         if ($withPermissions) {
-            $data['roles']       = $user->getRoleNames();
+            $data['roles'] = $user->getRoleNames();
             $data['permissions'] = $user->getAllPermissions()->pluck('name');
         }
 

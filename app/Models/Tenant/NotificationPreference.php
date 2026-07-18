@@ -74,7 +74,7 @@ class NotificationPreference extends Model
         foreach (self::channels() as $channel) {
             $result[$channel] = [];
             foreach (self::events() as $event) {
-                $key   = "{$channel}.{$event}";
+                $key = "{$channel}.{$event}";
                 $result[$channel][$event] = $stored->has($key)
                     ? $stored[$key]->is_enabled
                     : true; // default: enabled

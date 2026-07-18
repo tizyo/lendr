@@ -15,6 +15,7 @@ class MultiCurrencyController extends BaseApiController
     public function portfolio(Request $request): JsonResponse
     {
         $base = strtoupper($request->get('base', 'ZMW'));
+
         return $this->success($this->fx->portfolioSummary($base));
     }
 
@@ -22,10 +23,10 @@ class MultiCurrencyController extends BaseApiController
     public function loanInfo(Loan $loan): JsonResponse
     {
         return $this->success([
-            'currency'         => $loan->currency,
-            'base_currency'    => $loan->base_currency,
-            'fx_rate'          => (float) $loan->fx_rate,
-            'outstanding'      => (float) $loan->outstanding_balance,
+            'currency' => $loan->currency,
+            'base_currency' => $loan->base_currency,
+            'fx_rate' => (float) $loan->fx_rate,
+            'outstanding' => (float) $loan->outstanding_balance,
             'outstanding_base' => $this->fx->outstandingInBase($loan),
         ]);
     }
@@ -35,24 +36,24 @@ class MultiCurrencyController extends BaseApiController
     {
         $data = $request->validate([
             'amount' => ['required', 'numeric', 'min:0'],
-            'from'   => ['required', 'string', 'size:3'],
-            'to'     => ['required', 'string', 'size:3'],
+            'from' => ['required', 'string', 'size:3'],
+            'to' => ['required', 'string', 'size:3'],
         ]);
 
         $converted = $this->fx->convert(
             (float) $data['amount'],
             strtoupper($data['from']),
-            strtoupper($data['to'])
+            strtoupper($data['to']),
         );
 
         $rate = $this->fx->rateFor(strtoupper($data['from']), strtoupper($data['to']));
 
         return $this->success([
-            'from'      => strtoupper($data['from']),
-            'to'        => strtoupper($data['to']),
-            'amount'    => (float) $data['amount'],
+            'from' => strtoupper($data['from']),
+            'to' => strtoupper($data['to']),
+            'amount' => (float) $data['amount'],
             'converted' => $converted,
-            'rate'      => $rate,
+            'rate' => $rate,
         ]);
     }
 }

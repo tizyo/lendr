@@ -26,11 +26,11 @@ class FieldCollection extends Model
     protected function casts(): array
     {
         return [
-            'amount'       => 'float',
-            'latitude'     => 'float',
-            'longitude'    => 'float',
+            'amount' => 'float',
+            'latitude' => 'float',
+            'longitude' => 'float',
             'collected_at' => 'datetime',
-            'synced_at'    => 'datetime',
+            'synced_at' => 'datetime',
         ];
     }
 

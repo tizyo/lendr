@@ -2,7 +2,6 @@
 
 namespace App\Jobs;
 
-use App\Enums\UserRole;
 use App\Models\Landlord\Tenant;
 use Illuminate\Contracts\Queue\ShouldQueue;
 

@@ -21,7 +21,7 @@ class TenantVerificationMail extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Verify your email — ' . config('app.name'),
+            subject: 'Verify your email — '.config('app.name'),
         );
     }
 

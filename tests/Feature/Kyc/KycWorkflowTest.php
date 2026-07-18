@@ -15,19 +15,19 @@ function kycWorkflowUser(): User
 function kycDoc(Borrower $borrower, KycStatus $status = KycStatus::Pending): KycDocument
 {
     return KycDocument::factory()->create([
-        'borrower_id'   => $borrower->id,
+        'borrower_id' => $borrower->id,
         'document_type' => 'national_id_front',
-        'file_path'     => 'kyc/test/doc.jpg',
-        'status'        => $status,
+        'file_path' => 'kyc/test/doc.jpg',
+        'status' => $status,
     ]);
 }
 
 // ─── State Machine ────────────────────────────────────────────────────────────
 
 test('pending document can be moved to under_review via start-review', function () {
-    $user     = kycWorkflowUser();
+    $user = kycWorkflowUser();
     $borrower = Borrower::factory()->create();
-    $doc      = kycDoc($borrower, KycStatus::Pending);
+    $doc = kycDoc($borrower, KycStatus::Pending);
 
     $response = $this->actingAs($user)
         ->postJson(route('api.v1.kyc.start-review', $doc));
@@ -38,9 +38,9 @@ test('pending document can be moved to under_review via start-review', function 
 });
 
 test('start-review returns 422 if document is not pending', function () {
-    $user     = kycWorkflowUser();
+    $user = kycWorkflowUser();
     $borrower = Borrower::factory()->create();
-    $doc      = kycDoc($borrower, KycStatus::Verified);
+    $doc = kycDoc($borrower, KycStatus::Verified);
 
     $response = $this->actingAs($user)
         ->postJson(route('api.v1.kyc.start-review', $doc));
@@ -49,9 +49,9 @@ test('start-review returns 422 if document is not pending', function () {
 });
 
 test('under_review document can be approved', function () {
-    $user     = kycWorkflowUser();
+    $user = kycWorkflowUser();
     $borrower = Borrower::factory()->create(['kyc_verified' => false]);
-    $doc      = kycDoc($borrower, KycStatus::UnderReview);
+    $doc = kycDoc($borrower, KycStatus::UnderReview);
 
     $response = $this->actingAs($user)
         ->putJson(route('api.v1.kyc.review', $doc), ['action' => 'approve']);
@@ -63,13 +63,13 @@ test('under_review document can be approved', function () {
 });
 
 test('under_review document can be rejected with reason', function () {
-    $user     = kycWorkflowUser();
+    $user = kycWorkflowUser();
     $borrower = Borrower::factory()->create();
-    $doc      = kycDoc($borrower, KycStatus::UnderReview);
+    $doc = kycDoc($borrower, KycStatus::UnderReview);
 
     $response = $this->actingAs($user)
         ->putJson(route('api.v1.kyc.review', $doc), [
-            'action'           => 'reject',
+            'action' => 'reject',
             'rejection_reason' => 'Document is blurry',
         ]);
 
@@ -79,9 +79,9 @@ test('under_review document can be rejected with reason', function () {
 });
 
 test('pending document cannot be directly approved (must go through under_review)', function () {
-    $user     = kycWorkflowUser();
+    $user = kycWorkflowUser();
     $borrower = Borrower::factory()->create();
-    $doc      = kycDoc($borrower, KycStatus::Pending);
+    $doc = kycDoc($borrower, KycStatus::Pending);
 
     $response = $this->actingAs($user)
         ->putJson(route('api.v1.kyc.review', $doc), ['action' => 'approve']);
@@ -91,9 +91,9 @@ test('pending document cannot be directly approved (must go through under_review
 });
 
 test('verified document cannot be deleted', function () {
-    $user     = kycWorkflowUser();
+    $user = kycWorkflowUser();
     $borrower = Borrower::factory()->create();
-    $doc      = kycDoc($borrower, KycStatus::Verified);
+    $doc = kycDoc($borrower, KycStatus::Verified);
 
     $response = $this->actingAs($user)
         ->deleteJson(route('api.v1.kyc.destroy', $doc));
@@ -104,7 +104,7 @@ test('verified document cannot be deleted', function () {
 // ─── Borrower Documents Summary ───────────────────────────────────────────────
 
 test('can list all kyc documents for a borrower with summary', function () {
-    $user     = kycWorkflowUser();
+    $user = kycWorkflowUser();
     $borrower = Borrower::factory()->create(['kyc_verified' => true]);
     kycDoc($borrower, KycStatus::Verified);
     kycDoc($borrower, KycStatus::Pending);
@@ -123,19 +123,19 @@ test('can list all kyc documents for a borrower with summary', function () {
 
 test('expire-kyc-documents command marks expired verified docs', function () {
     $borrower = Borrower::factory()->create(['kyc_verified' => true]);
-    $expired  = KycDocument::factory()->create([
-        'borrower_id'   => $borrower->id,
+    $expired = KycDocument::factory()->create([
+        'borrower_id' => $borrower->id,
         'document_type' => 'passport',
-        'file_path'     => 'kyc/test/expired.jpg',
-        'status'        => KycStatus::Verified,
-        'expires_at'    => now()->subDay(),
+        'file_path' => 'kyc/test/expired.jpg',
+        'status' => KycStatus::Verified,
+        'expires_at' => now()->subDay(),
     ]);
     $current = KycDocument::factory()->create([
-        'borrower_id'   => $borrower->id,
+        'borrower_id' => $borrower->id,
         'document_type' => 'selfie',
-        'file_path'     => 'kyc/test/current.jpg',
-        'status'        => KycStatus::Verified,
-        'expires_at'    => now()->addYear(),
+        'file_path' => 'kyc/test/current.jpg',
+        'status' => KycStatus::Verified,
+        'expires_at' => now()->addYear(),
     ]);
 
     $this->artisan('lendr:expire-kyc-documents')
@@ -148,11 +148,11 @@ test('expire-kyc-documents command marks expired verified docs', function () {
 test('expire command resets borrower kyc_verified when all docs are expired', function () {
     $borrower = Borrower::factory()->create(['kyc_verified' => true]);
     KycDocument::factory()->create([
-        'borrower_id'   => $borrower->id,
+        'borrower_id' => $borrower->id,
         'document_type' => 'passport',
-        'file_path'     => 'kyc/test/only.jpg',
-        'status'        => KycStatus::Verified,
-        'expires_at'    => now()->subDay(),
+        'file_path' => 'kyc/test/only.jpg',
+        'status' => KycStatus::Verified,
+        'expires_at' => now()->subDay(),
     ]);
 
     $this->artisan('lendr:expire-kyc-documents')->assertSuccessful();
@@ -164,14 +164,14 @@ test('expire command resets borrower kyc_verified when all docs are expired', fu
 
 test('borrower with unverified kyc cannot apply for a loan', function () {
     $borrower = Borrower::factory()->create(['kyc_verified' => false, 'is_active' => true, 'portal_access' => true]);
-    $token    = $borrower->createToken('pwa')->plainTextToken;
+    $token = $borrower->createToken('pwa')->plainTextToken;
 
     $response = $this->withToken($token)
         ->postJson('/api/v1/me/loans/apply', [
-            'loan_type_id'     => 1,
-            'loan_plan_id'     => 1,
+            'loan_type_id' => 1,
+            'loan_plan_id' => 1,
             'principal_amount' => 1000,
-            'tenure'           => 6,
+            'tenure' => 6,
         ]);
 
     $response->assertStatus(403);
@@ -179,7 +179,7 @@ test('borrower with unverified kyc cannot apply for a loan', function () {
 });
 
 test('pending queue includes under_review documents', function () {
-    $user     = kycWorkflowUser();
+    $user = kycWorkflowUser();
     $borrower = Borrower::factory()->create();
     kycDoc($borrower, KycStatus::UnderReview);
 

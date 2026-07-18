@@ -22,7 +22,7 @@ return [
         env('CENTRAL_DOMAIN', 'lendr.app'),
         // Shared portal — Starter/Trial tenants log in here
         'app.localhost',
-        'app.' . env('CENTRAL_DOMAIN', 'lendr.app'),
+        'app.'.env('CENTRAL_DOMAIN', 'lendr.app'),
     ],
 
     /**

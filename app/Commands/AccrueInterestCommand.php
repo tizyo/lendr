@@ -16,7 +16,7 @@ class AccrueInterestCommand extends Command
 
     public function handle(InterestAccrualService $service): int
     {
-        $date   = $this->option('date')
+        $date = $this->option('date')
             ? Carbon::parse($this->option('date'))
             : now()->subDay();
 
@@ -25,7 +25,7 @@ class AccrueInterestCommand extends Command
         $this->info(sprintf(
             'Accruing interest for %s%s',
             $date->toDateString(),
-            $dryRun ? ' [DRY RUN]' : ''
+            $dryRun ? ' [DRY RUN]' : '',
         ));
 
         $result = $service->accrueForDate($date, $dryRun);
@@ -37,7 +37,7 @@ class AccrueInterestCommand extends Command
                 ['Loans suspended',  $result['loans_suspended']],
                 ['Already skipped',  $result['skipped']],
                 ['Total accrued',    number_format($result['total_accrued'], 2)],
-            ]
+            ],
         );
 
         return self::SUCCESS;

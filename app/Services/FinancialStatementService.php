@@ -3,7 +3,6 @@
 namespace App\Services;
 
 use App\Models\Tenant\GlAccount;
-use App\Models\Tenant\GlJournalLine;
 use App\Models\Tenant\Loan;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -33,38 +32,38 @@ class FinancialStatementService
         $assets = $liabilities = $equity = [];
 
         foreach ($accounts as $account) {
-            $rows    = $agg->get($account->id, collect());
-            $debits  = (float) ($rows->get('debit')->total ?? 0);
+            $rows = $agg->get($account->id, collect());
+            $debits = (float) ($rows->get('debit')->total ?? 0);
             $credits = (float) ($rows->get('credit')->total ?? 0);
 
             $balance = match ($account->type) {
-                'asset', 'expense'              => $debits - $credits,
+                'asset', 'expense' => $debits - $credits,
                 'liability', 'equity', 'income' => $credits - $debits,
             };
 
             $row = ['code' => $account->code, 'name' => $account->name, 'balance' => round($balance, 2)];
 
             match ($account->type) {
-                'asset'     => $assets[]      = $row,
+                'asset' => $assets[] = $row,
                 'liability' => $liabilities[] = $row,
-                'equity'    => $equity[]      = $row,
-                default     => null,
+                'equity' => $equity[] = $row,
+                default => null,
             };
         }
 
-        $totalAssets      = round(array_sum(array_column($assets, 'balance')), 2);
+        $totalAssets = round(array_sum(array_column($assets, 'balance')), 2);
         $totalLiabilities = round(array_sum(array_column($liabilities, 'balance')), 2);
-        $totalEquity      = round(array_sum(array_column($equity, 'balance')), 2);
+        $totalEquity = round(array_sum(array_column($equity, 'balance')), 2);
 
         return [
-            'as_of'             => $date,
-            'assets'            => $assets,
-            'liabilities'       => $liabilities,
-            'equity'            => $equity,
-            'total_assets'      => $totalAssets,
+            'as_of' => $date,
+            'assets' => $assets,
+            'liabilities' => $liabilities,
+            'equity' => $equity,
+            'total_assets' => $totalAssets,
             'total_liabilities' => $totalLiabilities,
-            'total_equity'      => $totalEquity,
-            'net_assets'        => round($totalAssets - $totalLiabilities, 2),
+            'total_equity' => $totalEquity,
+            'net_assets' => round($totalAssets - $totalLiabilities, 2),
         ];
     }
 
@@ -74,7 +73,7 @@ class FinancialStatementService
     public function incomeStatement(?string $from = null, ?string $to = null): array
     {
         $from = $from ? Carbon::parse($from)->toDateString() : now()->startOfMonth()->toDateString();
-        $to   = $to   ? Carbon::parse($to)->toDateString()   : now()->toDateString();
+        $to = $to ? Carbon::parse($to)->toDateString() : now()->toDateString();
 
         $agg = DB::table('gl_journal_lines as l')
             ->join('gl_journal_entries as e', 'l.journal_entry_id', '=', 'e.id')
@@ -95,34 +94,34 @@ class FinancialStatementService
         $income = $expenses = [];
 
         foreach ($accounts as $account) {
-            $rows    = $agg->get($account->id, collect());
-            $debits  = (float) ($rows->get('debit')->total ?? 0);
+            $rows = $agg->get($account->id, collect());
+            $debits = (float) ($rows->get('debit')->total ?? 0);
             $credits = (float) ($rows->get('credit')->total ?? 0);
 
             $balance = match ($account->type) {
-                'income'  => $credits - $debits,
+                'income' => $credits - $debits,
                 'expense' => $debits - $credits,
             };
 
             $row = ['code' => $account->code, 'name' => $account->name, 'amount' => round($balance, 2)];
 
             match ($account->type) {
-                'income'  => $income[]   = $row,
+                'income' => $income[] = $row,
                 'expense' => $expenses[] = $row,
             };
         }
 
-        $totalIncome   = round(array_sum(array_column($income, 'amount')), 2);
+        $totalIncome = round(array_sum(array_column($income, 'amount')), 2);
         $totalExpenses = round(array_sum(array_column($expenses, 'amount')), 2);
 
         return [
-            'from'           => $from,
-            'to'             => $to,
-            'income'         => $income,
-            'expenses'       => $expenses,
-            'total_income'   => $totalIncome,
+            'from' => $from,
+            'to' => $to,
+            'income' => $income,
+            'expenses' => $expenses,
+            'total_income' => $totalIncome,
             'total_expenses' => $totalExpenses,
-            'net_income'     => round($totalIncome - $totalExpenses, 2),
+            'net_income' => round($totalIncome - $totalExpenses, 2),
         ];
     }
 
@@ -132,7 +131,7 @@ class FinancialStatementService
     public function cashFlow(?string $from = null, ?string $to = null): array
     {
         $from = $from ? Carbon::parse($from)->toDateString() : now()->startOfMonth()->toDateString();
-        $to   = $to   ? Carbon::parse($to)->toDateString()   : now()->toDateString();
+        $to = $to ? Carbon::parse($to)->toDateString() : now()->toDateString();
 
         $cashAccounts = GlAccount::whereIn('code', ['1001', '1002'])->pluck('id');
 
@@ -145,9 +144,9 @@ class FinancialStatementService
             ->orderBy('e.entry_date')
             ->get();
 
-        $inflows  = 0.0;
+        $inflows = 0.0;
         $outflows = 0.0;
-        $lines    = [];
+        $lines = [];
 
         foreach ($rows as $row) {
             $amount = (float) $row->amount;
@@ -157,20 +156,20 @@ class FinancialStatementService
                 $outflows += $amount;
             }
             $lines[] = [
-                'date'        => $row->date,
+                'date' => $row->date,
                 'description' => $row->description,
-                'type'        => $row->side === 'debit' ? 'inflow' : 'outflow',
-                'amount'      => $amount,
+                'type' => $row->side === 'debit' ? 'inflow' : 'outflow',
+                'amount' => $amount,
             ];
         }
 
         return [
-            'from'     => $from,
-            'to'       => $to,
-            'inflows'  => round($inflows, 2),
+            'from' => $from,
+            'to' => $to,
+            'inflows' => round($inflows, 2),
             'outflows' => round($outflows, 2),
             'net_flow' => round($inflows - $outflows, 2),
-            'lines'    => $lines,
+            'lines' => $lines,
         ];
     }
 
@@ -185,9 +184,9 @@ class FinancialStatementService
             ->sum('outstanding_balance');
 
         $buckets = [
-            'par_1_30'    => [1,  30],
-            'par_31_60'   => [31, 60],
-            'par_61_90'   => [61, 90],
+            'par_1_30' => [1,  30],
+            'par_31_60' => [31, 60],
+            'par_61_90' => [61, 90],
             'par_90_plus' => [91, 99999],
         ];
 
@@ -199,13 +198,13 @@ class FinancialStatementService
             $amount = (float) Loan::whereIn('status', ['active', 'disbursed'])
                 ->whereHas('schedule', function ($q) use ($minDate, $maxDate) {
                     $q->where('is_paid', false)
-                      ->where('due_date', '>=', $minDate)
-                      ->where('due_date', '<=', $maxDate);
+                        ->where('due_date', '>=', $minDate)
+                        ->where('due_date', '<=', $maxDate);
                 })
                 ->sum('outstanding_balance');
 
             $result[$key] = [
-                'amount'  => round($amount, 2),
+                'amount' => round($amount, 2),
                 'par_pct' => $totalLoan > 0 ? round($amount / $totalLoan * 100, 2) : 0.0,
             ];
         }
@@ -213,11 +212,11 @@ class FinancialStatementService
         $totalPar = array_sum(array_column($result, 'amount'));
 
         return [
-            'as_of'           => $asOf,
+            'as_of' => $asOf,
             'total_portfolio' => round($totalLoan, 2),
-            'total_par'       => round($totalPar, 2),
-            'total_par_pct'   => $totalLoan > 0 ? round($totalPar / $totalLoan * 100, 2) : 0.0,
-            'buckets'         => $result,
+            'total_par' => round($totalPar, 2),
+            'total_par_pct' => $totalLoan > 0 ? round($totalPar / $totalLoan * 100, 2) : 0.0,
+            'buckets' => $result,
         ];
     }
 }

@@ -23,7 +23,7 @@ class FundService
                 FundTransactionType::Deposit,
                 $deposit,
                 $userId,
-                "Capital deposit: {$deposit->reference} from {$deposit->source}"
+                "Capital deposit: {$deposit->reference} from {$deposit->source}",
             );
         });
     }
@@ -39,7 +39,7 @@ class FundService
                 FundTransactionType::Disburse,
                 $loan,
                 $userId,
-                "Loan disbursement: {$loan->loan_number}"
+                "Loan disbursement: {$loan->loan_number}",
             );
         });
     }
@@ -55,7 +55,7 @@ class FundService
                 FundTransactionType::Repayment,
                 $payment,
                 $userId,
-                "Loan repayment: {$payment->receipt_number}"
+                "Loan repayment: {$payment->receipt_number}",
             );
         });
     }
@@ -71,7 +71,7 @@ class FundService
                 FundTransactionType::Penalty,
                 $payment,
                 $userId,
-                "Penalty collected: {$payment->receipt_number}"
+                "Penalty collected: {$payment->receipt_number}",
             );
         });
     }
@@ -87,7 +87,7 @@ class FundService
                 FundTransactionType::Withdrawal,
                 $expense,
                 $userId,
-                "Expense: #{$expense->id}"
+                "Expense: #{$expense->id}",
             );
         });
     }
@@ -103,7 +103,7 @@ class FundService
                 FundTransactionType::Adjustment,
                 $deposit,
                 $userId,
-                "Deposit reversal: {$deposit->reference}"
+                "Deposit reversal: {$deposit->reference}",
             );
         });
     }
@@ -115,20 +115,20 @@ class FundService
         $balance = FundBalance::lockForUpdate()->first() ?? FundBalance::current();
 
         $before = (float) $balance->available_balance;
-        $after  = $before + $amount;
+        $after = $before + $amount;
 
         $this->updateBalanceForCredit($balance, $type, $amount, $after);
 
         return FundTransaction::create([
             'transaction_ref' => $this->generateRef(),
-            'type'            => $type->value,
-            'amount'          => $amount,
-            'balance_before'  => $before,
-            'balance_after'   => $after,
-            'source_type'     => $source->getMorphClass(),
-            'source_id'       => $source->getKey(),
-            'performed_by'    => $userId,
-            'description'     => $description,
+            'type' => $type->value,
+            'amount' => $amount,
+            'balance_before' => $before,
+            'balance_after' => $after,
+            'source_type' => $source->getMorphClass(),
+            'source_id' => $source->getKey(),
+            'performed_by' => $userId,
+            'description' => $description,
         ]);
     }
 
@@ -137,20 +137,20 @@ class FundService
         $balance = FundBalance::lockForUpdate()->first() ?? FundBalance::current();
 
         $before = (float) $balance->available_balance;
-        $after  = $before - $amount;
+        $after = $before - $amount;
 
         $this->updateBalanceForDebit($balance, $type, $amount, $after);
 
         return FundTransaction::create([
             'transaction_ref' => $this->generateRef(),
-            'type'            => $type->value,
-            'amount'          => $amount,
-            'balance_before'  => $before,
-            'balance_after'   => $after,
-            'source_type'     => $source->getMorphClass(),
-            'source_id'       => $source->getKey(),
-            'performed_by'    => $userId,
-            'description'     => $description,
+            'type' => $type->value,
+            'amount' => $amount,
+            'balance_before' => $before,
+            'balance_after' => $after,
+            'source_type' => $source->getMorphClass(),
+            'source_id' => $source->getKey(),
+            'performed_by' => $userId,
+            'description' => $description,
         ]);
     }
 
@@ -160,11 +160,11 @@ class FundService
     {
         $fields = ['available_balance' => $newAvailable];
 
-        $fields += match($type) {
-            FundTransactionType::Deposit   => ['total_deposits'  => (float) $balance->total_deposits  + $amount],
-            FundTransactionType::Repayment => ['total_repaid'    => (float) $balance->total_repaid    + $amount],
-            FundTransactionType::Penalty   => ['total_penalties' => (float) $balance->total_penalties + $amount],
-            default                        => [],
+        $fields += match ($type) {
+            FundTransactionType::Deposit => ['total_deposits' => (float) $balance->total_deposits + $amount],
+            FundTransactionType::Repayment => ['total_repaid' => (float) $balance->total_repaid + $amount],
+            FundTransactionType::Penalty => ['total_penalties' => (float) $balance->total_penalties + $amount],
+            default => [],
         };
 
         $balance->update($fields);
@@ -174,10 +174,10 @@ class FundService
     {
         $fields = ['available_balance' => $newAvailable];
 
-        $fields += match($type) {
-            FundTransactionType::Disburse   => ['total_disbursed' => (float) $balance->total_disbursed + $amount],
-            FundTransactionType::Withdrawal => ['total_expenses'  => (float) $balance->total_expenses  + $amount],
-            default                         => [],
+        $fields += match ($type) {
+            FundTransactionType::Disburse => ['total_disbursed' => (float) $balance->total_disbursed + $amount],
+            FundTransactionType::Withdrawal => ['total_expenses' => (float) $balance->total_expenses + $amount],
+            default => [],
         };
 
         $balance->update($fields);
@@ -186,8 +186,8 @@ class FundService
     private function generateRef(): string
     {
         $prefix = 'TXN-'.now()->format('Ym').'-';
-        $last   = FundTransaction::where('transaction_ref', 'like', $prefix.'%')->max('transaction_ref');
-        $seq    = $last ? ((int) Str::afterLast($last, '-')) + 1 : 1;
+        $last = FundTransaction::where('transaction_ref', 'like', $prefix.'%')->max('transaction_ref');
+        $seq = $last ? ((int) Str::afterLast($last, '-')) + 1 : 1;
 
         return $prefix.str_pad($seq, 5, '0', STR_PAD_LEFT);
     }

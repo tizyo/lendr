@@ -23,21 +23,21 @@ class TenantController extends BaseApiController
     {
         $tenants = Tenant::query()
             ->when($request->status, fn ($q, $s) => $q->where('status', $s))
-            ->when($request->plan,   fn ($q, $p) => $q->where('plan', $p))
+            ->when($request->plan, fn ($q, $p) => $q->where('plan', $p))
             ->when($request->search, fn ($q, $s) => $q->where(function ($q) use ($s) {
                 $q->where('name', 'like', "%{$s}%")
-                  ->orWhere('id', 'like', "%{$s}%");
+                    ->orWhere('id', 'like', "%{$s}%");
             }))
             ->orderByDesc('created_at')
             ->paginate($request->integer('per_page', 20));
 
         return $this->success([
-            'data'       => $tenants->map(fn ($t) => $this->format($t)),
+            'data' => $tenants->map(fn ($t) => $this->format($t)),
             'pagination' => [
-                'total'        => $tenants->total(),
-                'per_page'     => $tenants->perPage(),
+                'total' => $tenants->total(),
+                'per_page' => $tenants->perPage(),
                 'current_page' => $tenants->currentPage(),
-                'last_page'    => $tenants->lastPage(),
+                'last_page' => $tenants->lastPage(),
             ],
         ]);
     }
@@ -58,24 +58,24 @@ class TenantController extends BaseApiController
     public function store(Request $request): JsonResponse
     {
         $data = $request->validate([
-            'name'      => ['required', 'string', 'max:100'],
-            'plan'      => ['required', Rule::in(['starter', 'growth', 'enterprise'])],
-            'currency'  => ['nullable', 'string', 'size:3'],
-            'timezone'  => ['nullable', 'string', 'max:64'],
+            'name' => ['required', 'string', 'max:100'],
+            'plan' => ['required', Rule::in(['starter', 'growth', 'enterprise'])],
+            'currency' => ['nullable', 'string', 'size:3'],
+            'timezone' => ['nullable', 'string', 'max:64'],
             'subdomain' => ['nullable', 'string', 'alpha_dash', 'max:63',
                 Rule::unique('domains', 'domain'),
             ],
         ]);
 
         $slug = Str::slug($data['name']);
-        $id   = (string) Str::uuid();
+        $id = (string) Str::uuid();
 
         $tenant = Tenant::create([
-            'id'       => $id,
-            'name'     => $data['name'],
-            'slug'     => $slug,
-            'plan'     => $data['plan'],
-            'status'   => 'trial',
+            'id' => $id,
+            'name' => $data['name'],
+            'slug' => $slug,
+            'plan' => $data['plan'],
+            'status' => 'trial',
             'currency' => strtoupper($data['currency'] ?? 'ZMW'),
             'timezone' => $data['timezone'] ?? 'Africa/Lusaka',
         ]);
@@ -98,9 +98,9 @@ class TenantController extends BaseApiController
         $tenant = Tenant::findOrFail($id);
 
         $data = $request->validate([
-            'name'     => ['sometimes', 'string', 'max:100'],
-            'plan'     => ['sometimes', Rule::in(['starter', 'growth', 'enterprise'])],
-            'status'   => ['sometimes', Rule::in(['trial', 'active', 'suspended', 'cancelled', 'expired'])],
+            'name' => ['sometimes', 'string', 'max:100'],
+            'plan' => ['sometimes', Rule::in(['starter', 'growth', 'enterprise'])],
+            'status' => ['sometimes', Rule::in(['trial', 'active', 'suspended', 'cancelled', 'expired'])],
             'currency' => ['sometimes', 'string', 'size:3'],
             'timezone' => ['sometimes', 'string', 'max:64'],
         ]);
@@ -146,7 +146,7 @@ class TenantController extends BaseApiController
         $tenant = Tenant::findOrFail($id);
 
         $data = $request->validate([
-            'plan'   => ['required', Rule::in(['starter', 'growth', 'enterprise'])],
+            'plan' => ['required', Rule::in(['starter', 'growth', 'enterprise'])],
             'status' => ['sometimes', Rule::in(['trial', 'active', 'suspended', 'cancelled', 'expired'])],
         ]);
 
@@ -156,7 +156,7 @@ class TenantController extends BaseApiController
             $update['status'] = $data['status'];
         } elseif (in_array($tenant->status, ['trial', 'expired'])) {
             // Upgrading from trial/expired → activate automatically
-            $update['status']        = 'active';
+            $update['status'] = 'active';
             $update['trial_ends_at'] = null;
         }
 
@@ -174,7 +174,7 @@ class TenantController extends BaseApiController
         $tenant = Tenant::findOrFail($id);
 
         $data = $request->validate([
-            'status'        => ['required', Rule::in(['trial', 'active', 'suspended', 'cancelled', 'expired'])],
+            'status' => ['required', Rule::in(['trial', 'active', 'suspended', 'cancelled', 'expired'])],
             'trial_ends_at' => ['sometimes', 'nullable', 'date'],
         ]);
 
@@ -207,9 +207,9 @@ class TenantController extends BaseApiController
         ]);
 
         $tenant->update([
-            'is_verified'       => true,
-            'verified_at'       => now(),
-            'verified_by'       => $request->user()?->id,
+            'is_verified' => true,
+            'verified_at' => now(),
+            'verified_by' => $request->user()?->id,
             'verification_note' => $data['note'] ?? null,
         ]);
 
@@ -225,9 +225,9 @@ class TenantController extends BaseApiController
         $tenant = Tenant::findOrFail($id);
 
         $tenant->update([
-            'is_verified'       => false,
-            'verified_at'       => null,
-            'verified_by'       => null,
+            'is_verified' => false,
+            'verified_at' => null,
+            'verified_by' => null,
             'verification_note' => null,
         ]);
 
@@ -243,16 +243,16 @@ class TenantController extends BaseApiController
      */
     public function pushReminders(string $id): JsonResponse
     {
-        $tenant    = Tenant::findOrFail($id);
-        $cacheKey  = "landlord:push-reminders:{$tenant->id}";
+        $tenant = Tenant::findOrFail($id);
+        $cacheKey = "landlord:push-reminders:{$tenant->id}";
         $cooldownSeconds = 3600; // 1 hour
 
         if (Cache::has($cacheKey)) {
-            $ttl = Cache::get($cacheKey . ':expires_at') - now()->timestamp;
+            $ttl = Cache::get($cacheKey.':expires_at') - now()->timestamp;
 
             return $this->error(
-                'Push reminders already sent recently. Available again in ' . ceil($ttl / 60) . ' minutes.',
-                429
+                'Push reminders already sent recently. Available again in '.ceil($ttl / 60).' minutes.',
+                429,
             );
         }
 
@@ -269,6 +269,7 @@ class TenantController extends BaseApiController
 
             if ($loanIds->isEmpty()) {
                 tenancy()->end();
+
                 return $this->success(['notified' => 0], 'No overdue unpaid loans found.');
             }
 
@@ -279,7 +280,7 @@ class TenantController extends BaseApiController
 
             // Deduplicate by borrower so a borrower with multiple overdue loans
             // only gets one notification per trigger.
-            $seen    = [];
+            $seen = [];
             $notified = 0;
 
             foreach ($loans as $loan) {
@@ -298,10 +299,10 @@ class TenantController extends BaseApiController
                 // In-app notification
                 BorrowerNotification::create([
                     'borrower_id' => $borrowerId,
-                    'type'        => 'overdue',
-                    'title'       => 'Payment Overdue',
-                    'body'        => "Your loan {$loan->loan_number} has an overdue instalment. Please pay to avoid further penalties.",
-                    'data'        => ['loan_id' => $loan->id, 'loan_number' => $loan->loan_number],
+                    'type' => 'overdue',
+                    'title' => 'Payment Overdue',
+                    'body' => "Your loan {$loan->loan_number} has an overdue instalment. Please pay to avoid further penalties.",
+                    'data' => ['loan_id' => $loan->id, 'loan_number' => $loan->loan_number],
                 ]);
 
                 // SMS + email via existing job
@@ -315,11 +316,11 @@ class TenantController extends BaseApiController
 
         // Lock for 1 hour
         Cache::put($cacheKey, true, $cooldownSeconds);
-        Cache::put($cacheKey . ':expires_at', now()->timestamp + $cooldownSeconds, $cooldownSeconds);
+        Cache::put($cacheKey.':expires_at', now()->timestamp + $cooldownSeconds, $cooldownSeconds);
 
         return $this->success(
             ['notified' => $notified, 'cooldown_until' => now()->addSeconds($cooldownSeconds)->toIso8601String()],
-            "Payment reminders sent to {$notified} borrower(s)."
+            "Payment reminders sent to {$notified} borrower(s).",
         );
     }
 
@@ -328,20 +329,20 @@ class TenantController extends BaseApiController
     private function format(Tenant $tenant, bool $full = false): array
     {
         $base = [
-            'id'                  => $tenant->id,
-            'name'                => $tenant->name,
-            'slug'                => $tenant->slug,
-            'plan'                => $tenant->plan,
-            'status'              => $tenant->status,
-            'currency'            => $tenant->currency,
-            'timezone'            => $tenant->timezone,
-            'admin_email'         => $tenant->admin_email,
-            'trial_ends_at'       => $tenant->trial_ends_at?->toDateString(),
-            'created_at'          => $tenant->created_at?->toDateTimeString(),
-            'is_verified'         => $tenant->is_verified,
-            'verified_at'         => $tenant->verified_at?->toDateTimeString(),
-            'verification_note'   => $tenant->verification_note,
-            'verification_badge'  => $tenant->verificationBadge(),
+            'id' => $tenant->id,
+            'name' => $tenant->name,
+            'slug' => $tenant->slug,
+            'plan' => $tenant->plan,
+            'status' => $tenant->status,
+            'currency' => $tenant->currency,
+            'timezone' => $tenant->timezone,
+            'admin_email' => $tenant->admin_email,
+            'trial_ends_at' => $tenant->trial_ends_at?->toDateString(),
+            'created_at' => $tenant->created_at?->toDateTimeString(),
+            'is_verified' => $tenant->is_verified,
+            'verified_at' => $tenant->verified_at?->toDateTimeString(),
+            'verification_note' => $tenant->verification_note,
+            'verification_badge' => $tenant->verificationBadge(),
         ];
 
         if ($full) {

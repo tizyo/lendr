@@ -38,7 +38,7 @@ class BorrowerAuthController extends BaseApiController
             'phone.regex' => 'Please enter a valid Zambian phone number (e.g. 0971234567).',
         ]);
 
-        $phone       = $this->normalisePhone($request->phone);
+        $phone = $this->normalisePhone($request->phone);
         $throttleKey = 'otp-request:'.$phone;
 
         if (RateLimiter::tooManyAttempts($throttleKey, self::OTP_RATE_LIMIT)) {
@@ -52,22 +52,22 @@ class BorrowerAuthController extends BaseApiController
             ['phone' => $phone],
             [
                 'borrower_number' => $this->generateBorrowerNumber(),
-                'first_name'      => 'New',
-                'last_name'       => 'Borrower',
-                'is_active'       => true,
-            ]
+                'first_name' => 'New',
+                'last_name' => 'Borrower',
+                'is_active' => true,
+            ],
         );
 
         if ($borrower->is_blacklisted) {
             return $this->error('This account has been suspended. Contact support.', 403);
         }
 
-        $otp       = str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
-        $otpHash   = Hash::make($otp);
+        $otp = str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+        $otpHash = Hash::make($otp);
         $expiresAt = now()->addMinutes(self::OTP_TTL_MINUTES);
 
         $borrower->forceFill([
-            'otp'            => $otpHash,
+            'otp' => $otpHash,
             'otp_expires_at' => $expiresAt,
         ])->save();
 
@@ -86,10 +86,10 @@ class BorrowerAuthController extends BaseApiController
     {
         $request->validate([
             'phone' => ['required', 'string'],
-            'otp'   => ['required', 'string', 'digits:6'],
+            'otp' => ['required', 'string', 'digits:6'],
         ]);
 
-        $phone       = $this->normalisePhone($request->phone);
+        $phone = $this->normalisePhone($request->phone);
         $throttleKey = 'otp-verify:'.$phone;
 
         if (RateLimiter::tooManyAttempts($throttleKey, self::VERIFY_RATE_LIMIT)) {
@@ -120,15 +120,15 @@ class BorrowerAuthController extends BaseApiController
 
         // Invalidate the OTP after use
         $borrower->forceFill([
-            'otp'            => null,
+            'otp' => null,
             'otp_expires_at' => null,
-            'last_login_at'  => now(),
+            'last_login_at' => now(),
         ])->save();
 
         $token = $borrower->createToken('pwa-session')->plainTextToken;
 
         return $this->success([
-            'token'    => $token,
+            'token' => $token,
             'borrower' => $this->formatBorrower($borrower),
         ], 'OTP verified. Welcome to LENDR.');
     }
@@ -138,7 +138,7 @@ class BorrowerAuthController extends BaseApiController
     public function setPin(Request $request): JsonResponse
     {
         $request->validate([
-            'pin'              => ['required', 'digits_between:4,6'],
+            'pin' => ['required', 'digits_between:4,6'],
             'pin_confirmation' => ['required', 'same:pin'],
         ]);
 
@@ -155,10 +155,10 @@ class BorrowerAuthController extends BaseApiController
     {
         $request->validate([
             'phone' => ['required', 'string'],
-            'pin'   => ['required', 'digits_between:4,6'],
+            'pin' => ['required', 'digits_between:4,6'],
         ]);
 
-        $phone       = $this->normalisePhone($request->phone);
+        $phone = $this->normalisePhone($request->phone);
         $throttleKey = 'pin-login:'.$phone;
 
         if (RateLimiter::tooManyAttempts($throttleKey, self::VERIFY_RATE_LIMIT)) {
@@ -185,7 +185,7 @@ class BorrowerAuthController extends BaseApiController
         $token = $borrower->createToken('pwa-pin-session')->plainTextToken;
 
         return $this->success([
-            'token'    => $token,
+            'token' => $token,
             'borrower' => $this->formatBorrower($borrower),
         ], 'Login successful.');
     }
@@ -218,8 +218,8 @@ class BorrowerAuthController extends BaseApiController
     private function generateBorrowerNumber(): string
     {
         $prefix = 'BRW-'.now()->format('Ym').'-';
-        $last   = Borrower::withTrashed()->where('borrower_number', 'like', $prefix.'%')->max('borrower_number');
-        $seq    = $last ? ((int) Str::afterLast($last, '-')) + 1 : 1;
+        $last = Borrower::withTrashed()->where('borrower_number', 'like', $prefix.'%')->max('borrower_number');
+        $seq = $last ? ((int) Str::afterLast($last, '-')) + 1 : 1;
 
         return $prefix.str_pad($seq, 5, '0', STR_PAD_LEFT);
     }
@@ -227,14 +227,14 @@ class BorrowerAuthController extends BaseApiController
     private function formatBorrower(Borrower $borrower): array
     {
         return [
-            'id'              => $borrower->id,
+            'id' => $borrower->id,
             'borrower_number' => $borrower->borrower_number,
-            'full_name'       => $borrower->full_name,
-            'phone'           => $borrower->phone,
-            'email'           => $borrower->email,
-            'kyc_verified'    => $borrower->kyc_verified,
-            'has_pin'         => ! is_null($borrower->pin),
-            'portal_access'   => $borrower->portal_access ?? false,
+            'full_name' => $borrower->full_name,
+            'phone' => $borrower->phone,
+            'email' => $borrower->email,
+            'kyc_verified' => $borrower->kyc_verified,
+            'has_pin' => ! is_null($borrower->pin),
+            'portal_access' => $borrower->portal_access ?? false,
         ];
     }
 }

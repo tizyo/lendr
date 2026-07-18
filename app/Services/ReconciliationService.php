@@ -15,16 +15,16 @@ class ReconciliationService
      */
     public function importCsv(string $csv, string $filename, int $importedBy, array $meta = []): BankStatement
     {
-        $lines  = array_filter(explode("\n", trim($csv)));
+        $lines = array_filter(explode("\n", trim($csv)));
         $header = array_map(fn ($h) => strtolower(trim($h)), str_getcsv(array_shift($lines)));
 
         $statement = BankStatement::create([
-            'filename'       => $filename,
-            'bank_name'      => $meta['bank_name'] ?? null,
+            'filename' => $filename,
+            'bank_name' => $meta['bank_name'] ?? null,
             'statement_from' => $meta['statement_from'] ?? null,
-            'statement_to'   => $meta['statement_to'] ?? null,
-            'status'         => 'pending',
-            'imported_by'    => $importedBy,
+            'statement_to' => $meta['statement_to'] ?? null,
+            'status' => 'pending',
+            'imported_by' => $importedBy,
         ]);
 
         $rows = [];
@@ -37,14 +37,14 @@ class ReconciliationService
 
             $rows[] = [
                 'bank_statement_id' => $statement->id,
-                'transaction_date'  => $row['date'] ?? now()->toDateString(),
-                'reference'         => $row['reference'] ?? null,
-                'description'       => $row['description'] ?? null,
-                'amount'            => abs((float) ($row['amount'] ?? 0)),
-                'type'              => strtolower($row['type'] ?? 'credit') === 'debit' ? 'debit' : 'credit',
-                'match_status'      => 'unmatched',
-                'created_at'        => now(),
-                'updated_at'        => now(),
+                'transaction_date' => $row['date'] ?? now()->toDateString(),
+                'reference' => $row['reference'] ?? null,
+                'description' => $row['description'] ?? null,
+                'amount' => abs((float) ($row['amount'] ?? 0)),
+                'type' => strtolower($row['type'] ?? 'credit') === 'debit' ? 'debit' : 'credit',
+                'match_status' => 'unmatched',
+                'created_at' => now(),
+                'updated_at' => now(),
             ];
         }
 
@@ -70,7 +70,7 @@ class ReconciliationService
             ->where('type', 'credit')
             ->get();
 
-        $matched   = 0;
+        $matched = 0;
         $unmatched = 0;
 
         foreach ($transactions as $tx) {
@@ -90,9 +90,9 @@ class ReconciliationService
 
             if ($payment) {
                 $tx->update([
-                    'match_status'      => 'matched',
+                    'match_status' => 'matched',
                     'matched_payment_id' => $payment->id,
-                    'match_notes'       => 'Auto-matched',
+                    'match_notes' => 'Auto-matched',
                 ]);
                 $matched++;
             } else {
@@ -101,9 +101,9 @@ class ReconciliationService
         }
 
         $statement->update([
-            'matched_count'   => $statement->transactions()->where('match_status', 'matched')->count(),
+            'matched_count' => $statement->transactions()->where('match_status', 'matched')->count(),
             'unmatched_count' => $statement->transactions()->where('match_status', 'unmatched')->count(),
-            'status'          => 'processed',
+            'status' => 'processed',
         ]);
 
         return ['matched' => $matched, 'unmatched' => $unmatched];
@@ -126,9 +126,9 @@ class ReconciliationService
     public function manualMatch(BankTransaction $tx, Payment $payment, string $notes = ''): void
     {
         $tx->update([
-            'match_status'       => 'matched',
+            'match_status' => 'matched',
             'matched_payment_id' => $payment->id,
-            'match_notes'        => $notes ?: 'Manually matched',
+            'match_notes' => $notes ?: 'Manually matched',
         ]);
 
         $tx->bankStatement->increment('matched_count');
@@ -142,7 +142,7 @@ class ReconciliationService
     {
         $tx->update([
             'match_status' => 'ignored',
-            'match_notes'  => $reason ?: 'Ignored by user',
+            'match_notes' => $reason ?: 'Ignored by user',
         ]);
     }
 
@@ -155,19 +155,19 @@ class ReconciliationService
         $total = $txns->where('type', 'credit')->sum('amount');
 
         return [
-            'id'              => $statement->id,
-            'filename'        => $statement->filename,
-            'bank_name'       => $statement->bank_name,
-            'statement_from'  => $statement->statement_from?->toDateString(),
-            'statement_to'    => $statement->statement_to?->toDateString(),
-            'total_rows'      => $statement->total_rows,
-            'matched_count'   => $statement->matched_count,
+            'id' => $statement->id,
+            'filename' => $statement->filename,
+            'bank_name' => $statement->bank_name,
+            'statement_from' => $statement->statement_from?->toDateString(),
+            'statement_to' => $statement->statement_to?->toDateString(),
+            'total_rows' => $statement->total_rows,
+            'matched_count' => $statement->matched_count,
             'unmatched_count' => $statement->unmatched_count,
-            'match_rate'      => $statement->total_rows > 0
+            'match_rate' => $statement->total_rows > 0
                 ? round($statement->matched_count / $statement->total_rows * 100, 2)
                 : 0,
-            'total_credits'   => (float) $total,
-            'status'          => $statement->status,
+            'total_credits' => (float) $total,
+            'status' => $statement->status,
         ];
     }
 }

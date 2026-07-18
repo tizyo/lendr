@@ -22,7 +22,7 @@ class LoanOfferService
             return [];
         }
 
-        $rules   = LoanOfferRule::forScore($score);
+        $rules = LoanOfferRule::forScore($score);
         $created = [];
 
         foreach ($rules as $rule) {
@@ -39,22 +39,22 @@ class LoanOfferService
 
             // Offer amount: scale within rule range based on credit score position
             $scoreRange = max(1, $rule->max_credit_score - $rule->min_credit_score);
-            $position   = ($score - $rule->min_credit_score) / $scoreRange;
+            $position = ($score - $rule->min_credit_score) / $scoreRange;
             $amountRange = $rule->max_offered_amount - $rule->min_offered_amount;
             $offeredAmount = round($rule->min_offered_amount + ($position * $amountRange), 2);
 
             $plan = $rule->loanPlan;
 
             $offer = LoanOffer::create([
-                'loan_offer_rule_id'   => $rule->id,
-                'borrower_id'          => $borrower->id,
-                'loan_plan_id'         => $rule->loan_plan_id,
-                'offered_amount'       => $offeredAmount,
-                'interest_rate'        => $plan->interest_rate,
-                'tenure'               => $plan->min_tenure ?? 12,
+                'loan_offer_rule_id' => $rule->id,
+                'borrower_id' => $borrower->id,
+                'loan_plan_id' => $rule->loan_plan_id,
+                'offered_amount' => $offeredAmount,
+                'interest_rate' => $plan->interest_rate,
+                'tenure' => $plan->min_tenure ?? 12,
                 'credit_score_at_offer' => $score,
-                'status'               => 'pending',
-                'expires_at'           => now()->addDays($rule->validity_days),
+                'status' => 'pending',
+                'expires_at' => now()->addDays($rule->validity_days),
             ]);
 
             $created[] = $offer;
@@ -73,7 +73,7 @@ class LoanOfferService
         }
 
         $offer->update([
-            'status'      => 'accepted',
+            'status' => 'accepted',
             'accepted_at' => now(),
         ]);
 
@@ -90,8 +90,8 @@ class LoanOfferService
         }
 
         $offer->update([
-            'status'         => 'declined',
-            'declined_at'    => now(),
+            'status' => 'declined',
+            'declined_at' => now(),
             'decline_reason' => $reason,
         ]);
 

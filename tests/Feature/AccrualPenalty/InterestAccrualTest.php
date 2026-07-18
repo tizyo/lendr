@@ -19,32 +19,32 @@ function accrualAdmin(): User
 
 function accrualLoan(float $balance = 10000, float $annualRate = 24.0, int $dpdDays = 0): Loan
 {
-    $type     = LoanType::first() ?? LoanType::factory()->create();
-    $plan     = LoanPlan::first() ?? LoanPlan::factory()->create(['loan_type_id' => $type->id]);
+    $type = LoanType::first() ?? LoanType::factory()->create();
+    $plan = LoanPlan::first() ?? LoanPlan::factory()->create(['loan_type_id' => $type->id]);
     $borrower = Borrower::factory()->create();
 
     $loan = Loan::factory()->create([
-        'borrower_id'         => $borrower->id,
-        'loan_type_id'        => $type->id,
-        'loan_plan_id'        => $plan->id,
-        'status'              => LoanStatus::Active,
-        'principal_amount'    => $balance,
+        'borrower_id' => $borrower->id,
+        'loan_type_id' => $type->id,
+        'loan_plan_id' => $plan->id,
+        'status' => LoanStatus::Active,
+        'principal_amount' => $balance,
         'outstanding_balance' => $balance,
-        'interest_rate'       => $annualRate,
-        'interest_type'       => 'flat',
-        'interest_period'     => 'monthly',
+        'interest_rate' => $annualRate,
+        'interest_type' => 'flat',
+        'interest_period' => 'monthly',
     ]);
 
     if ($dpdDays > 0) {
         LoanSchedule::create([
-            'loan_id'           => $loan->id,
+            'loan_id' => $loan->id,
             'instalment_number' => 1,
-            'due_date'          => now()->subDays($dpdDays)->toDateString(),
-            'principal_due'     => 1000,
-            'interest_due'      => 100,
-            'total_due'         => 1100,
-            'outstanding'       => 1100,
-            'is_paid'           => false,
+            'due_date' => now()->subDays($dpdDays)->toDateString(),
+            'principal_due' => 1000,
+            'interest_due' => 100,
+            'total_due' => 1100,
+            'outstanding' => 1100,
+            'is_paid' => false,
         ]);
     }
 
@@ -121,7 +121,7 @@ test('dry run does not persist accrual records', function () {
 
     $resp = $this->actingAs($admin)
         ->postJson(route('api.v1.interest-accrual.run'), [
-            'date'    => now()->toDateString(),
+            'date' => now()->toDateString(),
             'dry_run' => true,
         ])
         ->assertOk();
@@ -153,7 +153,7 @@ test('can filter accruals by loan', function () {
     $this->actingAs($admin)->postJson(route('api.v1.interest-accrual.run'), ['date' => $date]);
 
     $resp = $this->actingAs($admin)
-        ->getJson(route('api.v1.interest-accrual.index') . '?loan_id=' . $loanA->id)
+        ->getJson(route('api.v1.interest-accrual.index').'?loan_id='.$loanA->id)
         ->assertOk();
 
     expect($resp->json('data'))->toHaveCount(1)
@@ -168,7 +168,7 @@ test('can get monthly accrual summary', function () {
         ->postJson(route('api.v1.interest-accrual.run'), ['date' => now()->toDateString()]);
 
     $resp = $this->actingAs($admin)
-        ->getJson(route('api.v1.interest-accrual.summary') . '?year=' . now()->year)
+        ->getJson(route('api.v1.interest-accrual.summary').'?year='.now()->year)
         ->assertOk();
 
     expect($resp->json('data.annual_total'))->toBeGreaterThan(0)

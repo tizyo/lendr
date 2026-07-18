@@ -14,10 +14,10 @@ class ExpenseCategoryFactory extends Factory
         static $seq = 1;
 
         return [
-            'name'      => fake()->randomElement(['Travel', 'Office Supplies', 'Utilities', 'Marketing', 'Training']).'-'.fake()->unique()->numerify('###'),
-            'code'      => 'EC'.str_pad($seq++, 3, '0', STR_PAD_LEFT),
-            'icon'      => null,
-            'colour'    => null,
+            'name' => fake()->randomElement(['Travel', 'Office Supplies', 'Utilities', 'Marketing', 'Training']).'-'.fake()->unique()->numerify('###'),
+            'code' => 'EC'.str_pad($seq++, 3, '0', STR_PAD_LEFT),
+            'icon' => null,
+            'colour' => null,
             'is_active' => true,
         ];
     }

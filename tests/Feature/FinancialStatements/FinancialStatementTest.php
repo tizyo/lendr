@@ -29,8 +29,8 @@ function seedGlAccounts(): void
 function postGlEntry(string $date, array $lines): void
 {
     $entry = GlJournalEntry::create([
-        'reference'   => 'TST-' . uniqid(),
-        'entry_date'  => $date,
+        'reference' => 'TST-'.uniqid(),
+        'entry_date' => $date,
         'description' => 'Test entry',
     ]);
 
@@ -38,9 +38,9 @@ function postGlEntry(string $date, array $lines): void
         $account = GlAccount::where('code', $code)->firstOrFail();
         GlJournalLine::create([
             'journal_entry_id' => $entry->id,
-            'account_id'       => $account->id,
-            'side'             => $side,
-            'amount'           => $amount,
+            'account_id' => $account->id,
+            'side' => $side,
+            'amount' => $amount,
         ]);
     }
 }
@@ -146,7 +146,7 @@ test('income statement filters by date range', function () {
     $resp = $this->actingAs($admin)
         ->getJson(route('api.v1.financial-statements.income-statement', [
             'from' => now()->subDays(10)->toDateString(),
-            'to'   => now()->toDateString(),
+            'to' => now()->toDateString(),
         ]))
         ->assertOk();
 
@@ -183,29 +183,29 @@ test('cash flow inflows and outflows are separated correctly', function () {
 // ─── Portfolio at Risk ─────────────────────────────────────────────────────────
 
 test('portfolio at risk returns par buckets', function () {
-    $admin    = fsAdmin();
-    $type     = LoanType::factory()->create();
-    $plan     = LoanPlan::factory()->create(['loan_type_id' => $type->id]);
+    $admin = fsAdmin();
+    $type = LoanType::factory()->create();
+    $plan = LoanPlan::factory()->create(['loan_type_id' => $type->id]);
     $borrower = Borrower::factory()->create();
 
     $loan = Loan::factory()->create([
-        'borrower_id'         => $borrower->id,
-        'loan_type_id'        => $type->id,
-        'loan_plan_id'        => $plan->id,
-        'status'              => LoanStatus::Active,
+        'borrower_id' => $borrower->id,
+        'loan_type_id' => $type->id,
+        'loan_plan_id' => $plan->id,
+        'status' => LoanStatus::Active,
         'outstanding_balance' => 10000,
     ]);
 
     // 45 days overdue — PAR 31-60 bucket
     LoanSchedule::create([
-        'loan_id'           => $loan->id,
+        'loan_id' => $loan->id,
         'instalment_number' => 1,
-        'due_date'          => now()->subDays(45)->toDateString(),
-        'principal_due'     => 1000,
-        'interest_due'      => 100,
-        'total_due'         => 1100,
-        'outstanding'       => 1100,
-        'is_paid'           => false,
+        'due_date' => now()->subDays(45)->toDateString(),
+        'principal_due' => 1000,
+        'interest_due' => 100,
+        'total_due' => 1100,
+        'outstanding' => 1100,
+        'is_paid' => false,
     ]);
 
     $resp = $this->actingAs($admin)

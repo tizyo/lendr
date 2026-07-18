@@ -35,10 +35,10 @@ class LandlordUser extends Authenticatable
     protected function casts(): array
     {
         return [
-            'password'                => 'hashed',
-            'is_active'               => 'boolean',
+            'password' => 'hashed',
+            'is_active' => 'boolean',
             'two_factor_confirmed_at' => 'datetime',
-            'last_login_at'           => 'datetime',
+            'last_login_at' => 'datetime',
         ];
     }
 

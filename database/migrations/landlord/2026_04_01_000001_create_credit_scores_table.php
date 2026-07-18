@@ -17,7 +17,7 @@ return new class extends Migration
         Schema::create('credit_scores', function (Blueprint $table) {
             $table->id();
             $table->string('borrower_global_id', 64)->unique()
-                  ->comment('SHA256 of phone number — cross-tenant identity hash');
+                ->comment('SHA256 of phone number — cross-tenant identity hash');
 
             // Composite score
             $table->smallInteger('score')->default(300);
@@ -25,15 +25,15 @@ return new class extends Migration
 
             // Factor subscores (0–100 each)
             $table->unsignedTinyInteger('repayment_history_score')->default(0)
-                  ->comment('Weight 40% — on-time payments ratio');
+                ->comment('Weight 40% — on-time payments ratio');
             $table->unsignedTinyInteger('debt_load_score')->default(0)
-                  ->comment('Weight 25% — outstanding vs income');
+                ->comment('Weight 25% — outstanding vs income');
             $table->unsignedTinyInteger('history_length_score')->default(0)
-                  ->comment('Weight 15% — months since first loan');
+                ->comment('Weight 15% — months since first loan');
             $table->unsignedTinyInteger('account_mix_score')->default(0)
-                  ->comment('Weight 10% — diversity of loan types');
+                ->comment('Weight 10% — diversity of loan types');
             $table->unsignedTinyInteger('new_credit_score')->default(0)
-                  ->comment('Weight 10% — applications in last 6 months (fewer = better)');
+                ->comment('Weight 10% — applications in last 6 months (fewer = better)');
 
             // Summary stats
             $table->unsignedInteger('total_loans')->default(0);

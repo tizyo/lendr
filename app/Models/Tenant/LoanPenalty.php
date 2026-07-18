@@ -25,12 +25,12 @@ class LoanPenalty extends Model
     protected function casts(): array
     {
         return [
-            'penalty_date'   => 'date',
-            'waived_at'      => 'datetime',
-            'penalty_rate'   => 'decimal:4',
+            'penalty_date' => 'date',
+            'waived_at' => 'datetime',
+            'penalty_rate' => 'decimal:4',
             'overdue_amount' => 'decimal:2',
             'penalty_amount' => 'decimal:2',
-            'waived_amount'  => 'decimal:2',
+            'waived_amount' => 'decimal:2',
         ];
     }
 

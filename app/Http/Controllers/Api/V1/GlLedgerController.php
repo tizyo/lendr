@@ -20,13 +20,13 @@ class GlLedgerController extends BaseApiController
     public function accounts(): JsonResponse
     {
         $accounts = GlAccount::orderBy('code')->get()->map(fn ($a) => [
-            'id'          => $a->id,
-            'code'        => $a->code,
-            'name'        => $a->name,
-            'type'        => $a->type,
-            'is_active'   => $a->is_active,
+            'id' => $a->id,
+            'code' => $a->code,
+            'name' => $a->name,
+            'type' => $a->type,
+            'is_active' => $a->is_active,
             'description' => $a->description,
-            'balance'     => $a->balance(),
+            'balance' => $a->balance(),
         ]);
 
         return $this->success(['accounts' => $accounts]);
@@ -38,9 +38,9 @@ class GlLedgerController extends BaseApiController
     public function createAccount(Request $request): JsonResponse
     {
         $data = $request->validate([
-            'code'        => ['required', 'string', 'max:20', 'unique:gl_accounts,code'],
-            'name'        => ['required', 'string', 'max:150'],
-            'type'        => ['required', 'in:asset,liability,equity,income,expense'],
+            'code' => ['required', 'string', 'max:20', 'unique:gl_accounts,code'],
+            'name' => ['required', 'string', 'max:150'],
+            'type' => ['required', 'in:asset,liability,equity,income,expense'],
             'description' => ['nullable', 'string'],
         ]);
 
@@ -48,10 +48,10 @@ class GlLedgerController extends BaseApiController
 
         return $this->success([
             'account' => [
-                'id'      => $account->id,
-                'code'    => $account->code,
-                'name'    => $account->name,
-                'type'    => $account->type,
+                'id' => $account->id,
+                'code' => $account->code,
+                'name' => $account->name,
+                'type' => $account->type,
                 'balance' => 0.0,
             ],
         ], 'Account created.', 201);
@@ -94,16 +94,16 @@ class GlLedgerController extends BaseApiController
     public function createEntry(Request $request): JsonResponse
     {
         $data = $request->validate([
-            'description'          => ['required', 'string', 'max:500'],
-            'entry_date'           => ['required', 'date'],
-            'lines'                => ['required', 'array', 'min:2'],
+            'description' => ['required', 'string', 'max:500'],
+            'entry_date' => ['required', 'date'],
+            'lines' => ['required', 'array', 'min:2'],
             'lines.*.account_code' => ['required', 'string', 'exists:gl_accounts,code'],
-            'lines.*.side'         => ['required', 'in:debit,credit'],
-            'lines.*.amount'       => ['required', 'numeric', 'min:0.01'],
-            'lines.*.notes'        => ['nullable', 'string'],
+            'lines.*.side' => ['required', 'in:debit,credit'],
+            'lines.*.amount' => ['required', 'numeric', 'min:0.01'],
+            'lines.*.notes' => ['nullable', 'string'],
         ]);
 
-        $debits  = collect($data['lines'])->where('side', 'debit')->sum('amount');
+        $debits = collect($data['lines'])->where('side', 'debit')->sum('amount');
         $credits = collect($data['lines'])->where('side', 'credit')->sum('amount');
 
         if (abs($debits - $credits) > 0.01) {
@@ -116,7 +116,7 @@ class GlLedgerController extends BaseApiController
                 $data['lines'],
                 null,
                 $data['entry_date'],
-                auth()->id()
+                auth()->id(),
             );
         } catch (\Throwable $e) {
             return $this->error($e->getMessage(), 422);
@@ -134,14 +134,14 @@ class GlLedgerController extends BaseApiController
     {
         $rows = $this->ledger->trialBalance();
 
-        $totalDebits  = collect($rows)->whereIn('type', ['asset', 'expense'])->sum('balance');
+        $totalDebits = collect($rows)->whereIn('type', ['asset', 'expense'])->sum('balance');
         $totalCredits = collect($rows)->whereIn('type', ['liability', 'equity', 'income'])->sum('balance');
 
         return $this->success([
-            'accounts'      => $rows,
-            'total_debits'  => round($totalDebits, 2),
+            'accounts' => $rows,
+            'total_debits' => round($totalDebits, 2),
             'total_credits' => round($totalCredits, 2),
-            'is_balanced'   => abs($totalDebits - $totalCredits) < 0.01,
+            'is_balanced' => abs($totalDebits - $totalCredits) < 0.01,
         ]);
     }
 
@@ -168,18 +168,18 @@ class GlLedgerController extends BaseApiController
     private function formatEntry(GlJournalEntry $entry): array
     {
         return [
-            'id'          => $entry->id,
-            'reference'   => $entry->reference,
-            'entry_date'  => $entry->entry_date?->format('d M Y'),
+            'id' => $entry->id,
+            'reference' => $entry->reference,
+            'entry_date' => $entry->entry_date?->format('d M Y'),
             'description' => $entry->description,
             'source_type' => $entry->source_type,
-            'source_id'   => $entry->source_id,
-            'lines'       => $entry->lines->map(fn ($l) => [
+            'source_id' => $entry->source_id,
+            'lines' => $entry->lines->map(fn ($l) => [
                 'account_code' => $l->account?->code,
                 'account_name' => $l->account?->name,
-                'side'         => $l->side,
-                'amount'       => (float) $l->amount,
-                'notes'        => $l->notes,
+                'side' => $l->side,
+                'amount' => (float) $l->amount,
+                'notes' => $l->notes,
             ])->values(),
         ];
     }

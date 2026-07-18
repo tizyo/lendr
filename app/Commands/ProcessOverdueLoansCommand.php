@@ -23,15 +23,16 @@ use Illuminate\Support\Facades\Log;
  */
 class ProcessOverdueLoansCommand extends Command
 {
-    protected $signature   = 'lendr:process-overdue {--dry-run : Preview without persisting changes}';
+    protected $signature = 'lendr:process-overdue {--dry-run : Preview without persisting changes}';
+
     protected $description = 'Accrue penalties on overdue loans and auto-default severely delinquent loans';
 
     private const AUTO_DEFAULT_DAYS = 90; // overdue days after grace period before auto-default
 
     public function handle(): int
     {
-        $dryRun  = $this->option('dry-run');
-        $today   = now()->toDateString();
+        $dryRun = $this->option('dry-run');
+        $today = now()->toDateString();
         $updated = 0;
         $defaulted = 0;
 
@@ -61,12 +62,12 @@ class ProcessOverdueLoansCommand extends Command
             return;
         }
 
-        $penaltyRate        = (float) ($loan->penalty_rate ?? 0);    // % per day or per period
-        $gracePeriodDays    = (int)   ($loan->grace_period_days ?? 0);
-        $maxOverdueDays     = 0;
-        $newPenaltyAccrued  = 0.0;
+        $penaltyRate = (float) ($loan->penalty_rate ?? 0);    // % per day or per period
+        $gracePeriodDays = (int) ($loan->grace_period_days ?? 0);
+        $maxOverdueDays = 0;
+        $newPenaltyAccrued = 0.0;
 
-        DB::transaction(function () use ($loan, $overdueInstallments, $penaltyRate, $gracePeriodDays, $today, $dryRun, &$maxOverdueDays, &$newPenaltyAccrued) {
+        DB::transaction(function () use ($loan, $overdueInstallments, $penaltyRate, $gracePeriodDays, $dryRun, &$maxOverdueDays, &$newPenaltyAccrued) {
             foreach ($overdueInstallments as $installment) {
                 $daysOverdue = (int) now()->diffInDays($installment->due_date);
                 $effectiveDays = max(0, $daysOverdue - $gracePeriodDays);
@@ -81,7 +82,7 @@ class ProcessOverdueLoansCommand extends Command
 
                 if (! $dryRun) {
                     $installment->update([
-                        'days_overdue'    => $daysOverdue,
+                        'days_overdue' => $daysOverdue,
                         'penalty_accrued' => $dailyPenalty,
                     ]);
                 }

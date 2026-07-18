@@ -6,7 +6,6 @@ use App\Models\Tenant\LoanPlan;
 use App\Models\Tenant\LoanType;
 use App\Models\Tenant\MobileMoneyIntent;
 use App\Models\Tenant\Payment;
-use App\Models\Tenant\WebhookEvent;
 use Illuminate\Support\Facades\DB;
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -14,51 +13,51 @@ use Illuminate\Support\Facades\DB;
 function webhookActiveLoan(): Loan
 {
     $borrower = Borrower::factory()->create(['is_active' => true]);
-    $lt       = LoanType::factory()->create();
-    $plan     = LoanPlan::factory()->create(['loan_type_id' => $lt->id]);
+    $lt = LoanType::factory()->create();
+    $plan = LoanPlan::factory()->create(['loan_type_id' => $lt->id]);
 
     return Loan::factory()->active()->create([
-        'borrower_id'         => $borrower->id,
-        'loan_type_id'        => $lt->id,
-        'loan_plan_id'        => $plan->id,
-        'principal_amount'    => 2000.00,
-        'interest_amount'     => 400.00,
-        'total_payable'       => 2400.00,
+        'borrower_id' => $borrower->id,
+        'loan_type_id' => $lt->id,
+        'loan_plan_id' => $plan->id,
+        'principal_amount' => 2000.00,
+        'interest_amount' => 400.00,
+        'total_payable' => 2400.00,
         'outstanding_balance' => 2400.00,
-        'total_paid'          => 0.00,
-        'penalty_balance'     => 0.00,
+        'total_paid' => 0.00,
+        'penalty_balance' => 0.00,
     ]);
 }
 
 function createIntent(Loan $loan, float $amount, string $ref): MobileMoneyIntent
 {
     return MobileMoneyIntent::create([
-        'loan_id'     => $loan->id,
+        'loan_id' => $loan->id,
         'borrower_id' => $loan->borrower_id,
-        'reference'   => $ref,
-        'amount'      => $amount,
-        'provider'    => 'pawapay',
-        'phone'       => '+260971000001',
-        'status'      => 'pending',
+        'reference' => $ref,
+        'amount' => $amount,
+        'provider' => 'pawapay',
+        'phone' => '+260971000001',
+        'status' => 'pending',
     ]);
 }
 
 // ─── Flutterwave webhook ──────────────────────────────────────────────────────
 
 test('flutterwave webhook records a payment on success', function () {
-    $loan   = webhookActiveLoan();
-    $ref    = 'LENDR-' . uniqid();
+    $loan = webhookActiveLoan();
+    $ref = 'LENDR-'.uniqid();
     $intent = createIntent($loan, 500.00, $ref);
 
     DB::table('settings')->updateOrInsert(
         ['key' => 'flutterwave_webhook_secret'],
-        ['value' => 'test-secret']
+        ['value' => 'test-secret'],
     );
 
     $payload = [
         'event' => 'charge.completed',
-        'data'  => [
-            'id'     => 'fw-txn-001',
+        'data' => [
+            'id' => 'fw-txn-001',
             'status' => 'successful',
             'amount' => 500,
             'tx_ref' => $ref,
@@ -76,34 +75,34 @@ test('flutterwave webhook records a payment on success', function () {
 test('flutterwave webhook rejects invalid signature', function () {
     DB::table('settings')->updateOrInsert(
         ['key' => 'flutterwave_webhook_secret'],
-        ['value' => 'correct-secret']
+        ['value' => 'correct-secret'],
     );
 
     $this->postJson(
         route('api.v1.webhooks.flutterwave'),
         ['event' => 'charge.completed', 'data' => []],
-        ['verif-hash' => 'wrong-secret']
+        ['verif-hash' => 'wrong-secret'],
     )->assertStatus(401);
 });
 
 test('flutterwave webhook is idempotent for duplicate events', function () {
-    $loan   = webhookActiveLoan();
-    $ref    = 'LENDR-' . uniqid();
+    $loan = webhookActiveLoan();
+    $ref = 'LENDR-'.uniqid();
     $intent = createIntent($loan, 300.00, $ref);
-    $txId   = 'fw-txn-idempotent';
+    $txId = 'fw-txn-idempotent';
 
     DB::table('settings')->updateOrInsert(
         ['key' => 'flutterwave_webhook_secret'],
-        ['value' => 'test-secret']
+        ['value' => 'test-secret'],
     );
 
     $payload = [
         'event' => 'charge.completed',
-        'data'  => [
-            'id'       => $txId,
-            'status'   => 'successful',
-            'amount'   => 300,
-            'tx_ref'   => $ref,
+        'data' => [
+            'id' => $txId,
+            'status' => 'successful',
+            'amount' => 300,
+            'tx_ref' => $ref,
             'customer' => ['phone_number' => '+260971000001'],
         ],
     ];
@@ -119,21 +118,21 @@ test('flutterwave webhook is idempotent for duplicate events', function () {
 // ─── PawaPay webhook ──────────────────────────────────────────────────────────
 
 test('pawapay webhook records a payment on completed status', function () {
-    $loan   = webhookActiveLoan();
-    $ref    = 'LENDR-' . uniqid();
+    $loan = webhookActiveLoan();
+    $ref = 'LENDR-'.uniqid();
     $intent = createIntent($loan, 750.00, $ref);
 
     DB::table('settings')->updateOrInsert(
         ['key' => 'pawapay_webhook_secret'],
-        ['value' => 'test-secret']
+        ['value' => 'test-secret'],
     );
 
     $payload = [
-        'paymentId'            => 'pp-txn-001',
-        'status'               => 'COMPLETED',
-        'amount'               => '750',
+        'paymentId' => 'pp-txn-001',
+        'status' => 'COMPLETED',
+        'amount' => '750',
         'statementDescription' => $ref,
-        'payer'                => ['address' => ['value' => '260971000001']],
+        'payer' => ['address' => ['value' => '260971000001']],
     ];
 
     $this->postJson(route('api.v1.webhooks.pawapay'), $payload, [
@@ -144,21 +143,21 @@ test('pawapay webhook records a payment on completed status', function () {
 });
 
 test('pawapay webhook does not record payment on failed status', function () {
-    $loan   = webhookActiveLoan();
-    $ref    = 'LENDR-' . uniqid();
+    $loan = webhookActiveLoan();
+    $ref = 'LENDR-'.uniqid();
     $intent = createIntent($loan, 750.00, $ref);
 
     DB::table('settings')->updateOrInsert(
         ['key' => 'pawapay_webhook_secret'],
-        ['value' => 'test-secret']
+        ['value' => 'test-secret'],
     );
 
     $payload = [
-        'paymentId'            => 'pp-txn-002',
-        'status'               => 'FAILED',
-        'amount'               => '750',
+        'paymentId' => 'pp-txn-002',
+        'status' => 'FAILED',
+        'amount' => '750',
         'statementDescription' => $ref,
-        'payer'                => ['address' => ['value' => '260971000001']],
+        'payer' => ['address' => ['value' => '260971000001']],
     ];
 
     $this->postJson(route('api.v1.webhooks.pawapay'), $payload, [
@@ -174,15 +173,15 @@ test('pawapay webhook does not record payment on failed status', function () {
 test('webhook with unknown internal ref is logged as skipped and returns 204', function () {
     DB::table('settings')->updateOrInsert(
         ['key' => 'pawapay_webhook_secret'],
-        ['value' => 'test-secret']
+        ['value' => 'test-secret'],
     );
 
     $payload = [
-        'paymentId'            => 'pp-unknown-001',
-        'status'               => 'COMPLETED',
-        'amount'               => '100',
+        'paymentId' => 'pp-unknown-001',
+        'status' => 'COMPLETED',
+        'amount' => '100',
         'statementDescription' => 'UNKNOWN-REF-9999',
-        'payer'                => ['address' => ['value' => '260971000001']],
+        'payer' => ['address' => ['value' => '260971000001']],
     ];
 
     $this->postJson(route('api.v1.webhooks.pawapay'), $payload, [

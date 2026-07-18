@@ -9,7 +9,6 @@ use App\Models\Tenant\LoanPlan;
 use App\Models\Tenant\LoanType;
 use App\Models\Tenant\User;
 use App\Services\ESignatureService;
-use Illuminate\Support\Facades\Hash;
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -20,16 +19,16 @@ function esigAdmin(): User
 
 function esigLoan(): Loan
 {
-    $type     = LoanType::factory()->create();
-    $plan     = LoanPlan::factory()->create(['loan_type_id' => $type->id]);
+    $type = LoanType::factory()->create();
+    $plan = LoanPlan::factory()->create(['loan_type_id' => $type->id]);
     $borrower = Borrower::factory()->create(['phone' => '0970000001']);
 
     return Loan::factory()->create([
-        'borrower_id'  => $borrower->id,
+        'borrower_id' => $borrower->id,
         'loan_type_id' => $type->id,
         'loan_plan_id' => $plan->id,
-        'status'       => LoanStatus::Approved,
-        'loan_number'  => 'LN-ESIG-001',
+        'status' => LoanStatus::Approved,
+        'loan_number' => 'LN-ESIG-001',
     ]);
 }
 
@@ -37,7 +36,7 @@ function esigLoan(): Loan
 
 test('returns null when no agreement exists yet', function () {
     $admin = esigAdmin();
-    $loan  = esigLoan();
+    $loan = esigLoan();
 
     $resp = $this->actingAs($admin)
         ->getJson(route('api.v1.loans.agreement.show', $loan))
@@ -48,7 +47,7 @@ test('returns null when no agreement exists yet', function () {
 
 test('can generate a loan agreement PDF', function () {
     $admin = esigAdmin();
-    $loan  = esigLoan();
+    $loan = esigLoan();
 
     $resp = $this->actingAs($admin)
         ->postJson(route('api.v1.loans.agreement.generate', $loan))
@@ -61,9 +60,9 @@ test('can generate a loan agreement PDF', function () {
 });
 
 test('re-generating resets a previously signed agreement', function () {
-    $admin     = esigAdmin();
-    $loan      = esigLoan();
-    $service   = app(ESignatureService::class);
+    $admin = esigAdmin();
+    $loan = esigLoan();
+    $service = app(ESignatureService::class);
 
     $agreement = $service->generate($loan, $admin->id);
     $agreement->update(['status' => 'signed', 'signed_at' => now()]);
@@ -75,8 +74,8 @@ test('re-generating resets a previously signed agreement', function () {
 });
 
 test('can send signing OTP', function () {
-    $admin   = esigAdmin();
-    $loan    = esigLoan();
+    $admin = esigAdmin();
+    $loan = esigLoan();
     $service = app(ESignatureService::class);
     $service->generate($loan, $admin->id);
 
@@ -93,11 +92,11 @@ test('can send signing OTP', function () {
 
 test('returns 422 if sending OTP before PDF is generated', function () {
     $admin = esigAdmin();
-    $loan  = esigLoan();
+    $loan = esigLoan();
 
     LoanAgreement::create([
         'loan_id' => $loan->id,
-        'status'  => 'pending',
+        'status' => 'pending',
         'pdf_path' => null,
     ]);
 
@@ -107,12 +106,12 @@ test('returns 422 if sending OTP before PDF is generated', function () {
 });
 
 test('can sign agreement with valid OTP', function () {
-    $admin   = esigAdmin();
-    $loan    = esigLoan();
+    $admin = esigAdmin();
+    $loan = esigLoan();
     $service = app(ESignatureService::class);
 
     $agreement = $service->generate($loan, $admin->id);
-    $otp       = $service->sendOtp($agreement);
+    $otp = $service->sendOtp($agreement);
 
     $resp = $this->actingAs($admin)
         ->postJson(route('api.v1.loans.agreement.sign', $loan), ['otp' => $otp])
@@ -123,8 +122,8 @@ test('can sign agreement with valid OTP', function () {
 });
 
 test('rejects invalid OTP', function () {
-    $admin   = esigAdmin();
-    $loan    = esigLoan();
+    $admin = esigAdmin();
+    $loan = esigLoan();
     $service = app(ESignatureService::class);
 
     $agreement = $service->generate($loan, $admin->id);
@@ -136,12 +135,12 @@ test('rejects invalid OTP', function () {
 });
 
 test('rejects signing an already signed agreement', function () {
-    $admin   = esigAdmin();
-    $loan    = esigLoan();
+    $admin = esigAdmin();
+    $loan = esigLoan();
     $service = app(ESignatureService::class);
 
     $agreement = $service->generate($loan, $admin->id);
-    $otp       = $service->sendOtp($agreement);
+    $otp = $service->sendOtp($agreement);
     $service->sign($agreement, $otp);
 
     $this->actingAs($admin)
@@ -150,12 +149,12 @@ test('rejects signing an already signed agreement', function () {
 });
 
 test('audit trail records all events', function () {
-    $admin   = esigAdmin();
-    $loan    = esigLoan();
+    $admin = esigAdmin();
+    $loan = esigLoan();
     $service = app(ESignatureService::class);
 
     $agreement = $service->generate($loan, $admin->id);
-    $otp       = $service->sendOtp($agreement);
+    $otp = $service->sendOtp($agreement);
     $service->sign($agreement, $otp);
 
     $resp = $this->actingAs($admin)
@@ -169,8 +168,8 @@ test('audit trail records all events', function () {
 });
 
 test('download returns PDF bytes for a generated agreement', function () {
-    $admin   = esigAdmin();
-    $loan    = esigLoan();
+    $admin = esigAdmin();
+    $loan = esigLoan();
     $service = app(ESignatureService::class);
     $service->generate($loan, $admin->id);
 
@@ -183,7 +182,7 @@ test('download returns PDF bytes for a generated agreement', function () {
 
 test('download returns 404 when no PDF generated', function () {
     $admin = esigAdmin();
-    $loan  = esigLoan();
+    $loan = esigLoan();
 
     LoanAgreement::create(['loan_id' => $loan->id, 'status' => 'pending']);
 
@@ -193,12 +192,12 @@ test('download returns 404 when no PDF generated', function () {
 });
 
 test('voided agreement cannot be signed', function () {
-    $admin   = esigAdmin();
-    $loan    = esigLoan();
+    $admin = esigAdmin();
+    $loan = esigLoan();
     $service = app(ESignatureService::class);
 
     $agreement = $service->generate($loan, $admin->id);
-    $otp       = $service->sendOtp($agreement);
+    $otp = $service->sendOtp($agreement);
     $service->void($agreement, 'test void');
 
     $this->actingAs($admin)

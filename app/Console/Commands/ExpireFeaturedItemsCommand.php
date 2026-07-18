@@ -15,7 +15,8 @@ use Illuminate\Support\Facades\Log;
  */
 class ExpireFeaturedItemsCommand extends Command
 {
-    protected $signature   = 'lendr:expire-featured-items {--dry-run : Report without making changes}';
+    protected $signature = 'lendr:expire-featured-items {--dry-run : Report without making changes}';
+
     protected $description = 'Deactivate expired featured repo items and hot deals';
 
     public function handle(): int
@@ -37,10 +38,10 @@ class ExpireFeaturedItemsCommand extends Command
                 $slot->update(['is_active' => false]);
 
                 Log::info('[FeaturedItems] Slot expired and deactivated', [
-                    'slot_id'      => $slot->id,
+                    'slot_id' => $slot->id,
                     'repo_item_id' => $slot->repo_item_id,
-                    'tenant_id'    => $slot->tenant_id,
-                    'expired_at'   => $slot->expires_at,
+                    'tenant_id' => $slot->tenant_id,
+                    'expired_at' => $slot->expires_at,
                 ]);
             }
         }
@@ -60,9 +61,9 @@ class ExpireFeaturedItemsCommand extends Command
                 $deal->update(['is_active' => false]);
 
                 Log::info('[HotDeals] Deal expired and deactivated', [
-                    'deal_id'    => $deal->id,
-                    'title'      => $deal->title,
-                    'tenant_id'  => $deal->tenant_id,
+                    'deal_id' => $deal->id,
+                    'title' => $deal->title,
+                    'tenant_id' => $deal->tenant_id,
                     'expired_at' => $deal->expires_at,
                 ]);
             }

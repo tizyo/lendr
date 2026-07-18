@@ -18,8 +18,8 @@ class PlatformSmsConfig extends Model
 
     protected $casts = [
         'is_active' => 'boolean',
-        'sandbox'   => 'boolean',
-        'api_key'   => 'encrypted',
+        'sandbox' => 'boolean',
+        'api_key' => 'encrypted',
     ];
 
     protected $hidden = ['api_key'];
@@ -28,13 +28,19 @@ class PlatformSmsConfig extends Model
 
     public static function active(): ?self
     {
-        if (! Schema::hasTable('platform_sms_configs')) return null;
+        if (! Schema::hasTable('platform_sms_configs')) {
+            return null;
+        }
+
         return static::where('is_active', true)->first();
     }
 
     public static function allKeyed(): array
     {
-        if (! Schema::hasTable('platform_sms_configs')) return [];
+        if (! Schema::hasTable('platform_sms_configs')) {
+            return [];
+        }
+
         return static::all()->keyBy('provider')->all();
     }
 

@@ -11,7 +11,6 @@ use App\Http\Controllers\OnboardingController;
 use App\Http\Controllers\Pwa\AppController;
 use App\Http\Middleware\InitializeTenancy;
 use Illuminate\Support\Facades\Route;
-use Inertia\Inertia;
 
 /*
 |--------------------------------------------------------------------------
@@ -19,33 +18,33 @@ use Inertia\Inertia;
 | No tenancy context — marketing, onboarding.
 |--------------------------------------------------------------------------
 */
-Route::get('/',           [LandingController::class, 'home'])->name('home');
-Route::get('/about',      [LandingController::class, 'about'])->name('about');
-Route::get('/contact',    [LandingController::class, 'contact'])->name('contact');
-Route::get('/privacy',    [LandingController::class, 'privacy'])->name('privacy');
-Route::get('/terms',      [LandingController::class, 'terms'])->name('terms');
-Route::get('/marketplace',[LandingController::class, 'marketplace'])->name('marketplace');
-Route::get('/help',       [LandingController::class, 'help'])->name('help');
-Route::get('/changelog',  [LandingController::class, 'changelog'])->name('changelog');
-Route::get('/careers',    [LandingController::class, 'careers'])->name('careers');
-Route::get('/blog',       [LandingController::class, 'blog'])->name('blog');
-Route::get('/docs',       [LandingController::class, 'docs'])->name('docs');
+Route::get('/', [LandingController::class, 'home'])->name('home');
+Route::get('/about', [LandingController::class, 'about'])->name('about');
+Route::get('/contact', [LandingController::class, 'contact'])->name('contact');
+Route::get('/privacy', [LandingController::class, 'privacy'])->name('privacy');
+Route::get('/terms', [LandingController::class, 'terms'])->name('terms');
+Route::get('/marketplace', [LandingController::class, 'marketplace'])->name('marketplace');
+Route::get('/help', [LandingController::class, 'help'])->name('help');
+Route::get('/changelog', [LandingController::class, 'changelog'])->name('changelog');
+Route::get('/careers', [LandingController::class, 'careers'])->name('careers');
+Route::get('/blog', [LandingController::class, 'blog'])->name('blog');
+Route::get('/docs', [LandingController::class, 'docs'])->name('docs');
 
 // ─── Public Repo Marketplace (no tenant context required) ─────────────────
 Route::prefix('app')->name('pwa.public.')->group(function () {
-    Route::get('/repo',       [AppController::class, 'repoBrowse'])->name('repo.browse');
-    Route::get('/repo/{id}',  [AppController::class, 'repoShow'])->name('repo.show');
-    Route::get('/repo/auth/login',  [AppController::class, 'ghostLogin'])->name('repo.auth.login');
+    Route::get('/repo', [AppController::class, 'repoBrowse'])->name('repo.browse');
+    Route::get('/repo/{id}', [AppController::class, 'repoShow'])->name('repo.show');
+    Route::get('/repo/auth/login', [AppController::class, 'ghostLogin'])->name('repo.auth.login');
     Route::get('/repo/auth/verify', [AppController::class, 'ghostVerify'])->name('repo.auth.verify');
 });
 
-Route::get('/onboarding',                  [OnboardingController::class, 'show'])->name('onboarding');
-Route::post('/onboarding',                 [OnboardingController::class, 'store'])->name('onboarding.store');
-Route::get('/onboarding/success',          [OnboardingController::class, 'success'])->name('onboarding.success');
-Route::get('/onboarding/verify/{token}',   [OnboardingController::class, 'verifyEmail'])->name('onboarding.verify');
+Route::get('/onboarding', [OnboardingController::class, 'show'])->name('onboarding');
+Route::post('/onboarding', [OnboardingController::class, 'store'])->name('onboarding.store');
+Route::get('/onboarding/success', [OnboardingController::class, 'success'])->name('onboarding.success');
+Route::get('/onboarding/verify/{token}', [OnboardingController::class, 'verifyEmail'])->name('onboarding.verify');
 
 // Staff invitation (central domain — controller initializes tenancy manually)
-Route::get('/invitation/{tenant}/{token}',  [AcceptInvitationController::class, 'show'])->name('invitation.show');
+Route::get('/invitation/{tenant}/{token}', [AcceptInvitationController::class, 'show'])->name('invitation.show');
 Route::post('/invitation/{tenant}/{token}', [AcceptInvitationController::class, 'accept'])->name('invitation.accept');
 
 /*
@@ -55,14 +54,14 @@ Route::post('/invitation/{tenant}/{token}', [AcceptInvitationController::class, 
 |--------------------------------------------------------------------------
 */
 Route::prefix('landlord')->name('landlord.')->group(function () {
-    Route::get('/',                [PanelController::class, 'login'])->name('login');
-    Route::get('/dashboard',       [PanelController::class, 'dashboard'])->name('dashboard');
-    Route::get('/tenants',         [PanelController::class, 'tenants'])->name('tenants');
-    Route::get('/plan-configs',    [PanelController::class, 'planConfigs'])->name('plan-configs');
-    Route::get('/billing-settings',[PanelController::class, 'billingSettings'])->name('billing-settings');
-    Route::get('/support',           [PanelController::class, 'support'])->name('support');
+    Route::get('/', [PanelController::class, 'login'])->name('login');
+    Route::get('/dashboard', [PanelController::class, 'dashboard'])->name('dashboard');
+    Route::get('/tenants', [PanelController::class, 'tenants'])->name('tenants');
+    Route::get('/plan-configs', [PanelController::class, 'planConfigs'])->name('plan-configs');
+    Route::get('/billing-settings', [PanelController::class, 'billingSettings'])->name('billing-settings');
+    Route::get('/support', [PanelController::class, 'support'])->name('support');
     Route::get('/platform-settings', [PanelController::class, 'platformSettings'])->name('platform-settings');
-    Route::get('/featured-items',    [PanelController::class, 'featuredItems'])->name('featured-items');
+    Route::get('/featured-items', [PanelController::class, 'featuredItems'])->name('featured-items');
 });
 
 /*
@@ -73,12 +72,12 @@ Route::prefix('landlord')->name('landlord.')->group(function () {
 */
 Route::name('portal.')->group(function () {
     Route::middleware('guest')->group(function () {
-        Route::get('/portal/login',          [AuthController::class, 'showPortalLogin'])->name('login');
-        Route::post('/portal/login',         [AuthController::class, 'portalLogin'])->name('login.post');
-        Route::get('/portal/forgot-password',[AuthController::class, 'showPortalForgotPassword'])->name('password.request');
-        Route::post('/portal/forgot-password',[AuthController::class, 'sendPortalResetLink'])->name('password.email');
+        Route::get('/portal/login', [AuthController::class, 'showPortalLogin'])->name('login');
+        Route::post('/portal/login', [AuthController::class, 'portalLogin'])->name('login.post');
+        Route::get('/portal/forgot-password', [AuthController::class, 'showPortalForgotPassword'])->name('password.request');
+        Route::post('/portal/forgot-password', [AuthController::class, 'sendPortalResetLink'])->name('password.email');
         Route::get('/portal/reset-password', [AuthController::class, 'showPortalResetPassword'])->name('password.reset');
-        Route::post('/portal/reset-password',[AuthController::class, 'resetPortalPassword'])->name('password.update');
+        Route::post('/portal/reset-password', [AuthController::class, 'resetPortalPassword'])->name('password.update');
     });
 
     Route::post('/portal/logout', [AuthController::class, 'portalLogout'])
@@ -101,14 +100,14 @@ Route::middleware([InitializeTenancy::class])->group(function () {
 
     // ─── Auth (guest) ──────────────────────────────────────────────────
     Route::middleware('guest')->group(function () {
-        Route::get('/login',              [AuthController::class, 'showLogin'])->name('login');
-        Route::post('/login',             [AuthController::class, 'login'])->name('login.post');
-        Route::get('/2fa/challenge',      [AuthController::class, 'show2faChallenge'])->name('2fa.challenge');
-        Route::post('/2fa/challenge',     [AuthController::class, 'verify2fa'])->name('2fa.verify');
-        Route::get('/forgot-password',    [AuthController::class, 'showForgotPassword'])->name('password.request');
-        Route::post('/forgot-password',   [AuthController::class, 'sendResetLink'])->name('password.email');
-        Route::get('/reset-password',     [AuthController::class, 'showResetPassword'])->name('password.reset');
-        Route::post('/reset-password',    [AuthController::class, 'resetPassword'])->name('password.update');
+        Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
+        Route::post('/login', [AuthController::class, 'login'])->name('login.post');
+        Route::get('/2fa/challenge', [AuthController::class, 'show2faChallenge'])->name('2fa.challenge');
+        Route::post('/2fa/challenge', [AuthController::class, 'verify2fa'])->name('2fa.verify');
+        Route::get('/forgot-password', [AuthController::class, 'showForgotPassword'])->name('password.request');
+        Route::post('/forgot-password', [AuthController::class, 'sendResetLink'])->name('password.email');
+        Route::get('/reset-password', [AuthController::class, 'showResetPassword'])->name('password.reset');
+        Route::post('/reset-password', [AuthController::class, 'resetPassword'])->name('password.update');
     });
 
     Route::post('/logout', [AuthController::class, 'logout'])
@@ -117,15 +116,15 @@ Route::middleware([InitializeTenancy::class])->group(function () {
 
     // ─── Billing (auth only — bypasses tenant.status so expired tenants can pay) ──
     Route::middleware('auth')->group(function () {
-        Route::get('/billing',           [BillingController::class, 'index'])->name('billing.index');
+        Route::get('/billing', [BillingController::class, 'index'])->name('billing.index');
         Route::post('/billing/checkout', [BillingController::class, 'checkout'])->name('billing.checkout');
-        Route::get('/billing/callback',  [BillingController::class, 'callback'])->name('billing.callback');
+        Route::get('/billing/callback', [BillingController::class, 'callback'])->name('billing.callback');
     });
 
     // ─── Authenticated Admin ────────────────────────────────────────────
     Route::middleware(['auth', 'tenant.status'])->group(function () {
-        Route::get('/dashboard',         [DashboardController::class, 'index'])->name('dashboard');
-        Route::get('/portal/dashboard',  [DashboardController::class, 'index'])->name('portal.dashboard');
+        Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+        Route::get('/portal/dashboard', [DashboardController::class, 'index'])->name('portal.dashboard');
 
         require __DIR__.'/admin/borrowers.php';
         require __DIR__.'/admin/loans.php';
@@ -140,10 +139,10 @@ Route::middleware([InitializeTenancy::class])->group(function () {
         require __DIR__.'/admin/broadcast.php';
 
         // Support tickets (all plans)
-        Route::get('/support',                         [SupportTicketController::class, 'index'])->name('support.index');
-        Route::post('/support',                        [SupportTicketController::class, 'store'])->name('support.store');
-        Route::get('/support/{id}',                    [SupportTicketController::class, 'show'])->name('support.show');
-        Route::post('/support/{id}/reply',             [SupportTicketController::class, 'reply'])->name('support.reply');
+        Route::get('/support', [SupportTicketController::class, 'index'])->name('support.index');
+        Route::post('/support', [SupportTicketController::class, 'store'])->name('support.store');
+        Route::get('/support/{id}', [SupportTicketController::class, 'show'])->name('support.show');
+        Route::post('/support/{id}/reply', [SupportTicketController::class, 'reply'])->name('support.reply');
 
         // ── Plan-feature gated routes ───────────────────────────────────────
         Route::middleware('plan.feature:audit_log')->group(function () {

@@ -31,8 +31,8 @@ class LoyaltyService
             $payment->loan->borrower_id,
             $points,
             'earned',
-            'Repayment on loan #' . $payment->loan->loan_number,
-            $payment->id
+            'Repayment on loan #'.$payment->loan->loan_number,
+            $payment->id,
         );
     }
 
@@ -59,6 +59,7 @@ class LoyaltyService
         if (! $account) {
             return 0.0;
         }
+
         return LoyaltyTier::discountFor($account->tier);
     }
 
@@ -69,7 +70,7 @@ class LoyaltyService
     {
         return LoyaltyAccount::firstOrCreate(
             ['borrower_id' => $borrowerId],
-            ['total_points' => 0, 'tier' => 'Bronze']
+            ['total_points' => 0, 'tier' => 'Bronze'],
         );
     }
 
@@ -84,18 +85,18 @@ class LoyaltyService
             ->orderByDesc('created_at')
             ->get()
             ->map(fn ($p) => [
-                'id'          => $p->id,
-                'points'      => $p->points,
-                'type'        => $p->type,
+                'id' => $p->id,
+                'points' => $p->points,
+                'type' => $p->type,
                 'description' => $p->description,
-                'payment_id'  => $p->payment_id,
-                'created_at'  => $p->created_at?->toDateTimeString(),
+                'payment_id' => $p->payment_id,
+                'created_at' => $p->created_at?->toDateTimeString(),
             ]);
 
         return [
             'account' => [
                 'total_points' => $account->total_points,
-                'tier'         => $account->tier,
+                'tier' => $account->tier,
                 'fee_discount' => LoyaltyTier::discountFor($account->tier),
             ],
             'transactions' => $points,
@@ -109,24 +110,24 @@ class LoyaltyService
         int $points,
         string $type,
         string $description = '',
-        ?int $paymentId = null
+        ?int $paymentId = null,
     ): LoyaltyAccount {
         return DB::transaction(function () use ($borrowerId, $points, $type, $description, $paymentId) {
             LoyaltyPoint::create([
                 'borrower_id' => $borrowerId,
-                'points'      => $points,
-                'type'        => $type,
+                'points' => $points,
+                'type' => $type,
                 'description' => $description,
-                'payment_id'  => $paymentId,
+                'payment_id' => $paymentId,
             ]);
 
             $account = $this->getOrCreate($borrowerId);
             $newTotal = max(0, $account->total_points + $points);
-            $newTier  = LoyaltyTier::resolveFor($newTotal);
+            $newTier = LoyaltyTier::resolveFor($newTotal);
 
             $account->update([
                 'total_points' => $newTotal,
-                'tier'         => $newTier,
+                'tier' => $newTier,
             ]);
 
             return $account->fresh();

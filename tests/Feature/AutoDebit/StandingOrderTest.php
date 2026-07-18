@@ -37,14 +37,15 @@ function soAdmin(): User
 function soTenant(string $plan = 'enterprise'): Tenant
 {
     $tenant = Tenant::create([
-        'id'       => (string) Str::uuid(),
-        'name'     => 'MFI ' . uniqid(),
-        'slug'     => 'mfi-' . uniqid(),
-        'plan'     => $plan,
-        'status'   => 'active',
+        'id' => (string) Str::uuid(),
+        'name' => 'MFI '.uniqid(),
+        'slug' => 'mfi-'.uniqid(),
+        'plan' => $plan,
+        'status' => 'active',
         'currency' => 'ZMW',
         'timezone' => 'Africa/Lusaka',
     ]);
+
     return $tenant->refresh();
 }
 
@@ -55,30 +56,30 @@ function soTenant(string $plan = 'enterprise'): Tenant
 function soWallet(Tenant $tenant, array $attrs = []): TenantWallet
 {
     return TenantWallet::create(array_merge([
-        'tenant_id'        => $tenant->id,
-        'gateway'          => 'airtel_money',
-        'environment'      => 'sandbox',
-        'api_key'          => 'AIRTEL-KEY',
-        'api_secret'       => 'AIRTEL-SECRET',
+        'tenant_id' => $tenant->id,
+        'gateway' => 'airtel_money',
+        'environment' => 'sandbox',
+        'api_key' => 'AIRTEL-KEY',
+        'api_secret' => 'AIRTEL-SECRET',
         'disburse_enabled' => true,
-        'debit_enabled'    => true,
-        'is_active'        => true,
+        'debit_enabled' => true,
+        'is_active' => true,
     ], $attrs));
 }
 
 function soLoan(array $attrs = []): Loan
 {
-    $type     = LoanType::factory()->create();
-    $plan     = LoanPlan::factory()->create(['loan_type_id' => $type->id]);
+    $type = LoanType::factory()->create();
+    $plan = LoanPlan::factory()->create(['loan_type_id' => $type->id]);
     $borrower = Borrower::factory()->create(['phone' => '0966123456']);
 
     return Loan::factory()->create(array_merge([
-        'borrower_id'         => $borrower->id,
-        'loan_type_id'        => $type->id,
-        'loan_plan_id'        => $plan->id,
-        'created_by'          => null,
-        'status'              => LoanStatus::Active,
-        'principal_amount'    => 6000.00,
+        'borrower_id' => $borrower->id,
+        'loan_type_id' => $type->id,
+        'loan_plan_id' => $plan->id,
+        'created_by' => null,
+        'status' => LoanStatus::Active,
+        'principal_amount' => 6000.00,
         'outstanding_balance' => 6000.00,
     ], $attrs));
 }
@@ -86,29 +87,29 @@ function soLoan(array $attrs = []): Loan
 function makeOrder(Loan $loan, array $attrs = []): StandingOrder
 {
     $schedule = LoanSchedule::create([
-        'loan_id'           => $loan->id,
+        'loan_id' => $loan->id,
         'instalment_number' => $attrs['instalment_number'] ?? 1,
-        'due_date'          => now()->subDay(),
-        'principal_due'     => 2000.00,
-        'interest_due'      => 100.00,
-        'total_due'         => 2100.00,
-        'outstanding'       => 2100.00,
-        'is_paid'           => false,
+        'due_date' => now()->subDay(),
+        'principal_due' => 2000.00,
+        'interest_due' => 100.00,
+        'total_due' => 2100.00,
+        'outstanding' => 2100.00,
+        'is_paid' => false,
     ]);
 
     unset($attrs['instalment_number']);
 
     return StandingOrder::create(array_merge([
-        'loan_id'          => $loan->id,
+        'loan_id' => $loan->id,
         'loan_schedule_id' => $schedule->id,
-        'borrower_id'      => $loan->borrower_id,
-        'amount'           => 2100.00,
-        'phone'            => '0966123456',
-        'gateway'          => 'airtel_money',
-        'due_date'         => now()->subDay(),
-        'status'           => 'pending',
-        'retry_count'      => 0,
-        'max_retries'      => 3,
+        'borrower_id' => $loan->borrower_id,
+        'amount' => 2100.00,
+        'phone' => '0966123456',
+        'gateway' => 'airtel_money',
+        'due_date' => now()->subDay(),
+        'status' => 'pending',
+        'retry_count' => 0,
+        'max_retries' => 3,
     ], $attrs));
 }
 
@@ -120,7 +121,7 @@ it('recordFailure schedules retry when retries remain', function () {
     $tenant = soTenant();
     tenancy()->initialize($tenant);
 
-    $loan  = soLoan();
+    $loan = soLoan();
     $order = makeOrder($loan, ['retry_count' => 0, 'max_retries' => 3]);
 
     $order->recordFailure('API timeout');
@@ -138,7 +139,7 @@ it('recordFailure marks failed when retries exhausted', function () {
     $tenant = soTenant();
     tenancy()->initialize($tenant);
 
-    $loan  = soLoan();
+    $loan = soLoan();
     $order = makeOrder($loan, ['retry_count' => 2, 'max_retries' => 3]);
 
     $order->recordFailure('Network error');
@@ -154,7 +155,7 @@ it('retry delay increases with each attempt', function () {
     $tenant = soTenant();
     tenancy()->initialize($tenant);
 
-    $loan  = soLoan();
+    $loan = soLoan();
     $order = makeOrder($loan, ['retry_count' => 0, 'max_retries' => 3]);
 
     // First failure — retry_count becomes 1, next_attempt_at = now + 1 day
@@ -180,7 +181,7 @@ it('can list standing orders for a loan', function () {
     tenancy()->initialize($tenant);
 
     $admin = soAdmin();
-    $loan  = soLoan();
+    $loan = soLoan();
     makeOrder($loan, ['instalment_number' => 1]);
     makeOrder($loan, ['instalment_number' => 2, 'status' => 'completed']);
 
@@ -198,7 +199,7 @@ it('can cancel a pending standing order', function () {
     tenancy()->initialize($tenant);
 
     $admin = soAdmin();
-    $loan  = soLoan();
+    $loan = soLoan();
     $order = makeOrder($loan, ['status' => 'pending']);
 
     $this->actingAs($admin)
@@ -216,7 +217,7 @@ it('can cancel a failed standing order', function () {
     tenancy()->initialize($tenant);
 
     $admin = soAdmin();
-    $loan  = soLoan();
+    $loan = soLoan();
     $order = makeOrder($loan, ['status' => 'failed']);
 
     $this->actingAs($admin)
@@ -231,7 +232,7 @@ it('cannot cancel a completed standing order', function () {
     tenancy()->initialize($tenant);
 
     $admin = soAdmin();
-    $loan  = soLoan();
+    $loan = soLoan();
     $order = makeOrder($loan, ['status' => 'completed']);
 
     $this->actingAs($admin)
@@ -246,7 +247,7 @@ it('cannot cancel a processing standing order', function () {
     tenancy()->initialize($tenant);
 
     $admin = soAdmin();
-    $loan  = soLoan();
+    $loan = soLoan();
     $order = makeOrder($loan, ['status' => 'processing']);
 
     $this->actingAs($admin)
@@ -265,12 +266,12 @@ it('AutoDebitService marks order processing and calls provider API', function ()
     $wallet = soWallet($tenant); // root DB — must be before tenancy()->initialize()
     tenancy()->initialize($tenant);
 
-    $loan  = soLoan();
+    $loan = soLoan();
     $order = makeOrder($loan);
 
     Http::fake(['*' => Http::response([
         'status' => 'SUCCESS',
-        'data'   => ['transactionId' => 'AIRTEL-TXN-001'],
+        'data' => ['transactionId' => 'AIRTEL-TXN-001'],
     ], 200)]);
 
     $service = app(AutoDebitService::class);
@@ -288,18 +289,18 @@ it('AutoDebitService::confirmFromWebhook records payment and marks completed', f
     $wallet = soWallet($tenant); // root DB — must be before tenancy()->initialize()
     tenancy()->initialize($tenant);
 
-    $loan  = soLoan();
+    $loan = soLoan();
     $order = makeOrder($loan, [
-        'status'             => 'processing',
-        'provider_reference' => 'LENDR-DEBIT-1-' . time(),
+        'status' => 'processing',
+        'provider_reference' => 'LENDR-DEBIT-1-'.time(),
     ]);
 
     $payload = [
         'transaction_id' => 'AIRTEL-TXN-CONFIRM',
-        'amount'         => 2100.00,
-        'phone'          => '0966123456',
-        'status'         => 'success',
-        'raw'            => ['provider' => 'airtel'],
+        'amount' => 2100.00,
+        'phone' => '0966123456',
+        'status' => 'success',
+        'raw' => ['provider' => 'airtel'],
     ];
 
     $service = app(AutoDebitService::class);
@@ -320,18 +321,18 @@ it('AutoDebitService::confirmFromWebhook is idempotent', function () {
     $wallet = soWallet($tenant); // root DB — must be before tenancy()->initialize()
     tenancy()->initialize($tenant);
 
-    $loan  = soLoan();
+    $loan = soLoan();
     $order = makeOrder($loan, [
-        'status'             => 'processing',
-        'provider_reference' => 'LENDR-DEBIT-1-' . time(),
+        'status' => 'processing',
+        'provider_reference' => 'LENDR-DEBIT-1-'.time(),
     ]);
 
     $payload = [
         'transaction_id' => 'AIRTEL-TXN-DUP',
-        'amount'         => 2100.00,
-        'phone'          => '0966123456',
-        'status'         => 'success',
-        'raw'            => [],
+        'amount' => 2100.00,
+        'phone' => '0966123456',
+        'status' => 'success',
+        'raw' => [],
     ];
 
     $service = app(AutoDebitService::class);
@@ -355,7 +356,7 @@ it('ProcessAutoDebitJob cancels order when wallet becomes inactive', function ()
     $wallet = soWallet($tenant, ['is_active' => false]); // root DB
     tenancy()->initialize($tenant);
 
-    $loan  = soLoan();
+    $loan = soLoan();
     $order = makeOrder($loan, ['status' => 'pending']);
 
     dispatch_sync(new ProcessAutoDebitJob($order, $wallet->id));
@@ -371,7 +372,7 @@ it('ProcessAutoDebitJob skips completed orders', function () {
     $wallet = soWallet($tenant); // root DB
     tenancy()->initialize($tenant);
 
-    $loan  = soLoan();
+    $loan = soLoan();
     $order = makeOrder($loan, ['status' => 'completed']);
 
     Http::fake(); // should not call API
@@ -397,26 +398,26 @@ it('process-standing-orders command dispatches jobs for due orders', function ()
     $loan = soLoan();
 
     $schedule = LoanSchedule::create([
-        'loan_id'           => $loan->id,
+        'loan_id' => $loan->id,
         'instalment_number' => 1,
-        'due_date'          => now()->subDay(),
-        'principal_due'     => 2000, 'interest_due' => 100, 'total_due' => 2100,
-        'outstanding'       => 2100,
-        'is_paid'           => false,
+        'due_date' => now()->subDay(),
+        'principal_due' => 2000, 'interest_due' => 100, 'total_due' => 2100,
+        'outstanding' => 2100,
+        'is_paid' => false,
     ]);
 
     StandingOrder::create([
-        'loan_id'          => $loan->id,
+        'loan_id' => $loan->id,
         'loan_schedule_id' => $schedule->id,
-        'borrower_id'      => $loan->borrower_id,
-        'amount'           => 2100,
-        'phone'            => '0966123456',
-        'gateway'          => 'airtel_money',
-        'due_date'         => now()->subDay(),
-        'status'           => 'pending',
-        'retry_count'      => 0,
-        'max_retries'      => 3,
-        'next_attempt_at'  => null,
+        'borrower_id' => $loan->borrower_id,
+        'amount' => 2100,
+        'phone' => '0966123456',
+        'gateway' => 'airtel_money',
+        'due_date' => now()->subDay(),
+        'status' => 'pending',
+        'retry_count' => 0,
+        'max_retries' => 3,
+        'next_attempt_at' => null,
     ]);
 
     tenancy()->end();
@@ -437,26 +438,26 @@ it('process-standing-orders command dry-run does not dispatch jobs', function ()
     $loan = soLoan();
 
     $schedule = LoanSchedule::create([
-        'loan_id'           => $loan->id,
+        'loan_id' => $loan->id,
         'instalment_number' => 1,
-        'due_date'          => now()->subDay(),
-        'principal_due'     => 2000, 'interest_due' => 100, 'total_due' => 2100,
-        'outstanding'       => 2100,
-        'is_paid'           => false,
+        'due_date' => now()->subDay(),
+        'principal_due' => 2000, 'interest_due' => 100, 'total_due' => 2100,
+        'outstanding' => 2100,
+        'is_paid' => false,
     ]);
 
     StandingOrder::create([
-        'loan_id'          => $loan->id,
+        'loan_id' => $loan->id,
         'loan_schedule_id' => $schedule->id,
-        'borrower_id'      => $loan->borrower_id,
-        'amount'           => 2100,
-        'phone'            => '0966123456',
-        'gateway'          => 'airtel_money',
-        'due_date'         => now()->subDay(),
-        'status'           => 'pending',
-        'retry_count'      => 0,
-        'max_retries'      => 3,
-        'next_attempt_at'  => null,
+        'borrower_id' => $loan->borrower_id,
+        'amount' => 2100,
+        'phone' => '0966123456',
+        'gateway' => 'airtel_money',
+        'due_date' => now()->subDay(),
+        'status' => 'pending',
+        'retry_count' => 0,
+        'max_retries' => 3,
+        'next_attempt_at' => null,
     ]);
 
     tenancy()->end();

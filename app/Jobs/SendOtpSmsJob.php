@@ -13,13 +13,14 @@ class SendOtpSmsJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    public int $tries   = 3;
+    public int $tries = 3;
+
     public int $backoff = 10; // seconds between retries
 
     public function __construct(
         public readonly string $phone,
         public readonly string $otp,
-        public readonly int    $ttlMinutes = 5,
+        public readonly int $ttlMinutes = 5,
     ) {}
 
     public function handle(SmsService $sms): void

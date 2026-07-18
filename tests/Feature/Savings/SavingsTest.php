@@ -20,27 +20,27 @@ function savingsBorrower(): Borrower
 function openAccount(User $admin, Borrower $borrower, array $extra = []): SavingsAccount
 {
     return SavingsAccount::create(array_merge([
-        'borrower_id'    => $borrower->id,
-        'opened_by'      => $admin->id,
+        'borrower_id' => $borrower->id,
+        'opened_by' => $admin->id,
         'account_number' => SavingsAccount::generateAccountNumber(),
-        'type'           => 'regular',
-        'balance'        => 0,
-        'interest_rate'  => 5.0,
-        'status'         => 'active',
-        'opened_date'    => now()->toDateString(),
+        'type' => 'regular',
+        'balance' => 0,
+        'interest_rate' => 5.0,
+        'status' => 'active',
+        'opened_date' => now()->toDateString(),
     ], $extra));
 }
 
 // ─── Account tests ────────────────────────────────────────────────────────────
 
 test('can open a new savings account', function () {
-    $admin    = savingsAdmin();
+    $admin = savingsAdmin();
     $borrower = savingsBorrower();
 
     $resp = $this->actingAs($admin)
         ->postJson(route('api.v1.savings.store'), [
-            'borrower_id'   => $borrower->id,
-            'type'          => 'regular',
+            'borrower_id' => $borrower->id,
+            'type' => 'regular',
             'interest_rate' => 5.0,
         ])
         ->assertStatus(201)
@@ -52,7 +52,7 @@ test('can open a new savings account', function () {
 })->group('savings');
 
 test('account number is auto-generated', function () {
-    $admin    = savingsAdmin();
+    $admin = savingsAdmin();
     $borrower = savingsBorrower();
 
     $resp = $this->actingAs($admin)
@@ -75,7 +75,7 @@ test('opening account requires valid borrower_id and type', function () {
 })->group('savings');
 
 test('index lists savings accounts', function () {
-    $admin    = savingsAdmin();
+    $admin = savingsAdmin();
     $borrower = savingsBorrower();
 
     openAccount($admin, $borrower);
@@ -88,7 +88,7 @@ test('index lists savings accounts', function () {
 })->group('savings');
 
 test('index filters by status', function () {
-    $admin    = savingsAdmin();
+    $admin = savingsAdmin();
     $borrower = savingsBorrower();
 
     openAccount($admin, $borrower, ['status' => 'active']);
@@ -104,9 +104,9 @@ test('index filters by status', function () {
 // ─── Deposit tests ────────────────────────────────────────────────────────────
 
 test('can deposit into an active account', function () {
-    $admin    = savingsAdmin();
+    $admin = savingsAdmin();
     $borrower = savingsBorrower();
-    $account  = openAccount($admin, $borrower);
+    $account = openAccount($admin, $borrower);
 
     $resp = $this->actingAs($admin)
         ->postJson(route('api.v1.savings.deposit', $account), ['amount' => 1000])
@@ -117,9 +117,9 @@ test('can deposit into an active account', function () {
 })->group('savings');
 
 test('deposit requires positive amount', function () {
-    $admin    = savingsAdmin();
+    $admin = savingsAdmin();
     $borrower = savingsBorrower();
-    $account  = openAccount($admin, $borrower);
+    $account = openAccount($admin, $borrower);
 
     $this->actingAs($admin)
         ->postJson(route('api.v1.savings.deposit', $account), ['amount' => 0])
@@ -127,9 +127,9 @@ test('deposit requires positive amount', function () {
 })->group('savings');
 
 test('cannot deposit into a closed account', function () {
-    $admin    = savingsAdmin();
+    $admin = savingsAdmin();
     $borrower = savingsBorrower();
-    $account  = openAccount($admin, $borrower, ['status' => 'closed']);
+    $account = openAccount($admin, $borrower, ['status' => 'closed']);
 
     $this->actingAs($admin)
         ->postJson(route('api.v1.savings.deposit', $account), ['amount' => 500])
@@ -139,9 +139,9 @@ test('cannot deposit into a closed account', function () {
 // ─── Withdrawal tests ─────────────────────────────────────────────────────────
 
 test('can withdraw from account with sufficient balance', function () {
-    $admin    = savingsAdmin();
+    $admin = savingsAdmin();
     $borrower = savingsBorrower();
-    $account  = openAccount($admin, $borrower, ['balance' => 2000]);
+    $account = openAccount($admin, $borrower, ['balance' => 2000]);
 
     $resp = $this->actingAs($admin)
         ->postJson(route('api.v1.savings.withdraw', $account), ['amount' => 500])
@@ -151,9 +151,9 @@ test('can withdraw from account with sufficient balance', function () {
 })->group('savings');
 
 test('withdrawal is rejected if balance is insufficient', function () {
-    $admin    = savingsAdmin();
+    $admin = savingsAdmin();
     $borrower = savingsBorrower();
-    $account  = openAccount($admin, $borrower, ['balance' => 100]);
+    $account = openAccount($admin, $borrower, ['balance' => 100]);
 
     $this->actingAs($admin)
         ->postJson(route('api.v1.savings.withdraw', $account), ['amount' => 500])
@@ -163,9 +163,9 @@ test('withdrawal is rejected if balance is insufficient', function () {
 // ─── Interest accrual ─────────────────────────────────────────────────────────
 
 test('can accrue monthly interest', function () {
-    $admin    = savingsAdmin();
+    $admin = savingsAdmin();
     $borrower = savingsBorrower();
-    $account  = openAccount($admin, $borrower, ['balance' => 12000, 'interest_rate' => 12.0]);
+    $account = openAccount($admin, $borrower, ['balance' => 12000, 'interest_rate' => 12.0]);
 
     // Monthly = 12000 * (12/100) / 12 = 120
     $resp = $this->actingAs($admin)
@@ -178,9 +178,9 @@ test('can accrue monthly interest', function () {
 })->group('savings');
 
 test('interest accrual fails when balance is zero', function () {
-    $admin    = savingsAdmin();
+    $admin = savingsAdmin();
     $borrower = savingsBorrower();
-    $account  = openAccount($admin, $borrower, ['balance' => 0]);
+    $account = openAccount($admin, $borrower, ['balance' => 0]);
 
     $this->actingAs($admin)
         ->postJson(route('api.v1.savings.accrue-interest', $account))
@@ -190,9 +190,9 @@ test('interest accrual fails when balance is zero', function () {
 // ─── Statement ────────────────────────────────────────────────────────────────
 
 test('statement returns paginated transactions', function () {
-    $admin    = savingsAdmin();
+    $admin = savingsAdmin();
     $borrower = savingsBorrower();
-    $account  = openAccount($admin, $borrower);
+    $account = openAccount($admin, $borrower);
 
     $this->actingAs($admin)->postJson(route('api.v1.savings.deposit', $account), ['amount' => 100]);
     $this->actingAs($admin)->postJson(route('api.v1.savings.deposit', $account), ['amount' => 200]);

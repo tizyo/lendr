@@ -31,10 +31,10 @@ class LoanCalculatorService
     private function bcround(string $num, int $scale = self::SCALE): string
     {
         $isNeg = str_starts_with($num, '-');
-        $abs   = $isNeg ? substr($num, 1) : $num;
+        $abs = $isNeg ? substr($num, 1) : $num;
 
         $increment = bcdiv('5', bcpow('10', (string) ($scale + 1)), $scale + 1);
-        $rounded   = bcadd($abs, $increment, $scale);
+        $rounded = bcadd($abs, $increment, $scale);
 
         return $isNeg && bccomp($rounded, '0', $scale) !== 0 ? '-'.$rounded : $rounded;
     }
@@ -53,7 +53,7 @@ class LoanCalculatorService
      */
     public function calculate(LoanPlan $plan, float $principal, int $tenure, string $disbursementDate): array
     {
-        $amounts  = $this->calculateAmounts($plan, $principal, $tenure);
+        $amounts = $this->calculateAmounts($plan, $principal, $tenure);
         $schedule = $this->generateSchedule($plan, $principal, $tenure, $disbursementDate, $amounts['interest_amount']);
 
         return array_merge($amounts, ['schedule' => $schedule]);
@@ -67,19 +67,19 @@ class LoanCalculatorService
         $principalStr = (string) $principal;
 
         $interestAmount = $this->bcround($this->computeInterest($plan, $principalStr, $tenure));
-        $processingFee  = $this->bcround(bcmul($principalStr, bcdiv((string) $plan->processing_fee, '100', self::RATE_SCALE), self::RATE_SCALE));
-        $insuranceFee   = $this->bcround(bcmul($principalStr, bcdiv((string) $plan->insurance_fee, '100', self::RATE_SCALE), self::RATE_SCALE));
+        $processingFee = $this->bcround(bcmul($principalStr, bcdiv((string) $plan->processing_fee, '100', self::RATE_SCALE), self::RATE_SCALE));
+        $insuranceFee = $this->bcround(bcmul($principalStr, bcdiv((string) $plan->insurance_fee, '100', self::RATE_SCALE), self::RATE_SCALE));
 
         $totalPayable = $this->bcround(
-            bcadd(bcadd(bcadd($principalStr, $interestAmount, self::RATE_SCALE), $processingFee, self::RATE_SCALE), $insuranceFee, self::RATE_SCALE)
+            bcadd(bcadd(bcadd($principalStr, $interestAmount, self::RATE_SCALE), $processingFee, self::RATE_SCALE), $insuranceFee, self::RATE_SCALE),
         );
 
         return [
             'principal_amount' => (float) $this->bcround($principalStr),
-            'interest_amount'  => (float) $interestAmount,
-            'processing_fee'   => (float) $processingFee,
-            'insurance_fee'    => (float) $insuranceFee,
-            'total_payable'    => (float) $totalPayable,
+            'interest_amount' => (float) $interestAmount,
+            'processing_fee' => (float) $processingFee,
+            'insurance_fee' => (float) $insuranceFee,
+            'total_payable' => (float) $totalPayable,
         ];
     }
 
@@ -88,25 +88,25 @@ class LoanCalculatorService
      */
     public function generateSchedule(LoanPlan $plan, float $principal, int $tenure, string $disbursementDate, float $interestAmount): array
     {
-        $disbursed    = Carbon::parse($disbursementDate);
-        $schedule     = [];
-        $schedStr     = $this->sched($plan->repayment_schedule);
+        $disbursed = Carbon::parse($disbursementDate);
+        $schedule = [];
+        $schedStr = $this->sched($plan->repayment_schedule);
         $principalStr = (string) $principal;
-        $interestStr  = (string) $interestAmount;
+        $interestStr = (string) $interestAmount;
 
         if ($schedStr === 'bullet') {
             // Single lump-sum payment at maturity
             $dueDate = $this->addPeriod($disbursed, $schedStr, 1);
-            $total   = $this->bcround(bcadd($principalStr, $interestStr, self::RATE_SCALE));
+            $total = $this->bcround(bcadd($principalStr, $interestStr, self::RATE_SCALE));
 
             $schedule[] = [
                 'instalment_number' => 1,
-                'due_date'          => $dueDate->toDateString(),
-                'principal_due'     => (float) $this->bcround($principalStr),
-                'interest_due'      => (float) $this->bcround($interestStr),
-                'fee_due'           => 0.00,
-                'total_due'         => (float) $total,
-                'outstanding'       => (float) $total,
+                'due_date' => $dueDate->toDateString(),
+                'principal_due' => (float) $this->bcround($principalStr),
+                'interest_due' => (float) $this->bcround($interestStr),
+                'fee_due' => 0.00,
+                'total_due' => (float) $total,
+                'outstanding' => (float) $total,
             ];
 
             return $schedule;
@@ -135,7 +135,7 @@ class LoanCalculatorService
 
     private function computeInterest(LoanPlan $plan, string $principal, int $tenure): string
     {
-        $rate  = bcdiv((string) $plan->interest_rate, '100', self::RATE_SCALE);
+        $rate = bcdiv((string) $plan->interest_rate, '100', self::RATE_SCALE);
         $sched = $this->sched($plan->repayment_schedule);
 
         return match ($plan->interest_type) {
@@ -164,7 +164,7 @@ class LoanCalculatorService
         }
 
         $periodRate = $this->periodRate($rate, $interestPeriod, $repaymentSchedule);
-        $emi        = $this->emi($principal, $periodRate, $instalments);
+        $emi = $this->emi($principal, $periodRate, $instalments);
 
         return $this->bcround(bcsub(bcmul($emi, (string) $instalments, self::RATE_SCALE), $principal, self::RATE_SCALE));
     }
@@ -177,7 +177,7 @@ class LoanCalculatorService
 
         // For compound: use EMI formula — same as reducing balance
         $periodRate = $this->periodRate($rate, $interestPeriod, $repaymentSchedule);
-        $emi        = $this->emi($principal, $periodRate, $instalments);
+        $emi = $this->emi($principal, $periodRate, $instalments);
 
         return $this->bcround(bcsub(bcmul($emi, (string) $instalments, self::RATE_SCALE), $principal, self::RATE_SCALE));
     }
@@ -187,9 +187,9 @@ class LoanCalculatorService
     private function flatSchedule(LoanPlan $plan, string $principal, int $instalments, string $totalInterest, Carbon $disbursed, string $schedStr): array
     {
         $principalPerInstalment = $this->bcround(bcdiv($principal, (string) $instalments, self::RATE_SCALE));
-        $interestPerInstalment  = $this->bcround(bcdiv($totalInterest, (string) $instalments, self::RATE_SCALE));
+        $interestPerInstalment = $this->bcround(bcdiv($totalInterest, (string) $instalments, self::RATE_SCALE));
         $schedule = [];
-        $balance  = $principal;
+        $balance = $principal;
 
         for ($i = 1; $i <= $instalments; $i++) {
             $dueDate = $this->addPeriod($disbursed, $schedStr, $i);
@@ -204,16 +204,16 @@ class LoanCalculatorService
                 : $interestPerInstalment;
 
             $totalDue = $this->bcround(bcadd($principalDue, $interestDue, self::RATE_SCALE));
-            $balance  = $this->bcround(bcsub($balance, $principalDue, self::RATE_SCALE));
+            $balance = $this->bcround(bcsub($balance, $principalDue, self::RATE_SCALE));
 
             $schedule[] = [
                 'instalment_number' => $i,
-                'due_date'          => $dueDate->toDateString(),
-                'principal_due'     => (float) $principalDue,
-                'interest_due'      => (float) $interestDue,
-                'fee_due'           => 0.00,
-                'total_due'         => (float) $totalDue,
-                'outstanding'       => (float) $totalDue,
+                'due_date' => $dueDate->toDateString(),
+                'principal_due' => (float) $principalDue,
+                'interest_due' => (float) $interestDue,
+                'fee_due' => 0.00,
+                'total_due' => (float) $totalDue,
+                'outstanding' => (float) $totalDue,
             ];
         }
 
@@ -222,17 +222,17 @@ class LoanCalculatorService
 
     private function reducingBalanceSchedule(LoanPlan $plan, string $principal, int $instalments, Carbon $disbursed, string $schedStr): array
     {
-        $rate     = bcdiv((string) $plan->interest_rate, '100', self::RATE_SCALE);
+        $rate = bcdiv((string) $plan->interest_rate, '100', self::RATE_SCALE);
         $schedule = [];
-        $balance  = $principal;
+        $balance = $principal;
 
         // If interest period differs from repayment period, normalise
         $periodRate = $this->periodRate($rate, $plan->interest_period, $schedStr);
-        $emi        = $this->emi($principal, $periodRate, $instalments);
+        $emi = $this->emi($principal, $periodRate, $instalments);
 
         for ($i = 1; $i <= $instalments; $i++) {
-            $dueDate      = $this->addPeriod($disbursed, $schedStr, $i);
-            $interestDue  = $this->bcround(bcmul($balance, $periodRate, self::RATE_SCALE));
+            $dueDate = $this->addPeriod($disbursed, $schedStr, $i);
+            $interestDue = $this->bcround(bcmul($balance, $periodRate, self::RATE_SCALE));
             $principalDue = ($i === $instalments)
                 ? $this->bcround($balance)
                 : $this->bcround(bcsub($emi, $interestDue, self::RATE_SCALE));
@@ -242,16 +242,16 @@ class LoanCalculatorService
             }
 
             $totalDue = $this->bcround(bcadd($principalDue, $interestDue, self::RATE_SCALE));
-            $balance  = $this->bcround(bcsub($balance, $principalDue, self::RATE_SCALE));
+            $balance = $this->bcround(bcsub($balance, $principalDue, self::RATE_SCALE));
 
             $schedule[] = [
                 'instalment_number' => $i,
-                'due_date'          => $dueDate->toDateString(),
-                'principal_due'     => (float) $principalDue,
-                'interest_due'      => (float) $interestDue,
-                'fee_due'           => 0.00,
-                'total_due'         => (float) $totalDue,
-                'outstanding'       => (float) $totalDue,
+                'due_date' => $dueDate->toDateString(),
+                'principal_due' => (float) $principalDue,
+                'interest_due' => (float) $interestDue,
+                'fee_due' => 0.00,
+                'total_due' => (float) $totalDue,
+                'outstanding' => (float) $totalDue,
             ];
         }
 
@@ -276,9 +276,9 @@ class LoanCalculatorService
             return $this->bcround(bcdiv($principal, (string) $n, self::RATE_SCALE));
         }
 
-        $onePlusR    = bcadd('1', $periodRate, self::RATE_SCALE);
-        $pow         = bcpow($onePlusR, (string) $n, self::RATE_SCALE);
-        $numerator   = bcmul(bcmul($principal, $periodRate, self::RATE_SCALE), $pow, self::RATE_SCALE);
+        $onePlusR = bcadd('1', $periodRate, self::RATE_SCALE);
+        $pow = bcpow($onePlusR, (string) $n, self::RATE_SCALE);
+        $numerator = bcmul(bcmul($principal, $periodRate, self::RATE_SCALE), $pow, self::RATE_SCALE);
         $denominator = bcsub($pow, '1', self::RATE_SCALE);
 
         return $this->bcround(bcdiv($numerator, $denominator, self::RATE_SCALE));
@@ -291,20 +291,20 @@ class LoanCalculatorService
     {
         // First convert interest rate to daily rate
         $dailyRate = match ($interestPeriod) {
-            'daily'    => $annualOrPeriodRate,
-            'weekly'   => bcdiv($annualOrPeriodRate, '7', self::RATE_SCALE),
-            'monthly'  => bcdiv($annualOrPeriodRate, '30', self::RATE_SCALE),
+            'daily' => $annualOrPeriodRate,
+            'weekly' => bcdiv($annualOrPeriodRate, '7', self::RATE_SCALE),
+            'monthly' => bcdiv($annualOrPeriodRate, '30', self::RATE_SCALE),
             'annually' => bcdiv($annualOrPeriodRate, '365', self::RATE_SCALE),
-            default    => bcdiv($annualOrPeriodRate, '30', self::RATE_SCALE),
+            default => bcdiv($annualOrPeriodRate, '30', self::RATE_SCALE),
         };
 
         // Then convert to repayment period rate
         return match ($repaymentSchedule) {
-            'daily'     => $dailyRate,
-            'weekly'    => bcmul($dailyRate, '7', self::RATE_SCALE),
+            'daily' => $dailyRate,
+            'weekly' => bcmul($dailyRate, '7', self::RATE_SCALE),
             'bi_weekly' => bcmul($dailyRate, '14', self::RATE_SCALE),
-            'monthly'   => bcmul($dailyRate, '30', self::RATE_SCALE),
-            default     => bcmul($dailyRate, '30', self::RATE_SCALE),
+            'monthly' => bcmul($dailyRate, '30', self::RATE_SCALE),
+            default => bcmul($dailyRate, '30', self::RATE_SCALE),
         };
     }
 
@@ -320,19 +320,19 @@ class LoanCalculatorService
 
         // Convert tenure to days first
         $days = match ($tenureType) {
-            'days'   => (string) $tenure,
-            'weeks'  => bcmul((string) $tenure, '7'),
+            'days' => (string) $tenure,
+            'weeks' => bcmul((string) $tenure, '7'),
             'months' => bcmul((string) $tenure, '30'),
-            default  => bcmul((string) $tenure, '30'),
+            default => bcmul((string) $tenure, '30'),
         };
 
         // Convert days to the interest period unit
         return match ($interestPeriod) {
-            'daily'    => $days,
-            'weekly'   => bcdiv($days, '7', self::RATE_SCALE),
-            'monthly'  => bcdiv($days, '30', self::RATE_SCALE),
+            'daily' => $days,
+            'weekly' => bcdiv($days, '7', self::RATE_SCALE),
+            'monthly' => bcdiv($days, '30', self::RATE_SCALE),
             'annually' => bcdiv($days, '365', self::RATE_SCALE),
-            default    => bcdiv($days, '30', self::RATE_SCALE),
+            default => bcdiv($days, '30', self::RATE_SCALE),
         };
     }
 
@@ -344,12 +344,12 @@ class LoanCalculatorService
         $clone = $base->copy();
 
         return match ($repaymentSchedule) {
-            'daily'     => $clone->addDays($n),
-            'weekly'    => $clone->addWeeks($n),
+            'daily' => $clone->addDays($n),
+            'weekly' => $clone->addWeeks($n),
             'bi_weekly' => $clone->addWeeks($n * 2),
-            'monthly'   => $clone->addMonths($n),
-            'bullet'    => $clone->addMonths($n), // maturity date = 1 period from disbursement
-            default     => $clone->addMonths($n),
+            'monthly' => $clone->addMonths($n),
+            'bullet' => $clone->addMonths($n), // maturity date = 1 period from disbursement
+            default => $clone->addMonths($n),
         };
     }
 
@@ -372,15 +372,15 @@ class LoanCalculatorService
      */
     public function preview(array $params): array
     {
-        $plan = new LoanPlan();
+        $plan = new LoanPlan;
         $plan->forceFill([
-            'interest_rate'      => $params['interest_rate'],
-            'interest_type'      => $params['interest_type'],
-            'interest_period'    => $params['interest_period'],
-            'tenure_type'        => $params['tenure_type'],
+            'interest_rate' => $params['interest_rate'],
+            'interest_type' => $params['interest_type'],
+            'interest_period' => $params['interest_period'],
+            'tenure_type' => $params['tenure_type'],
             'repayment_schedule' => $params['repayment_schedule'],
-            'processing_fee'     => $params['processing_fee'] ?? 0,
-            'insurance_fee'      => $params['insurance_fee']  ?? 0,
+            'processing_fee' => $params['processing_fee'] ?? 0,
+            'insurance_fee' => $params['insurance_fee'] ?? 0,
         ]);
 
         $startDate = $params['start_date'] ?? now()->toDateString();
@@ -394,15 +394,15 @@ class LoanCalculatorService
     public function maturityDate(string $disbursementDate, LoanPlan $plan, int $tenure): string
     {
         $disbursed = Carbon::parse($disbursementDate);
-        $schedStr  = $this->sched($plan->repayment_schedule);
+        $schedStr = $this->sched($plan->repayment_schedule);
 
         if ($schedStr === 'bullet') {
             // Tenure in tenure_type units
             return match ($plan->tenure_type) {
-                'days'   => $disbursed->addDays($tenure)->toDateString(),
-                'weeks'  => $disbursed->addWeeks($tenure)->toDateString(),
+                'days' => $disbursed->addDays($tenure)->toDateString(),
+                'weeks' => $disbursed->addWeeks($tenure)->toDateString(),
                 'months' => $disbursed->addMonths($tenure)->toDateString(),
-                default  => $disbursed->addMonths($tenure)->toDateString(),
+                default => $disbursed->addMonths($tenure)->toDateString(),
             };
         }
 

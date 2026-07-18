@@ -5,7 +5,6 @@ use App\Models\Landlord\LandlordUser;
 use App\Models\Landlord\Tenant;
 use App\Models\Tenant\Borrower;
 use App\Services\CreditScoringService;
-use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Str;
 
 // ─── Cleanup ─────────────────────────────────────────────────────────────────
@@ -20,13 +19,13 @@ afterEach(function () {
 function makeVerifTenant(string $plan = 'starter', bool $isVerified = false): Tenant
 {
     $tenant = Tenant::create([
-        'id'          => (string) Str::uuid(),
-        'name'        => 'MFI ' . uniqid(),
-        'slug'        => 'mfi-' . uniqid(),
-        'plan'        => $plan,
-        'status'      => 'active',
-        'currency'    => 'ZMW',
-        'timezone'    => 'Africa/Lusaka',
+        'id' => (string) Str::uuid(),
+        'name' => 'MFI '.uniqid(),
+        'slug' => 'mfi-'.uniqid(),
+        'plan' => $plan,
+        'status' => 'active',
+        'currency' => 'ZMW',
+        'timezone' => 'Africa/Lusaka',
         'is_verified' => $isVerified,
     ]);
 
@@ -61,7 +60,7 @@ it('non-enterprise tenant with is_verified=false gets no badge', function () {
 });
 
 it('landlord can grant gold badge to a tenant via POST verify', function () {
-    $tenant   = makeVerifTenant('starter');
+    $tenant = makeVerifTenant('starter');
     $landlord = landlordActor();
 
     $this->actingAs($landlord, 'sanctum')
@@ -94,7 +93,7 @@ it('landlord can revoke gold badge via DELETE verify', function () {
 });
 
 it('verify endpoint appears in tenant format response for tenant list', function () {
-    $tenant   = makeVerifTenant('enterprise');
+    $tenant = makeVerifTenant('enterprise');
     $landlord = landlordActor();
 
     $data = $this->actingAs($landlord, 'sanctum')
@@ -152,7 +151,7 @@ it('RecalculateCreditScoreJob sets verification_tier based on calculated score',
     tenancy()->initialize($tenant);
 
     $borrower = Borrower::factory()->create([
-        'credit_score'      => null,
+        'credit_score' => null,
         'verification_tier' => null,
     ]);
 
@@ -162,7 +161,7 @@ it('RecalculateCreditScoreJob sets verification_tier based on calculated score',
     });
 
     (new RecalculateCreditScoreJob($borrower->id))->handle(
-        app(CreditScoringService::class)
+        app(CreditScoringService::class),
     );
 
     $borrower->refresh();
@@ -179,7 +178,7 @@ it('RecalculateCreditScoreJob assigns yellow tier for score 600', function () {
     tenancy()->initialize($tenant);
 
     $borrower = Borrower::factory()->create([
-        'credit_score'      => null,
+        'credit_score' => null,
         'verification_tier' => null,
     ]);
 
@@ -188,7 +187,7 @@ it('RecalculateCreditScoreJob assigns yellow tier for score 600', function () {
     });
 
     (new RecalculateCreditScoreJob($borrower->id))->handle(
-        app(CreditScoringService::class)
+        app(CreditScoringService::class),
     );
 
     expect($borrower->fresh()->verification_tier)->toBe('yellow');
@@ -201,7 +200,7 @@ it('RecalculateCreditScoreJob assigns grey tier for score 450', function () {
     tenancy()->initialize($tenant);
 
     $borrower = Borrower::factory()->create([
-        'credit_score'      => null,
+        'credit_score' => null,
         'verification_tier' => null,
     ]);
 
@@ -210,7 +209,7 @@ it('RecalculateCreditScoreJob assigns grey tier for score 450', function () {
     });
 
     (new RecalculateCreditScoreJob($borrower->id))->handle(
-        app(CreditScoringService::class)
+        app(CreditScoringService::class),
     );
 
     expect($borrower->fresh()->verification_tier)->toBe('grey');

@@ -20,11 +20,11 @@ class CrbIdentity extends Model
     protected function casts(): array
     {
         return [
-            'first_loan_date'      => 'date',
+            'first_loan_date' => 'date',
             'last_score_updated_at' => 'datetime',
-            'credit_score'         => 'integer',
-            'active_loan_count'    => 'integer',
-            'total_loans_taken'    => 'integer',
+            'credit_score' => 'integer',
+            'active_loan_count' => 'integer',
+            'total_loans_taken' => 'integer',
             'total_loans_completed' => 'integer',
             'total_loans_defaulted' => 'integer',
             'total_loans_written_off' => 'integer',

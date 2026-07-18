@@ -31,24 +31,24 @@ class LoanDocumentController extends BaseApiController
     public function store(Request $request, Loan $loan): JsonResponse
     {
         $request->validate([
-            'file'          => ['required', 'file', 'max:10240', 'mimes:pdf,jpg,jpeg,png,doc,docx,xls,xlsx'],
+            'file' => ['required', 'file', 'max:10240', 'mimes:pdf,jpg,jpeg,png,doc,docx,xls,xlsx'],
             'document_type' => ['required', 'string', 'max:100'],
-            'title'         => ['nullable', 'string', 'max:200'],
+            'title' => ['nullable', 'string', 'max:200'],
         ]);
 
-        $file     = $request->file('file');
+        $file = $request->file('file');
         $fileName = $file->getClientOriginalName();
-        $path     = $file->store("loans/{$loan->id}/documents", 'public');
+        $path = $file->store("loans/{$loan->id}/documents", 'public');
 
         $document = LoanDocument::create([
-            'loan_id'       => $loan->id,
+            'loan_id' => $loan->id,
             'document_type' => $request->document_type,
-            'title'         => $request->title ?? $fileName,
-            'file_path'     => Storage::url($path),
-            'file_name'     => $fileName,
-            'mime_type'     => $file->getMimeType(),
-            'file_size'     => $file->getSize(),
-            'uploaded_by'   => auth()->id(),
+            'title' => $request->title ?? $fileName,
+            'file_path' => Storage::url($path),
+            'file_name' => $fileName,
+            'mime_type' => $file->getMimeType(),
+            'file_size' => $file->getSize(),
+            'uploaded_by' => auth()->id(),
         ]);
 
         return $this->success($this->format($document->load('uploadedBy')), 'Document uploaded.', 201);
@@ -77,15 +77,15 @@ class LoanDocumentController extends BaseApiController
     private function format(LoanDocument $d): array
     {
         return [
-            'id'            => $d->id,
+            'id' => $d->id,
             'document_type' => $d->document_type,
-            'title'         => $d->title,
-            'file_name'     => $d->file_name,
-            'file_path'     => $d->file_path,
-            'mime_type'     => $d->mime_type,
-            'file_size'     => $d->file_size,
-            'uploaded_by'   => $d->relationLoaded('uploadedBy') ? $d->uploadedBy?->name : null,
-            'created_at'    => $d->created_at->format('d M Y H:i'),
+            'title' => $d->title,
+            'file_name' => $d->file_name,
+            'file_path' => $d->file_path,
+            'mime_type' => $d->mime_type,
+            'file_size' => $d->file_size,
+            'uploaded_by' => $d->relationLoaded('uploadedBy') ? $d->uploadedBy?->name : null,
+            'created_at' => $d->created_at->format('d M Y H:i'),
         ];
     }
 }

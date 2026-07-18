@@ -50,7 +50,7 @@ return new class extends Migration
         // Add agent_id to loans
         Schema::table('loans', function (Blueprint $table) {
             $table->foreignId('agent_id')->nullable()->after('loan_group_id')
-                  ->constrained('agents')->nullOnDelete();
+                ->constrained('agents')->nullOnDelete();
         });
     }
 

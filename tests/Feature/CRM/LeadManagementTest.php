@@ -2,7 +2,6 @@
 
 use App\Enums\UserRole;
 use App\Models\Tenant\Borrower;
-use App\Models\Tenant\BorrowerInteraction;
 use App\Models\Tenant\Lead;
 use App\Models\Tenant\User;
 
@@ -17,10 +16,10 @@ function makeLead(array $attrs = []): Lead
 {
     return Lead::create(array_merge([
         'lead_number' => Lead::generateLeadNumber(),
-        'first_name'  => 'Jane',
-        'last_name'   => 'Doe',
-        'phone'       => '0977000001',
-        'status'      => 'new',
+        'first_name' => 'Jane',
+        'last_name' => 'Doe',
+        'phone' => '0977000001',
+        'status' => 'new',
     ], $attrs));
 }
 
@@ -32,9 +31,9 @@ test('can create a lead', function () {
     $this->actingAs($admin)
         ->postJson(route('api.v1.leads.store'), [
             'first_name' => 'Alice',
-            'last_name'  => 'Mutale',
-            'phone'      => '0977111222',
-            'source'     => 'referral',
+            'last_name' => 'Mutale',
+            'phone' => '0977111222',
+            'source' => 'referral',
         ])
         ->assertStatus(201)
         ->assertJsonPath('data.lead.first_name', 'Alice');
@@ -77,7 +76,7 @@ test('can filter leads by status', function () {
 
 test('can update a lead', function () {
     $admin = crmAdmin();
-    $lead  = makeLead();
+    $lead = makeLead();
 
     $this->actingAs($admin)
         ->putJson(route('api.v1.leads.update', $lead), ['status' => 'contacted', 'notes' => 'Called today'])
@@ -87,7 +86,7 @@ test('can update a lead', function () {
 
 test('can delete a lead', function () {
     $admin = crmAdmin();
-    $lead  = makeLead(['phone' => '0977500001']);
+    $lead = makeLead(['phone' => '0977500001']);
 
     $this->actingAs($admin)
         ->deleteJson(route('api.v1.leads.destroy', $lead))
@@ -109,12 +108,12 @@ test('can show lead pipeline summary', function () {
 
 test('can convert a lead to borrower', function () {
     $admin = crmAdmin();
-    $lead  = makeLead(['phone' => '0977600001']);
+    $lead = makeLead(['phone' => '0977600001']);
 
     $resp = $this->actingAs($admin)
         ->postJson(route('api.v1.leads.convert', $lead), [
             'first_name' => $lead->first_name,
-            'phone'      => $lead->phone,
+            'phone' => $lead->phone,
         ])
         ->assertOk()
         ->assertJsonStructure(['data' => ['lead', 'borrower']]);
@@ -124,9 +123,9 @@ test('can convert a lead to borrower', function () {
 })->group('crm');
 
 test('cannot convert an already-converted lead', function () {
-    $admin    = crmAdmin();
+    $admin = crmAdmin();
     $borrower = Borrower::factory()->create();
-    $lead     = makeLead(['status' => 'converted', 'converted_borrower_id' => $borrower->id, 'phone' => '0977700001']);
+    $lead = makeLead(['status' => 'converted', 'converted_borrower_id' => $borrower->id, 'phone' => '0977700001']);
 
     $this->actingAs($admin)
         ->postJson(route('api.v1.leads.convert', $lead), ['first_name' => 'Jane', 'phone' => $lead->phone])
@@ -135,14 +134,14 @@ test('cannot convert an already-converted lead', function () {
 
 test('can add interaction to a lead', function () {
     $admin = crmAdmin();
-    $lead  = makeLead(['phone' => '0977800001']);
+    $lead = makeLead(['phone' => '0977800001']);
 
     $resp = $this->actingAs($admin)
         ->postJson(route('api.v1.leads.interactions.store', $lead), [
-            'channel'   => 'call',
+            'channel' => 'call',
             'direction' => 'outbound',
-            'outcome'   => 'spoke_to_borrower',
-            'notes'     => 'Interested in 5000 loan',
+            'outcome' => 'spoke_to_borrower',
+            'notes' => 'Interested in 5000 loan',
         ])
         ->assertStatus(201)
         ->assertJsonPath('data.interaction.channel', 'call');

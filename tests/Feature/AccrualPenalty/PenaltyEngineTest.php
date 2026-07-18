@@ -19,33 +19,33 @@ function penaltyAdmin(): User
 
 function penaltyLoan(float $penaltyRate = 2.0, int $dpdDays = 30): Loan
 {
-    $type     = LoanType::first() ?? LoanType::factory()->create();
-    $plan     = LoanPlan::first() ?? LoanPlan::factory()->create(['loan_type_id' => $type->id]);
+    $type = LoanType::first() ?? LoanType::factory()->create();
+    $plan = LoanPlan::first() ?? LoanPlan::factory()->create(['loan_type_id' => $type->id]);
     $borrower = Borrower::factory()->create();
 
     $loan = Loan::factory()->create([
-        'borrower_id'         => $borrower->id,
-        'loan_type_id'        => $type->id,
-        'loan_plan_id'        => $plan->id,
-        'status'              => LoanStatus::Active,
-        'principal_amount'    => 10000,
+        'borrower_id' => $borrower->id,
+        'loan_type_id' => $type->id,
+        'loan_plan_id' => $plan->id,
+        'status' => LoanStatus::Active,
+        'principal_amount' => 10000,
         'outstanding_balance' => 10000,
-        'interest_rate'       => 24,
-        'interest_type'       => 'flat',
-        'interest_period'     => 'monthly',
-        'penalty_rate'        => $penaltyRate,
+        'interest_rate' => 24,
+        'interest_type' => 'flat',
+        'interest_period' => 'monthly',
+        'penalty_rate' => $penaltyRate,
     ]);
 
     if ($dpdDays > 0) {
         LoanSchedule::create([
-            'loan_id'           => $loan->id,
+            'loan_id' => $loan->id,
             'instalment_number' => 1,
-            'due_date'          => now()->subDays($dpdDays)->toDateString(),
-            'principal_due'     => 1000,
-            'interest_due'      => 100,
-            'total_due'         => 1100,
-            'outstanding'       => 1100,
-            'is_paid'           => false,
+            'due_date' => now()->subDays($dpdDays)->toDateString(),
+            'principal_due' => 1000,
+            'interest_due' => 100,
+            'total_due' => 1100,
+            'outstanding' => 1100,
+            'is_paid' => false,
         ]);
     }
 
@@ -78,30 +78,30 @@ test('penalty amount is calculated from penalty rate and overdue amount', functi
 });
 
 test('no penalty applied to paid installments', function () {
-    $admin    = penaltyAdmin();
-    $type     = LoanType::factory()->create();
-    $plan     = LoanPlan::factory()->create(['loan_type_id' => $type->id]);
+    $admin = penaltyAdmin();
+    $type = LoanType::factory()->create();
+    $plan = LoanPlan::factory()->create(['loan_type_id' => $type->id]);
     $borrower = Borrower::factory()->create();
     $loan = Loan::factory()->create([
-        'borrower_id'         => $borrower->id,
-        'loan_type_id'        => $type->id,
-        'loan_plan_id'        => $plan->id,
-        'status'              => LoanStatus::Active,
+        'borrower_id' => $borrower->id,
+        'loan_type_id' => $type->id,
+        'loan_plan_id' => $plan->id,
+        'status' => LoanStatus::Active,
         'outstanding_balance' => 10000,
-        'interest_rate'       => 24,
-        'interest_type'       => 'flat',
-        'interest_period'     => 'monthly',
-        'penalty_rate'        => 2.0,
+        'interest_rate' => 24,
+        'interest_type' => 'flat',
+        'interest_period' => 'monthly',
+        'penalty_rate' => 2.0,
     ]);
     LoanSchedule::create([
-        'loan_id'           => $loan->id,
+        'loan_id' => $loan->id,
         'instalment_number' => 1,
-        'due_date'          => now()->subDays(30)->toDateString(),
-        'principal_due'     => 1000,
-        'interest_due'      => 100,
-        'total_due'         => 1100,
-        'outstanding'       => 0,
-        'is_paid'           => true,     // ← paid
+        'due_date' => now()->subDays(30)->toDateString(),
+        'principal_due' => 1000,
+        'interest_due' => 100,
+        'total_due' => 1100,
+        'outstanding' => 0,
+        'is_paid' => true,     // ← paid
     ]);
 
     $resp = $this->actingAs($admin)
@@ -117,7 +117,7 @@ test('dry run does not persist penalties', function () {
 
     $this->actingAs($admin)
         ->postJson(route('api.v1.penalties.run'), [
-            'date'    => now()->toDateString(),
+            'date' => now()->toDateString(),
             'dry_run' => true,
         ])
         ->assertOk();
@@ -154,7 +154,7 @@ test('can list all penalties', function () {
 
 test('can list penalties for a specific loan', function () {
     $admin = penaltyAdmin();
-    $loan  = penaltyLoan(2.0, 30);
+    $loan = penaltyLoan(2.0, 30);
 
     $this->actingAs($admin)->postJson(route('api.v1.penalties.run'), ['date' => now()->toDateString()]);
 

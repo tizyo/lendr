@@ -2,13 +2,10 @@
 
 use App\Enums\UserRole;
 use App\Models\Tenant\Borrower;
-use App\Models\Tenant\Expense;
-use App\Models\Tenant\ExpenseCategory;
 use App\Models\Tenant\FundBalance;
 use App\Models\Tenant\Loan;
 use App\Models\Tenant\LoanPlan;
 use App\Models\Tenant\LoanType;
-use App\Models\Tenant\Payment;
 use App\Models\Tenant\User;
 
 function dashUser(): User
@@ -43,10 +40,10 @@ test('fund block reflects actual fund balance totals', function () {
     $balance = FundBalance::current();
     $balance->update([
         'available_balance' => 8000,
-        'total_deposits'    => 10000,
-        'total_disbursed'   => 5000,
-        'total_repaid'      => 3000,
-        'total_expenses'    => 2000,
+        'total_deposits' => 10000,
+        'total_disbursed' => 5000,
+        'total_repaid' => 3000,
+        'total_expenses' => 2000,
     ]);
 
     $response = $this->actingAs($user)
@@ -129,7 +126,7 @@ test('expenses chart returns series', function () {
         ->getJson(route('api.v1.dashboard.charts', 'expenses'));
 
     $response->assertOk()
-             ->assertJsonPath('data.type', 'expenses');
+        ->assertJsonPath('data.type', 'expenses');
 });
 
 test('chart months parameter is respected', function () {
@@ -156,14 +153,14 @@ test('disbursements chart sums actual data', function () {
     $user = dashUser();
 
     $loanType = LoanType::factory()->create();
-    $plan     = LoanPlan::factory()->create(['loan_type_id' => $loanType->id]);
+    $plan = LoanPlan::factory()->create(['loan_type_id' => $loanType->id]);
     $borrower = Borrower::factory()->create();
 
     Loan::factory()->create([
-        'loan_type_id'     => $loanType->id,
-        'loan_plan_id'     => $plan->id,
-        'borrower_id'      => $borrower->id,
-        'status'           => 'active',
+        'loan_type_id' => $loanType->id,
+        'loan_plan_id' => $plan->id,
+        'borrower_id' => $borrower->id,
+        'status' => 'active',
         'principal_amount' => 2000,
         'disbursement_date' => now()->toDateString(),
     ]);

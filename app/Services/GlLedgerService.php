@@ -11,29 +11,28 @@ class GlLedgerService
     /**
      * Post a balanced double-entry journal entry.
      *
-     * @param  string  $description
-     * @param  array   $lines  [['account_code' => '1100', 'side' => 'debit', 'amount' => 5000, 'notes' => '...'], ...]
-     * @param  object|null $source  The source model (e.g. Loan, Payment)
-     * @param  string  $entryDate   Y-m-d date string
-     * @param  int|null $createdBy  User ID
+     * @param  array  $lines  [['account_code' => '1100', 'side' => 'debit', 'amount' => 5000, 'notes' => '...'], ...]
+     * @param  object|null  $source  The source model (e.g. Loan, Payment)
+     * @param  string  $entryDate  Y-m-d date string
+     * @param  int|null  $createdBy  User ID
      */
     public function post(
-        string  $description,
-        array   $lines,
-        ?object $source    = null,
-        string  $entryDate = '',
-        ?int    $createdBy = null
+        string $description,
+        array $lines,
+        ?object $source = null,
+        string $entryDate = '',
+        ?int $createdBy = null,
     ): GlJournalEntry {
         $entryDate = $entryDate ?: now()->toDateString();
 
         return DB::transaction(function () use ($description, $lines, $source, $entryDate, $createdBy) {
             $entry = GlJournalEntry::create([
-                'reference'   => GlJournalEntry::nextReference(),
-                'entry_date'  => $entryDate,
+                'reference' => GlJournalEntry::nextReference(),
+                'entry_date' => $entryDate,
                 'description' => $description,
                 'source_type' => $source ? get_class($source) : null,
-                'source_id'   => $source?->id,
-                'created_by'  => $createdBy,
+                'source_id' => $source?->id,
+                'created_by' => $createdBy,
             ]);
 
             foreach ($lines as $line) {
@@ -41,9 +40,9 @@ class GlLedgerService
 
                 $entry->lines()->create([
                     'account_id' => $account->id,
-                    'side'       => $line['side'],
-                    'amount'     => $line['amount'],
-                    'notes'      => $line['notes'] ?? null,
+                    'side' => $line['side'],
+                    'amount' => $line['amount'],
+                    'notes' => $line['notes'] ?? null,
                 ]);
             }
 
@@ -69,7 +68,7 @@ class GlLedgerService
             ],
             $loan,
             now()->toDateString(),
-            auth()->id()
+            auth()->id(),
         );
     }
 
@@ -84,8 +83,8 @@ class GlLedgerService
         ];
 
         $principal = (float) ($payment->principal_allocated ?? $payment->amount);
-        $interest  = (float) ($payment->interest_allocated ?? 0);
-        $fees      = (float) ($payment->fee_allocated ?? 0);
+        $interest = (float) ($payment->interest_allocated ?? 0);
+        $fees = (float) ($payment->fee_allocated ?? 0);
 
         if ($principal > 0) {
             $lines[] = ['account_code' => '1100', 'side' => 'credit', 'amount' => $principal];
@@ -114,7 +113,7 @@ class GlLedgerService
             $lines,
             $payment,
             $payment->payment_date ?? now()->toDateString(),
-            auth()->id()
+            auth()->id(),
         );
     }
 
@@ -127,9 +126,9 @@ class GlLedgerService
             ->orderBy('code')
             ->get()
             ->map(fn ($account) => [
-                'code'    => $account->code,
-                'name'    => $account->name,
-                'type'    => $account->type,
+                'code' => $account->code,
+                'name' => $account->name,
+                'type' => $account->type,
                 'balance' => $account->balance(),
             ])
             ->toArray();

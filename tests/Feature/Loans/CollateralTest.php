@@ -18,25 +18,25 @@ function collateralAdmin(): User
 
 function collateralLoan(): Loan
 {
-    $type     = LoanType::first() ?? LoanType::factory()->create();
-    $plan     = LoanPlan::first() ?? LoanPlan::factory()->create(['loan_type_id' => $type->id]);
+    $type = LoanType::first() ?? LoanType::factory()->create();
+    $plan = LoanPlan::first() ?? LoanPlan::factory()->create(['loan_type_id' => $type->id]);
     $borrower = Borrower::factory()->create();
 
     return Loan::factory()->create([
-        'borrower_id'  => $borrower->id,
+        'borrower_id' => $borrower->id,
         'loan_type_id' => $type->id,
         'loan_plan_id' => $plan->id,
-        'status'       => LoanStatus::Active,
+        'status' => LoanStatus::Active,
     ]);
 }
 
 function makeCollateral(Loan $loan, array $attrs = []): CollateralItem
 {
     return $loan->collateralItems()->create(array_merge([
-        'type'            => 'property',
-        'description'     => 'Residential house on Stand 45',
+        'type' => 'property',
+        'description' => 'Residential house on Stand 45',
         'estimated_value' => 80000.00,
-        'location'        => 'Lusaka, Woodlands',
+        'location' => 'Lusaka, Woodlands',
     ], $attrs));
 }
 
@@ -44,7 +44,7 @@ function makeCollateral(Loan $loan, array $attrs = []): CollateralItem
 
 test('can list collateral items for a loan', function () {
     $admin = collateralAdmin();
-    $loan  = collateralLoan();
+    $loan = collateralLoan();
 
     makeCollateral($loan);
     makeCollateral($loan, ['type' => 'vehicle', 'description' => 'Toyota Hilux 2020']);
@@ -58,12 +58,12 @@ test('can list collateral items for a loan', function () {
 
 test('can add a collateral item to a loan', function () {
     $admin = collateralAdmin();
-    $loan  = collateralLoan();
+    $loan = collateralLoan();
 
     $resp = $this->actingAs($admin)
         ->postJson(route('api.v1.loans.collateral.store', $loan), [
-            'type'            => 'vehicle',
-            'description'     => 'Land Rover Defender 2021',
+            'type' => 'vehicle',
+            'description' => 'Land Rover Defender 2021',
             'estimated_value' => 120000,
         ])
         ->assertCreated();
@@ -73,14 +73,14 @@ test('can add a collateral item to a loan', function () {
         ->and($resp->json('data.type_label'))->toBe('Vehicle');
 
     $this->assertDatabaseHas('collateral_items', [
-        'loan_id'     => $loan->id,
+        'loan_id' => $loan->id,
         'description' => 'Land Rover Defender 2021',
     ]);
 });
 
 test('can show a single collateral item', function () {
-    $admin      = collateralAdmin();
-    $loan       = collateralLoan();
+    $admin = collateralAdmin();
+    $loan = collateralLoan();
     $collateral = makeCollateral($loan);
 
     $resp = $this->actingAs($admin)
@@ -92,28 +92,28 @@ test('can show a single collateral item', function () {
 });
 
 test('can update a collateral item status to verified', function () {
-    $admin      = collateralAdmin();
-    $loan       = collateralLoan();
+    $admin = collateralAdmin();
+    $loan = collateralLoan();
     $collateral = makeCollateral($loan);
 
     $resp = $this->actingAs($admin)
         ->putJson(route('api.v1.collateral.update', $collateral), [
-            'status'          => 'verified',
-            'assessed_value'  => 75000,
+            'status' => 'verified',
+            'assessed_value' => 75000,
             'assessment_date' => '2026-03-15',
         ])
         ->assertOk();
 
     expect($resp->json('data.status'))->toBe('verified');
     $this->assertDatabaseHas('collateral_items', [
-        'id'     => $collateral->id,
+        'id' => $collateral->id,
         'status' => 'verified',
     ]);
 });
 
 test('can release a collateral item', function () {
-    $admin      = collateralAdmin();
-    $loan       = collateralLoan();
+    $admin = collateralAdmin();
+    $loan = collateralLoan();
     $collateral = makeCollateral($loan, ['status' => 'verified']);
 
     $this->actingAs($admin)
@@ -124,8 +124,8 @@ test('can release a collateral item', function () {
 });
 
 test('can delete a collateral item', function () {
-    $admin      = collateralAdmin();
-    $loan       = collateralLoan();
+    $admin = collateralAdmin();
+    $loan = collateralLoan();
     $collateral = makeCollateral($loan);
 
     $this->actingAs($admin)
@@ -137,7 +137,7 @@ test('can delete a collateral item', function () {
 
 test('store validates required type and description', function () {
     $admin = collateralAdmin();
-    $loan  = collateralLoan();
+    $loan = collateralLoan();
 
     $this->actingAs($admin)
         ->postJson(route('api.v1.loans.collateral.store', $loan), [])
@@ -147,11 +147,11 @@ test('store validates required type and description', function () {
 
 test('store rejects invalid collateral type', function () {
     $admin = collateralAdmin();
-    $loan  = collateralLoan();
+    $loan = collateralLoan();
 
     $this->actingAs($admin)
         ->postJson(route('api.v1.loans.collateral.store', $loan), [
-            'type'        => 'cryptocurrency',
+            'type' => 'cryptocurrency',
             'description' => 'Bitcoin',
         ])
         ->assertUnprocessable()

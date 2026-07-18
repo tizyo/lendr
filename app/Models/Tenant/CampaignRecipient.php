@@ -20,7 +20,7 @@ class CampaignRecipient extends Model
     protected function casts(): array
     {
         return [
-            'sent_at'   => 'datetime',
+            'sent_at' => 'datetime',
             'opened_at' => 'datetime',
         ];
     }

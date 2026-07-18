@@ -16,11 +16,11 @@ afterEach(function () {
 function makeTenant(string $plan = 'starter', string $status = 'active', ?string $createdAt = null): Tenant
 {
     $t = Tenant::create([
-        'id'       => (string) \Illuminate\Support\Str::uuid(),
-        'name'     => 'MFI ' . uniqid(),
-        'slug'     => 'mfi-' . uniqid(),
-        'plan'     => $plan,
-        'status'   => $status,
+        'id' => (string) \Illuminate\Support\Str::uuid(),
+        'name' => 'MFI '.uniqid(),
+        'slug' => 'mfi-'.uniqid(),
+        'plan' => $plan,
+        'status' => $status,
         'currency' => 'ZMW',
         'timezone' => 'Africa/Lusaka',
     ]);
@@ -37,30 +37,30 @@ function makeTenant(string $plan = 'starter', string $status = 'active', ?string
 function makeSubscription(Tenant $tenant, string $plan = 'growth', string $billing = 'monthly', float $amount = 1499.00): Subscription
 {
     return Subscription::create([
-        'tenant_id'     => $tenant->id,
-        'plan'          => $plan,
-        'status'        => 'active',
-        'gateway'       => 'flutterwave',
-        'amount'        => $amount,
-        'currency'      => 'ZMW',
+        'tenant_id' => $tenant->id,
+        'plan' => $plan,
+        'status' => 'active',
+        'gateway' => 'flutterwave',
+        'amount' => $amount,
+        'currency' => 'ZMW',
         'billing_cycle' => $billing,
-        'starts_at'     => now()->subMonth(),
-        'ends_at'       => now()->addMonth(),
+        'starts_at' => now()->subMonth(),
+        'ends_at' => now()->addMonth(),
     ]);
 }
 
 function makePaidInvoice(Tenant $tenant, string $plan = 'growth', float $amount = 1499.00, ?string $paidAt = null): SubscriptionInvoice
 {
     return SubscriptionInvoice::create([
-        'tenant_id'      => $tenant->id,
-        'gateway'        => 'flutterwave',
-        'gateway_tx_ref' => 'LENDR-SUB-' . uniqid(),
-        'plan'           => $plan,
-        'amount'         => $amount,
-        'currency'       => 'ZMW',
-        'billing_cycle'  => 'monthly',
-        'status'         => 'paid',
-        'paid_at'        => $paidAt ?? now()->toDateTimeString(),
+        'tenant_id' => $tenant->id,
+        'gateway' => 'flutterwave',
+        'gateway_tx_ref' => 'LENDR-SUB-'.uniqid(),
+        'plan' => $plan,
+        'amount' => $amount,
+        'currency' => 'ZMW',
+        'billing_cycle' => 'monthly',
+        'status' => 'paid',
+        'paid_at' => $paidAt ?? now()->toDateTimeString(),
     ]);
 }
 
@@ -75,9 +75,9 @@ it('returns the full stats payload', function () {
     $response->assertOk()
         ->assertJsonStructure([
             'data' => [
-                'tenants'  => ['total', 'by_plan', 'by_status', 'new_this_month', 'trial_conversion_rate', 'monthly_churn_rate'],
-                'revenue'  => ['mrr', 'arr', 'total_revenue', 'trend', 'by_plan'],
-                'growth'   => ['signup_trend'],
+                'tenants' => ['total', 'by_plan', 'by_status', 'new_this_month', 'trial_conversion_rate', 'monthly_churn_rate'],
+                'revenue' => ['mrr', 'arr', 'total_revenue', 'trend', 'by_plan'],
+                'growth' => ['signup_trend'],
                 'recent_invoices',
             ],
         ]);
@@ -119,15 +119,15 @@ it('normalises annual subscriptions to monthly for MRR', function () {
 it('excludes expired subscriptions from MRR', function () {
     $t = makeTenant('growth', 'active');
     Subscription::create([
-        'tenant_id'     => $t->id,
-        'plan'          => 'growth',
-        'status'        => 'active',
-        'gateway'       => 'flutterwave',
-        'amount'        => 1499.00,
-        'currency'      => 'ZMW',
+        'tenant_id' => $t->id,
+        'plan' => 'growth',
+        'status' => 'active',
+        'gateway' => 'flutterwave',
+        'amount' => 1499.00,
+        'currency' => 'ZMW',
         'billing_cycle' => 'monthly',
-        'starts_at'     => now()->subMonths(3),
-        'ends_at'       => now()->subDay(), // expired yesterday
+        'starts_at' => now()->subMonths(3),
+        'ends_at' => now()->subDay(), // expired yesterday
     ]);
 
     $landlord = LandlordUser::factory()->create();
@@ -180,7 +180,7 @@ it('groups paid invoices by month for revenue trend', function () {
 
 it('calculates trial conversion rate from 90-day cohort', function () {
     // 2 active (converted), 2 still on trial — out of 4 in 90 days => 50%
-    makeTenant('growth',  'active');
+    makeTenant('growth', 'active');
     makeTenant('starter', 'active');
     makeTenant('starter', 'trial');
     makeTenant('starter', 'trial');
@@ -267,7 +267,7 @@ it('groups new tenants by month for signup trend', function () {
 it('breaks down tenant counts by plan', function () {
     makeTenant('starter', 'active');
     makeTenant('starter', 'active');
-    makeTenant('growth',  'active');
+    makeTenant('growth', 'active');
 
     $landlord = LandlordUser::factory()->create();
 

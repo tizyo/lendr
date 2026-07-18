@@ -19,7 +19,7 @@ afterEach(function () {
             DB::purge('tenant');
 
             // For SQLite: delete the physical DB file (prefix = 'tenant', no suffix).
-            $dbFile = database_path('tenant' . $tenant->id);
+            $dbFile = database_path('tenant'.$tenant->id);
             if (file_exists($dbFile)) {
                 unlink($dbFile);
             }
@@ -35,15 +35,15 @@ afterEach(function () {
 function starterPayload(array $overrides = []): array
 {
     return array_merge([
-        'org_name'              => 'Test MFI',
-        'slug'                  => 'testmfi-' . uniqid(),
-        'plan'                  => 'starter',
-        'currency'              => 'ZMW',
-        'timezone'              => 'Africa/Lusaka',
-        'admin_name'            => 'Admin User',
-        'admin_email'           => 'admin@testmfi.com',
-        'admin_phone'           => '+260977000001',
-        'admin_password'        => 'Password1!',
+        'org_name' => 'Test MFI',
+        'slug' => 'testmfi-'.uniqid(),
+        'plan' => 'starter',
+        'currency' => 'ZMW',
+        'timezone' => 'Africa/Lusaka',
+        'admin_name' => 'Admin User',
+        'admin_email' => 'admin@testmfi.com',
+        'admin_phone' => '+260977000001',
+        'admin_password' => 'Password1!',
         'admin_password_confirmation' => 'Password1!',
     ], $overrides);
 }
@@ -57,7 +57,7 @@ test('onboarding page renders correctly', function () {
             ->has('plans')
             ->has('currencies')
             ->has('timezones')
-            ->has('sharedPortalHost')
+            ->has('sharedPortalHost'),
         );
 });
 
@@ -69,7 +69,7 @@ test('success page redirects to onboarding when no session', function () {
 
 // ─── Starter plan (shared portal) ────────────────────────────────────────────
 test('starter plan creates tenant and superadmin user', function () {
-    $payload = starterPayload(['slug' => 'starter-e2e-' . uniqid()]);
+    $payload = starterPayload(['slug' => 'starter-e2e-'.uniqid()]);
 
     $response = $this->post(route('onboarding.store'), $payload);
 
@@ -95,7 +95,7 @@ test('starter plan creates tenant and superadmin user', function () {
 });
 
 test('success page shows tenant details after onboarding', function () {
-    $payload = starterPayload(['slug' => 'success-e2e-' . uniqid()]);
+    $payload = starterPayload(['slug' => 'success-e2e-'.uniqid()]);
 
     $this->post(route('onboarding.store'), $payload);
 
@@ -106,17 +106,17 @@ test('success page shows tenant details after onboarding', function () {
             ->where('slug', $payload['slug'])
             ->where('plan', 'starter')
             ->where('adminEmail', $payload['admin_email'])
-            ->where('orgName', $payload['org_name'])
+            ->where('orgName', $payload['org_name']),
         );
 });
 
 // ─── Growth plan (custom subdomain) ──────────────────────────────────────────
 test('growth plan creates tenant with custom subdomain', function () {
-    $slug      = 'growth-e2e-' . uniqid();
-    $subdomain = 'growth-' . uniqid();
-    $payload   = starterPayload([
-        'plan'      => 'growth',
-        'slug'      => $slug,
+    $slug = 'growth-e2e-'.uniqid();
+    $subdomain = 'growth-'.uniqid();
+    $payload = starterPayload([
+        'plan' => 'growth',
+        'slug' => $slug,
         'subdomain' => $subdomain,
     ]);
 
@@ -128,7 +128,7 @@ test('growth plan creates tenant with custom subdomain', function () {
         ->and($tenant->plan)->toBe('growth');
 
     $centralDomain = env('CENTRAL_DOMAIN', 'localhost');
-    $domain        = Domain::where('domain', $subdomain . '.' . $centralDomain)->first();
+    $domain = Domain::where('domain', $subdomain.'.'.$centralDomain)->first();
     expect($domain)->not->toBeNull()
         ->and($domain->tenant_id)->toBe($tenant->id);
 });
@@ -140,7 +140,7 @@ test('onboarding requires all required fields', function () {
 });
 
 test('duplicate slug is rejected', function () {
-    $slug    = 'dup-slug-' . uniqid();
+    $slug = 'dup-slug-'.uniqid();
     $payload = starterPayload(['slug' => $slug]);
 
     $this->post(route('onboarding.store'), $payload);
@@ -150,7 +150,7 @@ test('duplicate slug is rejected', function () {
 
 test('reserved subdomain is rejected for growth plan', function () {
     $payload = starterPayload([
-        'plan'      => 'growth',
+        'plan' => 'growth',
         'subdomain' => 'api',
     ]);
 
@@ -160,7 +160,7 @@ test('reserved subdomain is rejected for growth plan', function () {
 
 test('password confirmation must match', function () {
     $payload = starterPayload([
-        'admin_password'              => 'Password1!',
+        'admin_password' => 'Password1!',
         'admin_password_confirmation' => 'DifferentPass!',
     ]);
 
@@ -174,15 +174,15 @@ test('shared portal login page is accessible without tenant context', function (
         ->assertStatus(200)
         ->assertInertia(fn ($page) => $page
             ->component('auth/Login')
-            ->where('isPortal', true)
+            ->where('isPortal', true),
         );
 });
 
 test('session-based tenancy resolves correct tenant after portal login', function () {
     // Create a starter tenant
-    $slug    = 'session-e2e-' . uniqid();
+    $slug = 'session-e2e-'.uniqid();
     $payload = starterPayload([
-        'slug'        => $slug,
+        'slug' => $slug,
         'admin_email' => 'portal@sessiontest.com',
     ]);
     $this->post(route('onboarding.store'), $payload);
@@ -198,8 +198,8 @@ test('session-based tenancy resolves correct tenant after portal login', functio
     // Portal login should set tenant_id in session
     $response = $this->post(route('portal.login.post'), [
         'workspace' => $slug,
-        'email'     => 'portal@sessiontest.com',
-        'password'  => 'Password1!',
+        'email' => 'portal@sessiontest.com',
+        'password' => 'Password1!',
     ]);
 
     $response->assertRedirect();

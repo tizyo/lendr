@@ -18,11 +18,11 @@ class UpdateStaffRequest extends FormRequest
         $staffId = $this->route('staff');
 
         return [
-            'name'       => ['sometimes', 'string', 'max:255'],
-            'email'      => ['sometimes', 'email', Rule::unique('users', 'email')->ignore($staffId)],
-            'username'   => ['nullable', 'string', 'max:50', Rule::unique('users', 'username')->ignore($staffId)],
-            'phone'      => ['nullable', 'string', 'max:20'],
-            'role'       => ['sometimes', Rule::enum(UserRole::class)],
+            'name' => ['sometimes', 'string', 'max:255'],
+            'email' => ['sometimes', 'email', Rule::unique('users', 'email')->ignore($staffId)],
+            'username' => ['nullable', 'string', 'max:50', Rule::unique('users', 'username')->ignore($staffId)],
+            'phone' => ['nullable', 'string', 'max:20'],
+            'role' => ['sometimes', Rule::enum(UserRole::class)],
             'department' => ['nullable', 'string', 'max:100'],
         ];
     }

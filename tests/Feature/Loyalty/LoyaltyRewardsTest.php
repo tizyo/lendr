@@ -6,7 +6,6 @@ use App\Models\Tenant\Borrower;
 use App\Models\Tenant\Loan;
 use App\Models\Tenant\LoanPlan;
 use App\Models\Tenant\LoanType;
-use App\Models\Tenant\LoyaltyAccount;
 use App\Models\Tenant\LoyaltyTier;
 use App\Models\Tenant\User;
 use App\Services\LoyaltyService;
@@ -29,11 +28,11 @@ function loyaltyLoan(Borrower $borrower): Loan
     $plan = LoanPlan::factory()->create(['loan_type_id' => $type->id]);
 
     return Loan::factory()->create([
-        'borrower_id'  => $borrower->id,
+        'borrower_id' => $borrower->id,
         'loan_type_id' => $type->id,
         'loan_plan_id' => $plan->id,
-        'status'       => LoanStatus::Active,
-        'loan_number'  => 'LN-LOYAL-001',
+        'status' => LoanStatus::Active,
+        'loan_number' => 'LN-LOYAL-001',
     ]);
 }
 
@@ -64,8 +63,8 @@ test('admin can create a loyalty tier', function () {
 
     $resp = $this->actingAs($admin)
         ->postJson(route('api.v1.loyalty.tiers.upsert'), [
-            'name'             => 'Diamond',
-            'min_points'       => 5000,
+            'name' => 'Diamond',
+            'min_points' => 5000,
             'fee_discount_pct' => 20,
         ])
         ->assertCreated();
@@ -80,8 +79,8 @@ test('upsert tier updates existing tier by name', function () {
 
     $this->actingAs($admin)
         ->postJson(route('api.v1.loyalty.tiers.upsert'), [
-            'name'             => 'Gold',
-            'min_points'       => 1200,
+            'name' => 'Gold',
+            'min_points' => 1200,
             'fee_discount_pct' => 12,
         ])
         ->assertCreated();
@@ -92,7 +91,7 @@ test('upsert tier updates existing tier by name', function () {
 });
 
 test('new borrower starts with zero points and Bronze tier', function () {
-    $admin    = loyaltyAdmin();
+    $admin = loyaltyAdmin();
     $borrower = loyaltyBorrower();
     seedTiers();
 
@@ -107,22 +106,22 @@ test('new borrower starts with zero points and Bronze tier', function () {
 test('payment awards loyalty points', function () {
     seedTiers();
     $borrower = loyaltyBorrower();
-    $loan     = loyaltyLoan($borrower);
-    $service  = app(LoyaltyService::class);
-    $admin    = loyaltyAdmin();
+    $loan = loyaltyLoan($borrower);
+    $service = app(LoyaltyService::class);
+    $admin = loyaltyAdmin();
 
     // Record a payment manually then award points
     $payment = \App\Models\Tenant\Payment::create([
-        'receipt_number'      => 'RCT-TEST-001',
-        'loan_id'             => $loan->id,
-        'amount'              => 1000,
+        'receipt_number' => 'RCT-TEST-001',
+        'loan_id' => $loan->id,
+        'amount' => 1000,
         'principal_allocated' => 900,
-        'interest_allocated'  => 100,
-        'penalty_allocated'   => 0,
-        'fee_allocated'       => 0,
-        'payment_method'      => 'cash',
-        'payment_date'        => now()->toDateString(),
-        'source'              => 'manual',
+        'interest_allocated' => 100,
+        'penalty_allocated' => 0,
+        'fee_allocated' => 0,
+        'payment_method' => 'cash',
+        'payment_date' => now()->toDateString(),
+        'source' => 'manual',
     ]);
 
     $account = $service->awardForPayment($payment->load('loan'));
@@ -135,7 +134,7 @@ test('payment awards loyalty points', function () {
 test('tier upgrades when points cross threshold', function () {
     seedTiers();
     $borrower = loyaltyBorrower();
-    $service  = app(LoyaltyService::class);
+    $service = app(LoyaltyService::class);
 
     // Manually insert enough points to reach Silver (500+)
     $account = $service->getOrCreate($borrower->id);
@@ -144,16 +143,16 @@ test('tier upgrades when points cross threshold', function () {
     // Award 10 more to push over 500
     $loan = loyaltyLoan($borrower);
     $payment = \App\Models\Tenant\Payment::create([
-        'receipt_number'      => 'RCT-TEST-002',
-        'loan_id'             => $loan->id,
-        'amount'              => 100, // 100 / 10 = 10 pts
+        'receipt_number' => 'RCT-TEST-002',
+        'loan_id' => $loan->id,
+        'amount' => 100, // 100 / 10 = 10 pts
         'principal_allocated' => 90,
-        'interest_allocated'  => 10,
-        'penalty_allocated'   => 0,
-        'fee_allocated'       => 0,
-        'payment_method'      => 'cash',
-        'payment_date'        => now()->toDateString(),
-        'source'              => 'manual',
+        'interest_allocated' => 10,
+        'penalty_allocated' => 0,
+        'fee_allocated' => 0,
+        'payment_method' => 'cash',
+        'payment_date' => now()->toDateString(),
+        'source' => 'manual',
     ]);
 
     $account = $service->awardForPayment($payment->load('loan'));
@@ -165,15 +164,15 @@ test('tier upgrades when points cross threshold', function () {
 test('can redeem points from a borrower account', function () {
     seedTiers();
     $borrower = loyaltyBorrower();
-    $admin    = loyaltyAdmin();
-    $service  = app(LoyaltyService::class);
+    $admin = loyaltyAdmin();
+    $service = app(LoyaltyService::class);
 
     $account = $service->getOrCreate($borrower->id);
     $account->update(['total_points' => 200]);
 
     $resp = $this->actingAs($admin)
         ->postJson(route('api.v1.loyalty.redeem', $borrower), [
-            'points'      => 50,
+            'points' => 50,
             'description' => 'Fee discount redemption',
         ])
         ->assertOk();
@@ -184,8 +183,8 @@ test('can redeem points from a borrower account', function () {
 test('cannot redeem more points than available', function () {
     seedTiers();
     $borrower = loyaltyBorrower();
-    $admin    = loyaltyAdmin();
-    $service  = app(LoyaltyService::class);
+    $admin = loyaltyAdmin();
+    $service = app(LoyaltyService::class);
 
     $account = $service->getOrCreate($borrower->id);
     $account->update(['total_points' => 50]);
@@ -200,7 +199,7 @@ test('cannot redeem more points than available', function () {
 test('fee discount reflects borrower tier', function () {
     seedTiers();
     $borrower = loyaltyBorrower();
-    $service  = app(LoyaltyService::class);
+    $service = app(LoyaltyService::class);
 
     $account = $service->getOrCreate($borrower->id);
     $account->update(['total_points' => 1000, 'tier' => 'Gold']);
@@ -213,21 +212,21 @@ test('fee discount reflects borrower tier', function () {
 test('ledger shows point transactions', function () {
     seedTiers();
     $borrower = loyaltyBorrower();
-    $admin    = loyaltyAdmin();
-    $service  = app(LoyaltyService::class);
+    $admin = loyaltyAdmin();
+    $service = app(LoyaltyService::class);
 
-    $loan    = loyaltyLoan($borrower);
+    $loan = loyaltyLoan($borrower);
     $payment = \App\Models\Tenant\Payment::create([
-        'receipt_number'      => 'RCT-TEST-003',
-        'loan_id'             => $loan->id,
-        'amount'              => 500,
+        'receipt_number' => 'RCT-TEST-003',
+        'loan_id' => $loan->id,
+        'amount' => 500,
         'principal_allocated' => 450,
-        'interest_allocated'  => 50,
-        'penalty_allocated'   => 0,
-        'fee_allocated'       => 0,
-        'payment_method'      => 'cash',
-        'payment_date'        => now()->toDateString(),
-        'source'              => 'manual',
+        'interest_allocated' => 50,
+        'penalty_allocated' => 0,
+        'fee_allocated' => 0,
+        'payment_method' => 'cash',
+        'payment_date' => now()->toDateString(),
+        'source' => 'manual',
     ]);
     $service->awardForPayment($payment->load('loan'));
 

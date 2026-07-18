@@ -15,10 +15,10 @@ class ApprovalService
      */
     public function submit(
         string $entityType,
-        int    $entityId,
-        User   $submitter,
-        float  $amount = 0,
-        ?string $notes = null
+        int $entityId,
+        User $submitter,
+        float $amount = 0,
+        ?string $notes = null,
     ): ?ApprovalRequest {
         $workflow = ApprovalWorkflow::findFor($entityType, $amount);
 
@@ -27,12 +27,12 @@ class ApprovalService
         }
 
         return ApprovalRequest::create([
-            'workflow_id'  => $workflow->id,
-            'entity_type'  => $entityType,
-            'entity_id'    => $entityId,
+            'workflow_id' => $workflow->id,
+            'entity_type' => $entityType,
+            'entity_id' => $entityId,
             'submitted_by' => $submitter->id,
-            'status'       => 'pending',
-            'notes'        => $notes,
+            'status' => 'pending',
+            'notes' => $notes,
         ]);
     }
 
@@ -47,10 +47,10 @@ class ApprovalService
 
         ApprovalAction::create([
             'request_id' => $request->id,
-            'actor_id'   => $actor->id,
-            'action'     => 'approve',
-            'notes'      => $notes,
-            'acted_at'   => now(),
+            'actor_id' => $actor->id,
+            'action' => 'approve',
+            'notes' => $notes,
+            'acted_at' => now(),
         ]);
 
         $approvalCount = $request->actions()->where('action', 'approve')->count();
@@ -73,10 +73,10 @@ class ApprovalService
 
         ApprovalAction::create([
             'request_id' => $request->id,
-            'actor_id'   => $actor->id,
-            'action'     => 'reject',
-            'notes'      => $notes,
-            'acted_at'   => now(),
+            'actor_id' => $actor->id,
+            'action' => 'reject',
+            'notes' => $notes,
+            'acted_at' => now(),
         ]);
 
         $request->update(['status' => 'rejected', 'decided_at' => now()]);

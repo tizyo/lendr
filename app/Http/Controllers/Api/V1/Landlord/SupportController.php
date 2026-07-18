@@ -31,7 +31,7 @@ class SupportController extends BaseApiController
             $query->where('tenant_id', $request->tenant_id);
         }
         if ($request->filled('search')) {
-            $query->where('subject', 'like', '%' . $request->search . '%');
+            $query->where('subject', 'like', '%'.$request->search.'%');
         }
 
         $tickets = $query->paginate(25)->through(fn ($t) => $this->format($t));
@@ -60,10 +60,10 @@ class SupportController extends BaseApiController
         ]);
 
         SupportTicketReply::create([
-            'ticket_id'   => $ticket->id,
+            'ticket_id' => $ticket->id,
             'author_type' => 'landlord',
             'author_name' => $request->user()?->name ?? 'LENDR Support',
-            'message'     => $data['message'],
+            'message' => $data['message'],
         ]);
 
         // Auto-move to in_progress when landlord first replies on an open ticket
@@ -85,7 +85,7 @@ class SupportController extends BaseApiController
         ]);
 
         $ticket->update([
-            'status'      => $data['status'],
+            'status' => $data['status'],
             'resolved_at' => in_array($data['status'], ['resolved', 'closed']) ? now() : null,
         ]);
 
@@ -114,11 +114,11 @@ class SupportController extends BaseApiController
         $tickets = SupportTicket::all();
 
         return $this->success([
-            'total'       => $tickets->count(),
-            'by_status'   => $tickets->groupBy('status')->map->count(),
-            'by_type'     => $tickets->groupBy('type')->map->count(),
+            'total' => $tickets->count(),
+            'by_status' => $tickets->groupBy('status')->map->count(),
+            'by_type' => $tickets->groupBy('type')->map->count(),
             'by_priority' => $tickets->groupBy('priority')->map->count(),
-            'open'        => $tickets->whereIn('status', ['open', 'in_progress'])->count(),
+            'open' => $tickets->whereIn('status', ['open', 'in_progress'])->count(),
         ]);
     }
 
@@ -127,31 +127,31 @@ class SupportController extends BaseApiController
     private function format(SupportTicket $t): array
     {
         return [
-            'id'            => $t->id,
-            'subject'       => $t->subject,
-            'type'          => $t->type,
-            'status'        => $t->status,
-            'priority'      => $t->priority,
-            'tenant_id'     => $t->tenant_id,
-            'tenant_name'   => $t->tenant?->name,
-            'submitted_by'  => $t->submitted_by,
+            'id' => $t->id,
+            'subject' => $t->subject,
+            'type' => $t->type,
+            'status' => $t->status,
+            'priority' => $t->priority,
+            'tenant_id' => $t->tenant_id,
+            'tenant_name' => $t->tenant?->name,
+            'submitted_by' => $t->submitted_by,
             'replies_count' => $t->replies_count ?? $t->replies()->count(),
-            'created_at'    => $t->created_at->toDateString(),
-            'resolved_at'   => $t->resolved_at?->toDateString(),
+            'created_at' => $t->created_at->toDateString(),
+            'resolved_at' => $t->resolved_at?->toDateString(),
         ];
     }
 
     private function formatFull(SupportTicket $t): array
     {
         return array_merge($this->format($t), [
-            'message'            => $t->message,
+            'message' => $t->message,
             'submitted_by_email' => $t->submitted_by_email,
-            'replies'            => $t->replies->map(fn ($r) => [
-                'id'          => $r->id,
+            'replies' => $t->replies->map(fn ($r) => [
+                'id' => $r->id,
                 'author_type' => $r->author_type,
                 'author_name' => $r->author_name,
-                'message'     => $r->message,
-                'created_at'  => $r->created_at->format('d M Y, H:i'),
+                'message' => $r->message,
+                'created_at' => $r->created_at->format('d M Y, H:i'),
             ])->all(),
         ]);
     }

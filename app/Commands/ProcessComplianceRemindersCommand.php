@@ -7,7 +7,8 @@ use Illuminate\Console\Command;
 
 class ProcessComplianceRemindersCommand extends Command
 {
-    protected $signature   = 'lendr:compliance-reminders {--days=7 : Days ahead to send reminders}';
+    protected $signature = 'lendr:compliance-reminders {--days=7 : Days ahead to send reminders}';
+
     protected $description = 'Mark overdue compliance events and flag upcoming ones for reminder';
 
     public function handle(): int

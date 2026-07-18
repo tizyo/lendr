@@ -46,18 +46,18 @@ return Application::configure(basePath: dirname(__DIR__))
 
         // API: SPA session auth (for Inertia admin axios calls) + tenant initialization
         $middleware->api(prepend: [EnsureFrontendRequestsAreStateful::class]);
-        $middleware->api(append:  [InitializeTenancy::class]);
+        $middleware->api(append: [InitializeTenancy::class]);
         $middleware->throttleApi();
 
         $middleware->alias([
-            'role'             => \Spatie\Permission\Middleware\RoleMiddleware::class,
-            'permission'       => \Spatie\Permission\Middleware\PermissionMiddleware::class,
+            'role' => \Spatie\Permission\Middleware\RoleMiddleware::class,
+            'permission' => \Spatie\Permission\Middleware\PermissionMiddleware::class,
             'role_or_permission' => \Spatie\Permission\Middleware\RoleOrPermissionMiddleware::class,
-            'premium.plan'     => \App\Http\Middleware\RequiresPremiumPlan::class,
-            'plan.feature'     => \App\Http\Middleware\RequiresPlanFeature::class,
-            'tenant.status'    => \App\Http\Middleware\CheckTenantStatus::class,
-            'api-gateway'      => \App\Http\Middleware\ApiGatewayAuth::class,
-            'marketplace'      => \App\Http\Middleware\RequiresMarketplaceEnabled::class,
+            'premium.plan' => \App\Http\Middleware\RequiresPremiumPlan::class,
+            'plan.feature' => \App\Http\Middleware\RequiresPlanFeature::class,
+            'tenant.status' => \App\Http\Middleware\CheckTenantStatus::class,
+            'api-gateway' => \App\Http\Middleware\ApiGatewayAuth::class,
+            'marketplace' => \App\Http\Middleware\RequiresMarketplaceEnabled::class,
         ]);
 
         // Exclude mobile money webhook routes from CSRF (they use HMAC signature verification instead)

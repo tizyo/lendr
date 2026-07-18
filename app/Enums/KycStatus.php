@@ -4,32 +4,32 @@ namespace App\Enums;
 
 enum KycStatus: string
 {
-    case Pending     = 'pending';
+    case Pending = 'pending';
     case UnderReview = 'under_review';
-    case Verified    = 'verified';
-    case Rejected    = 'rejected';
-    case Expired     = 'expired';
+    case Verified = 'verified';
+    case Rejected = 'rejected';
+    case Expired = 'expired';
 
     public function label(): string
     {
-        return match($this) {
-            self::Pending     => 'Pending Review',
+        return match ($this) {
+            self::Pending => 'Pending Review',
             self::UnderReview => 'Under Review',
-            self::Verified    => 'Verified',
-            self::Rejected    => 'Rejected',
-            self::Expired     => 'Expired',
+            self::Verified => 'Verified',
+            self::Rejected => 'Rejected',
+            self::Expired => 'Expired',
         };
     }
 
     /** Returns allowed next statuses for the state machine. */
     public function transitions(): array
     {
-        return match($this) {
-            self::Pending     => [self::UnderReview],
+        return match ($this) {
+            self::Pending => [self::UnderReview],
             self::UnderReview => [self::Verified, self::Rejected],
-            self::Verified    => [],
-            self::Rejected    => [self::Pending],
-            self::Expired     => [],
+            self::Verified => [],
+            self::Rejected => [self::Pending],
+            self::Expired => [],
         };
     }
 

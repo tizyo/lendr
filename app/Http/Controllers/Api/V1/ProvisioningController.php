@@ -28,10 +28,10 @@ class ProvisioningController extends BaseApiController
     public function storeRate(Request $request): JsonResponse
     {
         $data = $request->validate([
-            'stage_label'    => ['required', 'string', 'max:30'],
-            'stage'          => ['required', 'integer', 'in:1,2,3'],
-            'dpd_from'       => ['required', 'integer', 'min:0'],
-            'dpd_to'         => ['required', 'integer', 'gte:dpd_from'],
+            'stage_label' => ['required', 'string', 'max:30'],
+            'stage' => ['required', 'integer', 'in:1,2,3'],
+            'dpd_from' => ['required', 'integer', 'min:0'],
+            'dpd_to' => ['required', 'integer', 'gte:dpd_from'],
             'provision_rate' => ['required', 'numeric', 'min:0', 'max:100'],
         ]);
 
@@ -43,9 +43,9 @@ class ProvisioningController extends BaseApiController
     public function updateRate(Request $request, ProvisionRate $rate): JsonResponse
     {
         $data = $request->validate([
-            'stage_label'    => ['sometimes', 'string', 'max:30'],
+            'stage_label' => ['sometimes', 'string', 'max:30'],
             'provision_rate' => ['sometimes', 'numeric', 'min:0', 'max:100'],
-            'is_active'      => ['sometimes', 'boolean'],
+            'is_active' => ['sometimes', 'boolean'],
         ]);
 
         $rate->update($data);
@@ -100,35 +100,35 @@ class ProvisioningController extends BaseApiController
             ->get();
 
         $totalOutstanding = (float) $provisions->sum('outstanding_balance');
-        $totalProvision   = (float) $provisions->sum('provision_amount');
-        $coverageRatio    = $totalOutstanding > 0
+        $totalProvision = (float) $provisions->sum('provision_amount');
+        $coverageRatio = $totalOutstanding > 0
             ? round(($totalProvision / $totalOutstanding) * 100, 2)
             : 0;
 
         $loans = $provisions->map(fn ($p) => [
-            'loan_id'          => $p->loan_id,
-            'loan_number'      => $p->loan?->loan_number,
-            'borrower_name'    => $p->loan?->borrower
-                ? trim($p->loan->borrower->first_name . ' ' . $p->loan->borrower->last_name)
+            'loan_id' => $p->loan_id,
+            'loan_number' => $p->loan?->loan_number,
+            'borrower_name' => $p->loan?->borrower
+                ? trim($p->loan->borrower->first_name.' '.$p->loan->borrower->last_name)
                 : null,
-            'outstanding'      => (float) $p->outstanding_balance,
-            'max_dpd'          => $p->days_past_due,
-            'stage'            => $p->stage,
-            'stage_label'      => $p->stage_label,
-            'provision_rate'   => (float) $p->provision_rate,
+            'outstanding' => (float) $p->outstanding_balance,
+            'max_dpd' => $p->days_past_due,
+            'stage' => $p->stage,
+            'stage_label' => $p->stage_label,
+            'provision_rate' => (float) $p->provision_rate,
             'provision_amount' => (float) $p->provision_amount,
         ]);
 
         return $this->success([
-            'total_provision'   => round($totalProvision, 2),
+            'total_provision' => round($totalProvision, 2),
             'total_outstanding' => round($totalOutstanding, 2),
-            'total_loans'       => $provisions->count(),
-            'coverage_ratio'    => $coverageRatio,
+            'total_loans' => $provisions->count(),
+            'coverage_ratio' => $coverageRatio,
             'summary' => [
-                'total_loans'       => $provisions->count(),
+                'total_loans' => $provisions->count(),
                 'total_outstanding' => round($totalOutstanding, 2),
-                'total_provision'   => round($totalProvision, 2),
-                'coverage_ratio'    => $coverageRatio,
+                'total_provision' => round($totalProvision, 2),
+                'coverage_ratio' => $coverageRatio,
             ],
             'loans' => $loans,
         ]);
@@ -139,29 +139,29 @@ class ProvisioningController extends BaseApiController
     private function formatRate(ProvisionRate $r): array
     {
         return [
-            'id'             => $r->id,
-            'stage'          => $r->stage,
-            'stage_label'    => $r->stage_label,
-            'dpd_from'       => $r->dpd_from,
-            'dpd_to'         => $r->dpd_to,
+            'id' => $r->id,
+            'stage' => $r->stage,
+            'stage_label' => $r->stage_label,
+            'dpd_from' => $r->dpd_from,
+            'dpd_to' => $r->dpd_to,
             'provision_rate' => (float) $r->provision_rate,
-            'is_active'      => $r->is_active,
+            'is_active' => $r->is_active,
         ];
     }
 
     private function formatProvision(LoanProvision $p): array
     {
         return [
-            'id'                  => $p->id,
-            'loan_id'             => $p->loan_id,
-            'stage'               => $p->stage,
-            'stage_label'         => $p->stage_label,
-            'days_past_due'       => $p->days_past_due,
+            'id' => $p->id,
+            'loan_id' => $p->loan_id,
+            'stage' => $p->stage,
+            'stage_label' => $p->stage_label,
+            'days_past_due' => $p->days_past_due,
             'outstanding_balance' => (float) $p->outstanding_balance,
-            'provision_rate'      => (float) $p->provision_rate,
-            'provision_amount'    => (float) $p->provision_amount,
-            'calculation_date'    => $p->calculation_date?->toDateString(),
-            'notes'               => $p->notes,
+            'provision_rate' => (float) $p->provision_rate,
+            'provision_amount' => (float) $p->provision_amount,
+            'calculation_date' => $p->calculation_date?->toDateString(),
+            'notes' => $p->notes,
         ];
     }
 }

@@ -18,7 +18,7 @@ use Illuminate\Support\Facades\Log;
 abstract class BaseWebhookController extends Controller
 {
     public function __construct(
-        protected PaymentService  $payments,
+        protected PaymentService $payments,
         protected AutoDebitService $autoDebit,
     ) {}
 
@@ -50,11 +50,13 @@ abstract class BaseWebhookController extends Controller
     {
         if (! $this->ipAllowed($request)) {
             Log::warning("[Webhook:{$this->providerName()}] Source IP not in configured allowlist", ['ip' => $request->ip()]);
+
             return response()->noContent(403);
         }
 
         if (! $this->verifySignature($request)) {
             Log::warning("[Webhook:{$this->providerName()}] Invalid signature", ['ip' => $request->ip()]);
+
             return response()->noContent(401);
         }
 
@@ -72,8 +74,8 @@ abstract class BaseWebhookController extends Controller
         } catch (\Throwable $e) {
             $event->markFailed($e->getMessage());
             Log::error("[Webhook:{$this->providerName()}] Processing error", [
-                'error'    => $e->getMessage(),
-                'ref'      => $payload['internal_ref'] ?? null,
+                'error' => $e->getMessage(),
+                'ref' => $payload['internal_ref'] ?? null,
             ]);
         }
 
@@ -85,11 +87,12 @@ abstract class BaseWebhookController extends Controller
     private function processPayload(array $payload, WebhookEvent $event): void
     {
         $internalRef = $payload['internal_ref'] ?? null;
-        $status      = $payload['status']       ?? 'unknown';
+        $status = $payload['status'] ?? 'unknown';
 
         // Route LENDR-DEBIT-* references to standing orders (Phase 55)
         if ($internalRef && str_starts_with($internalRef, 'LENDR-DEBIT-')) {
             $this->processAutoDebit($internalRef, $status, $payload);
+
             return;
         }
 
@@ -101,6 +104,7 @@ abstract class BaseWebhookController extends Controller
         if (! $intent) {
             Log::info("[Webhook:{$this->providerName()}] Unknown ref, logging only", ['ref' => $internalRef]);
             $event->update(['status' => 'skipped']);
+
             return;
         }
 
@@ -108,22 +112,23 @@ abstract class BaseWebhookController extends Controller
         MobileMoneyTransaction::updateOrCreate(
             ['internal_ref' => $internalRef],
             [
-                'provider'          => $this->providerName(),
-                'transaction_id'    => $payload['transaction_id'],
+                'provider' => $this->providerName(),
+                'transaction_id' => $payload['transaction_id'],
                 'transactable_type' => MobileMoneyIntent::class,
-                'transactable_id'   => $intent->id,
-                'phone'             => $payload['phone'] ?? $intent->phone,
-                'amount'            => $payload['amount'] ?? $intent->amount,
-                'currency'          => 'ZMW',
-                'direction'         => 'inbound',
-                'status'            => $status === 'success' ? 'success' : ($status === 'failed' ? 'failed' : 'processing'),
+                'transactable_id' => $intent->id,
+                'phone' => $payload['phone'] ?? $intent->phone,
+                'amount' => $payload['amount'] ?? $intent->amount,
+                'currency' => 'ZMW',
+                'direction' => 'inbound',
+                'status' => $status === 'success' ? 'success' : ($status === 'failed' ? 'failed' : 'processing'),
                 'provider_response' => json_encode($payload['raw']),
-                'processed_at'      => $status === 'success' ? now() : null,
-            ]
+                'processed_at' => $status === 'success' ? now() : null,
+            ],
         );
 
         if ($status !== 'success') {
             $intent->update(['status' => 'failed']);
+
             return;
         }
 
@@ -135,24 +140,25 @@ abstract class BaseWebhookController extends Controller
         $loan = Loan::find($intent->loan_id);
         if (! $loan) {
             $intent->update(['status' => 'failed']);
+
             return;
         }
 
         $payment = $this->payments->record($loan, [
-            'amount'               => (float) $intent->amount,
-            'payment_method'       => $intent->provider,
-            'payment_date'         => now()->toDateString(),
-            'source'               => 'mobile_money_webhook',
-            'reference'            => $internalRef,
-            'momo_transaction_id'  => $payload['transaction_id'],
-            'momo_provider'        => $this->providerName(),
-            'notes'                => "Self-service payment via {$this->providerName()}",
+            'amount' => (float) $intent->amount,
+            'payment_method' => $intent->provider,
+            'payment_date' => now()->toDateString(),
+            'source' => 'mobile_money_webhook',
+            'reference' => $internalRef,
+            'momo_transaction_id' => $payload['transaction_id'],
+            'momo_provider' => $this->providerName(),
+            'notes' => "Self-service payment via {$this->providerName()}",
         ]);
 
         $intent->update([
-            'status'                  => 'confirmed',
+            'status' => 'confirmed',
             'provider_transaction_id' => $payload['transaction_id'],
-            'payment_id'              => $payment->id,
+            'payment_id' => $payment->id,
         ]);
     }
 
@@ -161,17 +167,19 @@ abstract class BaseWebhookController extends Controller
     private function processAutoDebit(string $ref, string $status, array $payload): void
     {
         // ref format: LENDR-DEBIT-{order_id}-{timestamp}
-        $parts   = explode('-', $ref);
+        $parts = explode('-', $ref);
         $orderId = $parts[2] ?? null;
 
         if (! $orderId) {
             Log::warning("[Webhook:{$this->providerName()}] Malformed DEBIT ref", ['ref' => $ref]);
+
             return;
         }
 
         $order = StandingOrder::find($orderId);
         if (! $order) {
             Log::info("[Webhook:{$this->providerName()}] Standing order not found", ['ref' => $ref]);
+
             return;
         }
 
@@ -217,15 +225,15 @@ abstract class BaseWebhookController extends Controller
         [$subnet, $bits] = explode('/', $cidr);
         $bits = (int) $bits;
 
-        $ipBin     = @inet_pton($ip);
+        $ipBin = @inet_pton($ip);
         $subnetBin = @inet_pton($subnet);
 
         if ($ipBin === false || $subnetBin === false || strlen($ipBin) !== strlen($subnetBin)) {
             return false;
         }
 
-        $bytes    = intdiv($bits, 8);
-        $remBits  = $bits % 8;
+        $bytes = intdiv($bits, 8);
+        $remBits = $bits % 8;
 
         if ($bytes > 0 && substr($ipBin, 0, $bytes) !== substr($subnetBin, 0, $bytes)) {
             return false;
@@ -251,11 +259,11 @@ abstract class BaseWebhookController extends Controller
         if (! $eventId) {
             // No event ID — always process (provider doesn't send one)
             return WebhookEvent::create([
-                'provider'   => $this->providerName(),
-                'event_id'   => uniqid($this->providerName() . '-', true),
+                'provider' => $this->providerName(),
+                'event_id' => uniqid($this->providerName().'-', true),
                 'event_type' => $payload['event_type'] ?? 'unknown',
-                'payload'    => $payload['raw'] ?? $payload,
-                'status'     => 'received',
+                'payload' => $payload['raw'] ?? $payload,
+                'status' => 'received',
             ]);
         }
 
@@ -268,11 +276,11 @@ abstract class BaseWebhookController extends Controller
         return WebhookEvent::updateOrCreate(
             ['event_id' => $eventId],
             [
-                'provider'   => $this->providerName(),
+                'provider' => $this->providerName(),
                 'event_type' => $payload['event_type'] ?? 'unknown',
-                'payload'    => $payload['raw'] ?? $payload,
-                'status'     => 'received',
-            ]
+                'payload' => $payload['raw'] ?? $payload,
+                'status' => 'received',
+            ],
         );
     }
 }

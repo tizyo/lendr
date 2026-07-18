@@ -27,7 +27,7 @@ class TwilioDriver
                 [
                     'from' => $this->fromNumber,
                     'body' => $message,
-                ]
+                ],
             );
 
             return true;
@@ -54,13 +54,13 @@ class TwilioDriver
         }
 
         if (str_starts_with($phone, '260')) {
-            return '+' . $phone;
+            return '+'.$phone;
         }
 
         if (str_starts_with($phone, '0')) {
-            return '+260' . substr($phone, 1);
+            return '+260'.substr($phone, 1);
         }
 
-        return '+' . $phone;
+        return '+'.$phone;
     }
 }

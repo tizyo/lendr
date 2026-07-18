@@ -20,9 +20,9 @@ class CrbInquiry extends Model
     protected function casts(): array
     {
         return [
-            'created_at'            => 'datetime',
+            'created_at' => 'datetime',
             'result_has_active_loans' => 'boolean',
-            'override_requested'    => 'boolean',
+            'override_requested' => 'boolean',
         ];
     }
 }

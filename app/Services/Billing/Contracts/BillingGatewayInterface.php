@@ -18,7 +18,7 @@ interface BillingGatewayInterface
      *   meta:          array,
      *   customizations?: array,
      * } $payload
-     * @return string  The redirect URL to send the user to.
+     * @return string The redirect URL to send the user to.
      */
     public function initiatePayment(array $payload): string;
 

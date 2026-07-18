@@ -14,13 +14,13 @@ class KycDocumentFactory extends Factory
     public function definition(): array
     {
         return [
-            'borrower_id'   => Borrower::factory(),
+            'borrower_id' => Borrower::factory(),
             'document_type' => fake()->randomElement(['national_id_front', 'national_id_back', 'passport', 'utility_bill', 'selfie']),
-            'file_path'     => 'kyc/test/sample.jpg',
-            'file_name'     => 'sample.jpg',
-            'file_size'     => 102400,
-            'mime_type'     => 'image/jpeg',
-            'status'        => KycStatus::Pending->value,
+            'file_path' => 'kyc/test/sample.jpg',
+            'file_name' => 'sample.jpg',
+            'file_size' => 102400,
+            'mime_type' => 'image/jpeg',
+            'status' => KycStatus::Pending->value,
         ];
     }
 
@@ -37,7 +37,7 @@ class KycDocumentFactory extends Factory
     public function rejected(): static
     {
         return $this->state([
-            'status'           => KycStatus::Rejected->value,
+            'status' => KycStatus::Rejected->value,
             'rejection_reason' => 'Document is blurry or unreadable.',
         ]);
     }

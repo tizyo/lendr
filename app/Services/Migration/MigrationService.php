@@ -42,12 +42,12 @@ class MigrationService
     public function logSuccess(string $table, int $legacyId, int $newId, string $notes = ''): void
     {
         DB::table('migration_log')->insert([
-            'tenant_id'   => $this->tenantId,
-            'table_name'  => $table,
-            'legacy_id'   => $legacyId,
-            'new_id'      => $newId,
-            'status'      => 'success',
-            'notes'       => $notes ?: null,
+            'tenant_id' => $this->tenantId,
+            'table_name' => $table,
+            'legacy_id' => $legacyId,
+            'new_id' => $newId,
+            'status' => 'success',
+            'notes' => $notes ?: null,
             'migrated_at' => now(),
         ]);
     }
@@ -58,12 +58,12 @@ class MigrationService
     public function logSkipped(string $table, int $legacyId, string $reason = ''): void
     {
         DB::table('migration_log')->insert([
-            'tenant_id'   => $this->tenantId,
-            'table_name'  => $table,
-            'legacy_id'   => $legacyId,
-            'new_id'      => null,
-            'status'      => 'skipped',
-            'notes'       => $reason ?: null,
+            'tenant_id' => $this->tenantId,
+            'table_name' => $table,
+            'legacy_id' => $legacyId,
+            'new_id' => null,
+            'status' => 'skipped',
+            'notes' => $reason ?: null,
             'migrated_at' => now(),
         ]);
     }
@@ -74,12 +74,12 @@ class MigrationService
     public function logFailed(string $table, int $legacyId, string $reason): void
     {
         DB::table('migration_log')->insert([
-            'tenant_id'   => $this->tenantId,
-            'table_name'  => $table,
-            'legacy_id'   => $legacyId,
-            'new_id'      => null,
-            'status'      => 'failed',
-            'notes'       => $reason,
+            'tenant_id' => $this->tenantId,
+            'table_name' => $table,
+            'legacy_id' => $legacyId,
+            'new_id' => null,
+            'status' => 'failed',
+            'notes' => $reason,
             'migrated_at' => now(),
         ]);
 
@@ -119,7 +119,7 @@ class MigrationService
     /**
      * Remove all migration_log entries for this tenant (used by rollback command).
      */
-    public function clearLog(string $table = null): int
+    public function clearLog(?string $table = null): int
     {
         $query = DB::table('migration_log')->where('tenant_id', $this->tenantId);
 

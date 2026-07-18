@@ -36,7 +36,7 @@ class SettingController extends Controller
 
             DB::table('settings')->updateOrInsert(
                 ['key' => $key],
-                ['value' => $value, 'updated_at' => now()]
+                ['value' => $value, 'updated_at' => now()],
             );
         }
 
@@ -51,12 +51,12 @@ class SettingController extends Controller
             (new TenantMailService)->raw(
                 $to,
                 'LENDR — SMTP Test',
-                'LENDR SMTP test — configuration is working.'
+                'LENDR SMTP test — configuration is working.',
             );
 
             return back()->with('success', "Test email sent to {$to}.");
         } catch (\Throwable $e) {
-            return back()->with('error', 'SMTP error: ' . $e->getMessage());
+            return back()->with('error', 'SMTP error: '.$e->getMessage());
         }
     }
 }

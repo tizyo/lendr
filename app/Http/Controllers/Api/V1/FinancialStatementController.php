@@ -16,7 +16,7 @@ class FinancialStatementController extends BaseApiController
 
         return $this->success(
             $this->service->balanceSheet($request->as_of),
-            'Balance sheet generated.'
+            'Balance sheet generated.',
         );
     }
 
@@ -24,12 +24,12 @@ class FinancialStatementController extends BaseApiController
     {
         $request->validate([
             'from' => ['nullable', 'date'],
-            'to'   => ['nullable', 'date', 'after_or_equal:from'],
+            'to' => ['nullable', 'date', 'after_or_equal:from'],
         ]);
 
         return $this->success(
             $this->service->incomeStatement($request->from, $request->to),
-            'Income statement generated.'
+            'Income statement generated.',
         );
     }
 
@@ -37,12 +37,12 @@ class FinancialStatementController extends BaseApiController
     {
         $request->validate([
             'from' => ['nullable', 'date'],
-            'to'   => ['nullable', 'date', 'after_or_equal:from'],
+            'to' => ['nullable', 'date', 'after_or_equal:from'],
         ]);
 
         return $this->success(
             $this->service->cashFlow($request->from, $request->to),
-            'Cash flow statement generated.'
+            'Cash flow statement generated.',
         );
     }
 
@@ -52,7 +52,7 @@ class FinancialStatementController extends BaseApiController
 
         return $this->success(
             $this->service->portfolioAtRisk($request->as_of),
-            'Portfolio at risk calculated.'
+            'Portfolio at risk calculated.',
         );
     }
 }

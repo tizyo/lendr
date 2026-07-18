@@ -24,11 +24,11 @@ function makeBorrower(array $attrs = []): Borrower
 function makeCampaign(array $attrs = []): Campaign
 {
     return Campaign::create(array_merge([
-        'name'           => 'Test Campaign',
-        'type'           => 'sms',
-        'content'        => 'Hello {{name}}, your loan is due.',
+        'name' => 'Test Campaign',
+        'type' => 'sms',
+        'content' => 'Hello {{name}}, your loan is due.',
         'target_segment' => 'all_borrowers',
-        'status'         => 'draft',
+        'status' => 'draft',
     ], $attrs));
 }
 
@@ -39,9 +39,9 @@ test('can create an SMS campaign', function () {
 
     $resp = $this->actingAs($admin)
         ->postJson(route('api.v1.campaigns.store'), [
-            'name'           => 'Payment Reminder',
-            'type'           => 'sms',
-            'content'        => 'Your loan repayment is due tomorrow.',
+            'name' => 'Payment Reminder',
+            'type' => 'sms',
+            'content' => 'Your loan repayment is due tomorrow.',
             'target_segment' => 'active_borrowers',
         ])
         ->assertStatus(201);
@@ -55,10 +55,10 @@ test('can create an email campaign with subject', function () {
 
     $resp = $this->actingAs($admin)
         ->postJson(route('api.v1.campaigns.store'), [
-            'name'           => 'Monthly Newsletter',
-            'type'           => 'email',
-            'subject'        => 'Your Monthly Statement',
-            'content'        => '<h1>Hello</h1><p>Your statement is ready.</p>',
+            'name' => 'Monthly Newsletter',
+            'type' => 'email',
+            'subject' => 'Your Monthly Statement',
+            'content' => '<h1>Hello</h1><p>Your statement is ready.</p>',
             'target_segment' => 'all_borrowers',
         ])
         ->assertStatus(201);
@@ -84,11 +84,11 @@ test('creating campaign with scheduled_at sets status to scheduled', function ()
 
     $resp = $this->actingAs($admin)
         ->postJson(route('api.v1.campaigns.store'), [
-            'name'           => 'Scheduled Blast',
-            'type'           => 'sms',
-            'content'        => 'Hello!',
+            'name' => 'Scheduled Blast',
+            'type' => 'sms',
+            'content' => 'Hello!',
             'target_segment' => 'all_borrowers',
-            'scheduled_at'   => now()->addDay()->toDateTimeString(),
+            'scheduled_at' => now()->addDay()->toDateTimeString(),
         ])
         ->assertStatus(201);
 
@@ -115,18 +115,18 @@ test('dispatching campaign to all_borrowers segment sends to all active borrower
 });
 
 test('dispatching campaign to active_borrowers only includes borrowers with active loans', function () {
-    $admin   = campaignAdmin();
-    $type    = LoanType::factory()->create();
-    $plan    = LoanPlan::factory()->create(['loan_type_id' => $type->id]);
+    $admin = campaignAdmin();
+    $type = LoanType::factory()->create();
+    $plan = LoanPlan::factory()->create(['loan_type_id' => $type->id]);
 
-    $activeBorrower   = makeBorrower(['phone' => '+260971111111']);
+    $activeBorrower = makeBorrower(['phone' => '+260971111111']);
     $inactiveBorrower = makeBorrower(['phone' => '+260972222222']); // no active loan
 
     Loan::factory()->create([
-        'borrower_id'  => $activeBorrower->id,
+        'borrower_id' => $activeBorrower->id,
         'loan_type_id' => $type->id,
         'loan_plan_id' => $plan->id,
-        'status'       => 'active',
+        'status' => 'active',
     ]);
 
     $campaign = makeCampaign(['target_segment' => 'active_borrowers']);
@@ -155,7 +155,7 @@ test('dry run dispatch does not persist recipient records', function () {
 });
 
 test('already completed campaign cannot be dispatched again', function () {
-    $admin    = campaignAdmin();
+    $admin = campaignAdmin();
     $campaign = makeCampaign(['status' => 'completed']);
 
     $this->actingAs($admin)
@@ -164,13 +164,13 @@ test('already completed campaign cannot be dispatched again', function () {
 });
 
 test('campaign stats shows delivery and open rates', function () {
-    $admin    = campaignAdmin();
+    $admin = campaignAdmin();
     $campaign = makeCampaign([
-        'status'           => 'completed',
+        'status' => 'completed',
         'total_recipients' => 100,
-        'sent_count'       => 90,
-        'failed_count'     => 10,
-        'opened_count'     => 45,
+        'sent_count' => 90,
+        'failed_count' => 10,
+        'opened_count' => 45,
     ]);
 
     $resp = $this->actingAs($admin)
@@ -182,13 +182,13 @@ test('campaign stats shows delivery and open rates', function () {
 });
 
 test('tracking open updates recipient status and increments campaign opened count', function () {
-    $admin     = campaignAdmin();
-    $campaign  = makeCampaign(['status' => 'completed', 'sent_count' => 1]);
+    $admin = campaignAdmin();
+    $campaign = makeCampaign(['status' => 'completed', 'sent_count' => 1]);
     $recipient = CampaignRecipient::create([
-        'campaign_id'       => $campaign->id,
+        'campaign_id' => $campaign->id,
         'recipient_address' => '+260971000001',
-        'status'            => 'sent',
-        'sent_at'           => now(),
+        'status' => 'sent',
+        'sent_at' => now(),
     ]);
 
     $this->actingAs($admin)
@@ -200,9 +200,9 @@ test('tracking open updates recipient status and increments campaign opened coun
 });
 
 test('scheduled campaigns are processed by the command', function () {
-    $admin    = campaignAdmin();
+    $admin = campaignAdmin();
     $campaign = makeCampaign([
-        'status'       => 'scheduled',
+        'status' => 'scheduled',
         'scheduled_at' => now()->subMinute()->toDateTimeString(),
     ]);
 

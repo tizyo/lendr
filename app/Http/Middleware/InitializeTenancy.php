@@ -19,7 +19,7 @@ class InitializeTenancy
 {
     public function handle(Request $request, Closure $next): Response
     {
-        $host           = $request->getHost();
+        $host = $request->getHost();
         $centralDomains = config('tenancy.central_domains', []);
 
         // Custom subdomain (Growth/Enterprise) — identify by domain record.
@@ -28,6 +28,7 @@ class InitializeTenancy
             if ($domain) {
                 tenancy()->initialize($domain->tenant);
             }
+
             return $next($request);
         }
 
@@ -40,7 +41,7 @@ class InitializeTenancy
         // "Table 'users' doesn't exist" because users is a central-only table.
         $tenantId = $request->hasSession() ? $request->session()->get('tenant_id') : null;
         if ($tenantId) {
-            $webGuardKey   = app('auth')->guard('web')->getName();
+            $webGuardKey = app('auth')->guard('web')->getName();
             $hasAuthSession = $request->session()->has($webGuardKey);
 
             if ($hasAuthSession) {

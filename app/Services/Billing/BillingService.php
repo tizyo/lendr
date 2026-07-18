@@ -21,44 +21,44 @@ class BillingService
     public function initiateCheckout(Tenant $tenant, string $plan, string $billingCycle = 'monthly'): string
     {
         $planConfig = PlanConfig::forPlan($plan);
-        $amount     = (float) ($planConfig?->price_zmw ?? 0);
-        $currency   = $tenant->currency ?? 'ZMW';
-        $txRef      = 'LENDR-SUB-' . Str::uuid();
+        $amount = (float) ($planConfig?->price_zmw ?? 0);
+        $currency = $tenant->currency ?? 'ZMW';
+        $txRef = 'LENDR-SUB-'.Str::uuid();
 
         $gateway = $this->gateways->active();
 
         $invoice = SubscriptionInvoice::create([
-            'tenant_id'     => $tenant->id,
-            'gateway'       => $gateway->getName(),
-            'gateway_tx_ref'=> $txRef,
-            'plan'          => $plan,
-            'amount'        => $amount,
-            'currency'      => $currency,
+            'tenant_id' => $tenant->id,
+            'gateway' => $gateway->getName(),
+            'gateway_tx_ref' => $txRef,
+            'plan' => $plan,
+            'amount' => $amount,
+            'currency' => $currency,
             'billing_cycle' => $billingCycle,
-            'status'        => 'pending',
+            'status' => 'pending',
         ]);
 
         $redirectUrl = route('billing.callback');
 
         return $gateway->initiatePayment([
-            'tx_ref'       => $txRef,
-            'amount'       => $amount,
-            'currency'     => $currency,
+            'tx_ref' => $txRef,
+            'amount' => $amount,
+            'currency' => $currency,
             'redirect_url' => $redirectUrl,
-            'customer'     => [
-                'email'        => $tenant->admin_email ?? '',
-                'name'         => $tenant->name,
+            'customer' => [
+                'email' => $tenant->admin_email ?? '',
+                'name' => $tenant->name,
                 'phone_number' => '',
             ],
             'meta' => [
-                'tenant_id'  => $tenant->id,
-                'plan'       => $plan,
+                'tenant_id' => $tenant->id,
+                'plan' => $plan,
                 'invoice_id' => $invoice->id,
             ],
             'customizations' => [
-                'title'       => 'LENDR Subscription',
-                'description' => ($planConfig?->label ?? ucfirst($plan)) . ' Plan — ' . ucfirst($billingCycle),
-                'logo'        => '',
+                'title' => 'LENDR Subscription',
+                'description' => ($planConfig?->label ?? ucfirst($plan)).' Plan — '.ucfirst($billingCycle),
+                'logo' => '',
             ],
         ]);
     }
@@ -83,20 +83,23 @@ class BillingService
         $rawStatus = strtolower($gatewayStatus);
         if (! in_array($rawStatus, ['successful', 'success', 'completed'])) {
             $invoice->update(['status' => 'failed', 'gateway_tx_id' => $transactionId ?: null]);
+
             return ['success' => false, 'reason' => 'Payment was not successful.'];
         }
 
         // Verify with gateway API
         try {
-            $gateway  = $this->gateways->driver($invoice->gateway);
+            $gateway = $this->gateways->driver($invoice->gateway);
             $verified = $gateway->verifyPayment($transactionId);
         } catch (\Throwable $e) {
             $invoice->update(['status' => 'failed']);
-            return ['success' => false, 'reason' => 'Gateway verification failed: ' . $e->getMessage()];
+
+            return ['success' => false, 'reason' => 'Gateway verification failed: '.$e->getMessage()];
         }
 
         if ($verified['status'] !== 'success') {
             $invoice->update(['status' => 'failed', 'gateway_tx_id' => $transactionId]);
+
             return ['success' => false, 'reason' => 'Gateway returned non-success status.'];
         }
 
@@ -120,10 +123,12 @@ class BillingService
 
         if ($status !== 'success') {
             $invoice->update(['status' => 'failed', 'gateway_tx_id' => $transactionId]);
+
             return ['handled' => true, 'reason' => 'Marked as failed.'];
         }
 
         $result = $this->activateSubscription($invoice, $transactionId, $amount);
+
         return ['handled' => true, ...$result];
     }
 
@@ -157,14 +162,14 @@ class BillingService
     {
         // Mark invoice paid
         $invoice->update([
-            'status'        => 'paid',
+            'status' => 'paid',
             'gateway_tx_id' => $gatewayTxId,
-            'paid_at'       => now(),
+            'paid_at' => now(),
         ]);
 
         // Determine subscription period
         $startsAt = now();
-        $endsAt   = $invoice->billing_cycle === 'annual'
+        $endsAt = $invoice->billing_cycle === 'annual'
             ? $startsAt->copy()->addYear()
             : $startsAt->copy()->addMonth();
 
@@ -175,16 +180,16 @@ class BillingService
 
         // Create new active subscription
         $subscription = Subscription::create([
-            'tenant_id'      => $invoice->tenant_id,
-            'plan'           => $invoice->plan,
-            'status'         => 'active',
-            'gateway'        => $invoice->gateway,
+            'tenant_id' => $invoice->tenant_id,
+            'plan' => $invoice->plan,
+            'status' => 'active',
+            'gateway' => $invoice->gateway,
             'gateway_tx_ref' => $invoice->gateway_tx_ref,
-            'amount'         => $amount,
-            'currency'       => $invoice->currency,
-            'billing_cycle'  => $invoice->billing_cycle,
-            'starts_at'      => $startsAt,
-            'ends_at'        => $endsAt,
+            'amount' => $amount,
+            'currency' => $invoice->currency,
+            'billing_cycle' => $invoice->billing_cycle,
+            'starts_at' => $startsAt,
+            'ends_at' => $endsAt,
         ]);
 
         // Link invoice to subscription
@@ -194,8 +199,8 @@ class BillingService
         $tenant = Tenant::find($invoice->tenant_id);
         if ($tenant) {
             $tenant->update([
-                'plan'          => $invoice->plan,
-                'status'        => 'active',
+                'plan' => $invoice->plan,
+                'status' => 'active',
                 'trial_ends_at' => null,
             ]);
         }

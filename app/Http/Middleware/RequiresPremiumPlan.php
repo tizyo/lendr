@@ -30,9 +30,9 @@ class RequiresPremiumPlan
 
         // Starter / Trial — return upgrade prompt page.
         return Inertia::render('upgrade/PremiumRequired', [
-            'feature'     => 'Borrower Self-Service PWA',
+            'feature' => 'Borrower Self-Service PWA',
             'currentPlan' => ucfirst($tenant->plan),
-            'tenantName'  => $tenant->name,
+            'tenantName' => $tenant->name,
         ])->toResponse($request)->setStatusCode(402);
     }
 }

@@ -26,18 +26,18 @@ class ReportController extends BaseApiController
     public function generate(Request $request, string $type): JsonResponse
     {
         $data = match ($type) {
-            'loans'             => $this->loansReport($request),
-            'payments'          => $this->paymentsReport($request),
-            'expenses'          => $this->expensesReport($request),
-            'borrowers'         => $this->borrowersReport($request),
-            'par'               => $this->parReport($request),
-            'collection'        => $this->collectionReport($request),
-            'portfolio_trend'   => $this->portfolioTrendReport($request),
-            'demographics'      => $this->demographicsReport($request),
-            'cohort'            => $this->cohortReport($request),
-            'officer_league'    => $this->officerLeagueReport($request),
-            'geographic'        => $this->geographicReport($request),
-            default             => null,
+            'loans' => $this->loansReport($request),
+            'payments' => $this->paymentsReport($request),
+            'expenses' => $this->expensesReport($request),
+            'borrowers' => $this->borrowersReport($request),
+            'par' => $this->parReport($request),
+            'collection' => $this->collectionReport($request),
+            'portfolio_trend' => $this->portfolioTrendReport($request),
+            'demographics' => $this->demographicsReport($request),
+            'cohort' => $this->cohortReport($request),
+            'officer_league' => $this->officerLeagueReport($request),
+            'geographic' => $this->geographicReport($request),
+            default => null,
         };
 
         if ($data === null) {
@@ -56,23 +56,23 @@ class ReportController extends BaseApiController
         $format = strtolower($request->query('format', 'excel'));
 
         $data = match ($type) {
-            'loans'           => $this->loansReport($request),
-            'payments'        => $this->paymentsReport($request),
-            'expenses'        => $this->expensesReport($request),
-            'borrowers'       => $this->borrowersReport($request),
-            'par'             => $this->parReport($request),
-            'collection'      => $this->collectionReport($request),
+            'loans' => $this->loansReport($request),
+            'payments' => $this->paymentsReport($request),
+            'expenses' => $this->expensesReport($request),
+            'borrowers' => $this->borrowersReport($request),
+            'par' => $this->parReport($request),
+            'collection' => $this->collectionReport($request),
             'portfolio_trend' => $this->portfolioTrendReport($request),
-            'officer_league'  => $this->officerLeagueReport($request),
-            default           => null,
+            'officer_league' => $this->officerLeagueReport($request),
+            default => null,
         };
 
         if ($data === null) {
             return $this->error("Unknown report type '{$type}'.", 422);
         }
 
-        $rows     = $data['rows'] ?? [];
-        $filename = "{$type}-report-" . now()->format('Y-m-d');
+        $rows = $data['rows'] ?? [];
+        $filename = "{$type}-report-".now()->format('Y-m-d');
 
         if ($format === 'csv') {
             return $this->streamCsv($rows, $filename);
@@ -85,14 +85,14 @@ class ReportController extends BaseApiController
         // Default: Excel
         $headings = ! empty($rows) ? array_map(
             fn ($k) => ucwords(str_replace('_', ' ', $k)),
-            array_keys((array) $rows[0])
+            array_keys((array) $rows[0]),
         ) : [];
 
         $rowArrays = array_map(fn ($row) => array_values((array) $row), $rows);
 
         return Excel::download(
             new ReportExport($rowArrays, $headings, ucwords(str_replace('_', '-', $type))),
-            "{$filename}.xlsx"
+            "{$filename}.xlsx",
         );
     }
 
@@ -103,17 +103,17 @@ class ReportController extends BaseApiController
         }
 
         $headings = array_keys((array) $rows[0]);
-        $lines    = [implode(',', array_map(fn ($h) => '"' . str_replace('"', '""', $h) . '"', $headings))];
+        $lines = [implode(',', array_map(fn ($h) => '"'.str_replace('"', '""', $h).'"', $headings))];
 
         foreach ($rows as $row) {
             $lines[] = implode(',', array_map(
-                fn ($v) => '"' . str_replace('"', '""', (string) ($v ?? '')) . '"',
-                array_values((array) $row)
+                fn ($v) => '"'.str_replace('"', '""', (string) ($v ?? '')).'"',
+                array_values((array) $row),
             ));
         }
 
         return response(implode("\n", $lines), 200, [
-            'Content-Type'        => 'text/csv',
+            'Content-Type' => 'text/csv',
             'Content-Disposition' => "attachment; filename=\"{$filename}.csv\"",
         ]);
     }
@@ -121,9 +121,9 @@ class ReportController extends BaseApiController
     private function streamPdf(string $type, array $data, string $filename): Response
     {
         $pdf = Pdf::loadView('pdf.reports.generic', [
-            'type'    => ucwords(str_replace('_', ' ', $type)),
-            'data'    => $data,
-            'rows'    => $data['rows'] ?? [],
+            'type' => ucwords(str_replace('_', ' ', $type)),
+            'data' => $data,
+            'rows' => $data['rows'] ?? [],
             'summary' => $data['summary'] ?? [],
             'generated_at' => now()->format('d M Y H:i'),
         ])->setPaper('a4', 'landscape');
@@ -141,36 +141,36 @@ class ReportController extends BaseApiController
                 'loanType:id,name',
                 'loanPlan:id,name',
             ])
-            ->when($request->status,   fn ($q, $s) => $q->where('status', $s))
+            ->when($request->status, fn ($q, $s) => $q->where('status', $s))
             ->when($request->date_from, fn ($q, $d) => $q->where('application_date', '>=', $d))
-            ->when($request->date_to,   fn ($q, $d) => $q->where('application_date', '<=', $d))
+            ->when($request->date_to, fn ($q, $d) => $q->where('application_date', '<=', $d))
             ->latest('application_date')
             ->limit(2000);
 
         $loans = $query->get()->map(fn ($l) => [
-            'loan_number'        => $l->loan_number,
-            'borrower_number'    => $l->borrower->borrower_number,
-            'borrower_name'      => $l->borrower->full_name,
-            'borrower_phone'     => $l->borrower->phone,
-            'loan_type'          => $l->loanType->name,
-            'loan_plan'          => $l->loanPlan->name,
-            'principal_amount'   => (float) $l->principal_amount,
-            'total_repayable'    => (float) $l->total_repayable,
+            'loan_number' => $l->loan_number,
+            'borrower_number' => $l->borrower->borrower_number,
+            'borrower_name' => $l->borrower->full_name,
+            'borrower_phone' => $l->borrower->phone,
+            'loan_type' => $l->loanType->name,
+            'loan_plan' => $l->loanPlan->name,
+            'principal_amount' => (float) $l->principal_amount,
+            'total_repayable' => (float) $l->total_repayable,
             'outstanding_balance' => (float) $l->outstanding_balance,
-            'status'             => $l->status->value,
-            'application_date'   => $l->application_date?->toDateString(),
-            'disbursement_date'  => $l->disbursement_date?->toDateString(),
-            'maturity_date'      => $l->maturity_date?->toDateString(),
+            'status' => $l->status->value,
+            'application_date' => $l->application_date?->toDateString(),
+            'disbursement_date' => $l->disbursement_date?->toDateString(),
+            'maturity_date' => $l->maturity_date?->toDateString(),
         ]);
 
         return [
-            'type'    => 'loans',
-            'total'   => $loans->count(),
+            'type' => 'loans',
+            'total' => $loans->count(),
             'summary' => [
-                'total_principal'    => round($loans->sum('principal_amount'), 2),
-                'total_outstanding'  => round($loans->sum('outstanding_balance'), 2),
+                'total_principal' => round($loans->sum('principal_amount'), 2),
+                'total_outstanding' => round($loans->sum('outstanding_balance'), 2),
             ],
-            'rows'    => $loans->values(),
+            'rows' => $loans->values(),
         ];
     }
 
@@ -179,31 +179,31 @@ class ReportController extends BaseApiController
         $payments = Payment::query()
             ->with(['loan.borrower:id,first_name,last_name,borrower_number'])
             ->when($request->date_from, fn ($q, $d) => $q->where('payment_date', '>=', $d))
-            ->when($request->date_to,   fn ($q, $d) => $q->where('payment_date', '<=', $d))
-            ->when($request->loan_id,   fn ($q, $id) => $q->where('loan_id', $id))
+            ->when($request->date_to, fn ($q, $d) => $q->where('payment_date', '<=', $d))
+            ->when($request->loan_id, fn ($q, $id) => $q->where('loan_id', $id))
             ->latest('payment_date')
             ->limit(2000)
             ->get()
             ->map(fn ($p) => [
-                'receipt_number'  => $p->receipt_number,
-                'loan_number'     => $p->loan->loan_number,
+                'receipt_number' => $p->receipt_number,
+                'loan_number' => $p->loan->loan_number,
                 'borrower_number' => $p->loan->borrower->borrower_number,
-                'borrower_name'   => $p->loan->borrower->full_name,
-                'amount'               => (float) $p->amount,
-                'principal_allocated'  => (float) $p->principal_allocated,
-                'interest_allocated'   => (float) $p->interest_allocated,
-                'penalty_allocated'    => (float) $p->penalty_allocated,
-                'payment_method'  => $p->payment_method->value,
-                'payment_date'    => $p->payment_date->toDateString(),
+                'borrower_name' => $p->loan->borrower->full_name,
+                'amount' => (float) $p->amount,
+                'principal_allocated' => (float) $p->principal_allocated,
+                'interest_allocated' => (float) $p->interest_allocated,
+                'penalty_allocated' => (float) $p->penalty_allocated,
+                'payment_method' => $p->payment_method->value,
+                'payment_date' => $p->payment_date->toDateString(),
             ]);
 
         return [
-            'type'    => 'payments',
-            'total'   => $payments->count(),
+            'type' => 'payments',
+            'total' => $payments->count(),
             'summary' => [
                 'total_collected' => round($payments->sum('amount'), 2),
                 'total_principal' => round($payments->sum('principal_allocated'), 2),
-                'total_interest'  => round($payments->sum('interest_allocated'), 2),
+                'total_interest' => round($payments->sum('interest_allocated'), 2),
                 'total_penalties' => round($payments->sum('penalty_allocated'), 2),
             ],
             'rows' => $payments->values(),
@@ -214,32 +214,32 @@ class ReportController extends BaseApiController
     {
         $expenses = Expense::query()
             ->with(['category:id,name,code', 'submittedBy:id,name'])
-            ->when($request->status,      fn ($q, $s) => $q->where('status', $s))
+            ->when($request->status, fn ($q, $s) => $q->where('status', $s))
             ->when($request->category_id, fn ($q, $id) => $q->where('expense_category_id', $id))
             ->when($request->date_from, fn ($q, $d) => $q->where('expense_date', '>=', $d))
-            ->when($request->date_to,   fn ($q, $d) => $q->where('expense_date', '<=', $d))
+            ->when($request->date_to, fn ($q, $d) => $q->where('expense_date', '<=', $d))
             ->latest('expense_date')
             ->limit(2000)
             ->get()
             ->map(fn ($e) => [
                 'expense_number' => $e->expense_number,
-                'title'          => $e->title,
-                'category'       => $e->category?->name,
-                'amount'         => (float) $e->amount,
-                'currency'       => $e->currency,
-                'vendor'         => $e->vendor,
-                'status'         => $e->status->value,
-                'expense_date'   => $e->expense_date?->toDateString(),
-                'submitted_by'   => $e->submittedBy?->name,
+                'title' => $e->title,
+                'category' => $e->category?->name,
+                'amount' => (float) $e->amount,
+                'currency' => $e->currency,
+                'vendor' => $e->vendor,
+                'status' => $e->status->value,
+                'expense_date' => $e->expense_date?->toDateString(),
+                'submitted_by' => $e->submittedBy?->name,
             ]);
 
         return [
-            'type'    => 'expenses',
-            'total'   => $expenses->count(),
+            'type' => 'expenses',
+            'total' => $expenses->count(),
             'summary' => [
-                'total_amount'    => round($expenses->sum('amount'), 2),
-                'total_approved'  => round(
-                    $expenses->where('status', 'approved')->sum('amount'), 2
+                'total_amount' => round($expenses->sum('amount'), 2),
+                'total_approved' => round(
+                    $expenses->where('status', 'approved')->sum('amount'), 2,
                 ),
             ],
             'rows' => $expenses->values(),
@@ -258,23 +258,23 @@ class ReportController extends BaseApiController
             ->limit(2000)
             ->get()
             ->map(fn ($b) => [
-                'borrower_number'    => $b->borrower_number,
-                'first_name'         => $b->first_name,
-                'last_name'          => $b->last_name,
-                'phone'              => $b->phone,
-                'email'              => $b->email,
-                'national_id'        => $b->national_id,
-                'is_active'          => $b->is_active,
-                'total_loans'        => $b->loans_count,
-                'active_loans'       => $b->active_loans_count,
-                'date_registered'    => $b->created_at->toDateString(),
+                'borrower_number' => $b->borrower_number,
+                'first_name' => $b->first_name,
+                'last_name' => $b->last_name,
+                'phone' => $b->phone,
+                'email' => $b->email,
+                'national_id' => $b->national_id,
+                'is_active' => $b->is_active,
+                'total_loans' => $b->loans_count,
+                'active_loans' => $b->active_loans_count,
+                'date_registered' => $b->created_at->toDateString(),
             ]);
 
         return [
-            'type'    => 'borrowers',
-            'total'   => $borrowers->count(),
+            'type' => 'borrowers',
+            'total' => $borrowers->count(),
             'summary' => [
-                'active'   => $borrowers->where('is_active', true)->count(),
+                'active' => $borrowers->where('is_active', true)->count(),
                 'inactive' => $borrowers->where('is_active', false)->count(),
             ],
             'rows' => $borrowers->values(),
@@ -294,15 +294,15 @@ class ReportController extends BaseApiController
             ->whereIn('status', $activeStatuses)
             ->get();
 
-        $today        = now()->startOfDay();
+        $today = now()->startOfDay();
         $totalPortfolio = $loans->sum(fn ($l) => (float) $l->outstanding_balance);
 
         $buckets = [
             'current' => collect(),
-            'par1'    => collect(), // 1–6 days
-            'par7'    => collect(), // 7–29 days
-            'par30'   => collect(), // 30–89 days
-            'par90'   => collect(), // 90+ days
+            'par1' => collect(), // 1–6 days
+            'par7' => collect(), // 7–29 days
+            'par30' => collect(), // 30–89 days
+            'par90' => collect(), // 90+ days
         ];
 
         foreach ($loans as $loan) {
@@ -315,6 +315,7 @@ class ReportController extends BaseApiController
 
             if (! $firstOverdue) {
                 $buckets['current']->push($loan);
+
                 continue;
             }
 
@@ -334,36 +335,36 @@ class ReportController extends BaseApiController
         }
 
         $formatBucket = fn ($bucket) => [
-            'count'      => $bucket->count(),
+            'count' => $bucket->count(),
             'outstanding' => round($bucket->sum(fn ($l) => (float) $l->outstanding_balance), 2),
-            'par_ratio'  => $totalPortfolio > 0
+            'par_ratio' => $totalPortfolio > 0
                 ? round($bucket->sum(fn ($l) => (float) $l->outstanding_balance) / $totalPortfolio * 100, 2)
                 : 0,
         ];
 
         $rows = $loans->whereIn('id', collect($buckets)->flatten()->pluck('id'))
             ->map(fn ($l) => [
-                'loan_number'        => $l->loan_number,
-                'borrower_number'    => $l->borrower->borrower_number,
-                'borrower_name'      => $l->borrower->full_name,
-                'loan_type'          => $l->loanType->name,
+                'loan_number' => $l->loan_number,
+                'borrower_number' => $l->borrower->borrower_number,
+                'borrower_name' => $l->borrower->full_name,
+                'loan_type' => $l->loanType->name,
                 'outstanding_balance' => (float) $l->outstanding_balance,
-                'status'             => $l->status->value,
-                'disbursement_date'  => $l->disbursement_date?->toDateString(),
-                'maturity_date'      => $l->maturity_date?->toDateString(),
+                'status' => $l->status->value,
+                'disbursement_date' => $l->disbursement_date?->toDateString(),
+                'maturity_date' => $l->maturity_date?->toDateString(),
             ]);
 
         return [
-            'type'    => 'par',
-            'total'   => $loans->count(),
+            'type' => 'par',
+            'total' => $loans->count(),
             'summary' => [
-                'total_portfolio'  => round($totalPortfolio, 2),
-                'par_buckets'      => [
+                'total_portfolio' => round($totalPortfolio, 2),
+                'par_buckets' => [
                     'current' => $formatBucket($buckets['current']),
-                    'par1'    => $formatBucket($buckets['par1']),
-                    'par7'    => $formatBucket($buckets['par7']),
-                    'par30'   => $formatBucket($buckets['par30']),
-                    'par90'   => $formatBucket($buckets['par90']),
+                    'par1' => $formatBucket($buckets['par1']),
+                    'par7' => $formatBucket($buckets['par7']),
+                    'par30' => $formatBucket($buckets['par30']),
+                    'par90' => $formatBucket($buckets['par90']),
                 ],
             ],
             'rows' => $rows->values(),
@@ -391,27 +392,27 @@ class ReportController extends BaseApiController
 
         $months = [];
         for ($m = 1; $m <= 12; $m++) {
-            $due        = (float) ($scheduled[$m] ?? 0);
+            $due = (float) ($scheduled[$m] ?? 0);
             $collected_ = (float) ($collected[$m] ?? 0);
-            $months[]  = [
-                'month'           => $m,
-                'label'           => now()->setMonth($m)->format('M'),
-                'total_due'       => round($due, 2),
+            $months[] = [
+                'month' => $m,
+                'label' => now()->setMonth($m)->format('M'),
+                'total_due' => round($due, 2),
                 'total_collected' => round($collected_, 2),
-                'efficiency'      => $due > 0 ? round($collected_ / $due * 100, 2) : null,
+                'efficiency' => $due > 0 ? round($collected_ / $due * 100, 2) : null,
             ];
         }
 
-        $totalDue       = array_sum(array_column($months, 'total_due'));
+        $totalDue = array_sum(array_column($months, 'total_due'));
         $totalCollected = array_sum(array_column($months, 'total_collected'));
 
         return [
             'type' => 'collection',
             'year' => $year,
             'summary' => [
-                'total_due'            => round($totalDue, 2),
-                'total_collected'      => round($totalCollected, 2),
-                'overall_efficiency'   => $totalDue > 0 ? round($totalCollected / $totalDue * 100, 2) : null,
+                'total_due' => round($totalDue, 2),
+                'total_collected' => round($totalCollected, 2),
+                'overall_efficiency' => $totalDue > 0 ? round($totalCollected / $totalDue * 100, 2) : null,
             ],
             'rows' => $months,
         ];
@@ -429,12 +430,12 @@ class ReportController extends BaseApiController
 
         $rows = [];
         for ($i = $months - 1; $i >= 0; $i--) {
-            $date  = now()->startOfMonth()->subMonths($i);
+            $date = now()->startOfMonth()->subMonths($i);
             $label = $date->format('M Y');
             $month = $date->month;
-            $year  = $date->year;
+            $year = $date->year;
 
-            $disbursed   = Loan::whereYear('disbursement_date', $year)
+            $disbursed = Loan::whereYear('disbursement_date', $year)
                 ->whereMonth('disbursement_date', $month)
                 ->sum('principal_amount');
 
@@ -447,10 +448,10 @@ class ReportController extends BaseApiController
                 ->count();
 
             $rows[] = [
-                'month'          => $label,
-                'disbursed'      => round((float) $disbursed, 2),
-                'outstanding'    => round((float) $outstanding, 2),
-                'new_borrowers'  => $newBorrowers,
+                'month' => $label,
+                'disbursed' => round((float) $disbursed, 2),
+                'outstanding' => round((float) $outstanding, 2),
+                'new_borrowers' => $newBorrowers,
             ];
         }
 
@@ -495,11 +496,11 @@ class ReportController extends BaseApiController
         $totalBorrowers = Borrower::count();
 
         return [
-            'type'           => 'demographics',
+            'type' => 'demographics',
             'total_borrowers' => $totalBorrowers,
-            'by_gender'      => $byGender,
-            'by_city'        => $byCity,
-            'by_occupation'  => $byOccupation,
+            'by_gender' => $byGender,
+            'by_city' => $byCity,
+            'by_occupation' => $byOccupation,
         ];
     }
 
@@ -513,7 +514,7 @@ class ReportController extends BaseApiController
 
         $rows = [];
         for ($i = $months - 1; $i >= 0; $i--) {
-            $date  = now()->startOfMonth()->subMonths($i);
+            $date = now()->startOfMonth()->subMonths($i);
             $label = $date->format('M Y');
 
             $loans = Loan::whereYear('disbursement_date', $date->year)
@@ -521,23 +522,23 @@ class ReportController extends BaseApiController
                 ->whereNotNull('disbursement_date')
                 ->get(['id', 'principal_amount', 'total_paid', 'outstanding_balance', 'status']);
 
-            $count      = $loans->count();
-            $disbursed  = $loans->sum(fn ($l) => (float) $l->principal_amount);
-            $collected  = $loans->sum(fn ($l) => (float) $l->total_paid);
-            $completed  = $loans->where('status', \App\Enums\LoanStatus::Completed)->count();
-            $defaulted  = $loans->whereIn('status', [
+            $count = $loans->count();
+            $disbursed = $loans->sum(fn ($l) => (float) $l->principal_amount);
+            $collected = $loans->sum(fn ($l) => (float) $l->total_paid);
+            $completed = $loans->where('status', \App\Enums\LoanStatus::Completed)->count();
+            $defaulted = $loans->whereIn('status', [
                 \App\Enums\LoanStatus::Defaulted,
                 \App\Enums\LoanStatus::WrittenOff,
             ])->count();
 
             $rows[] = [
-                'cohort'              => $label,
-                'loan_count'          => $count,
-                'total_disbursed'     => round($disbursed, 2),
-                'total_collected'     => round($collected, 2),
-                'collection_rate'     => $disbursed > 0 ? round($collected / $disbursed * 100, 2) : null,
-                'completed_count'     => $completed,
-                'defaulted_count'     => $defaulted,
+                'cohort' => $label,
+                'loan_count' => $count,
+                'total_disbursed' => round($disbursed, 2),
+                'total_collected' => round($collected, 2),
+                'collection_rate' => $disbursed > 0 ? round($collected / $disbursed * 100, 2) : null,
+                'completed_count' => $completed,
+                'defaulted_count' => $defaulted,
             ];
         }
 
@@ -553,7 +554,7 @@ class ReportController extends BaseApiController
     private function officerLeagueReport(Request $request): array
     {
         $dateFrom = $request->date_from ?? now()->startOfMonth()->toDateString();
-        $dateTo   = $request->date_to   ?? now()->toDateString();
+        $dateTo = $request->date_to ?? now()->toDateString();
 
         $officers = User::query()
             ->where('is_active', true)
@@ -571,23 +572,23 @@ class ReportController extends BaseApiController
                 ->sum('amount');
 
             return [
-                'officer_id'      => $officer->id,
-                'officer_name'    => $officer->name,
-                'role'            => $officer->role,
-                'loans_created'   => $loans->count(),
+                'officer_id' => $officer->id,
+                'officer_name' => $officer->name,
+                'role' => $officer->role,
+                'loans_created' => $loans->count(),
                 'loans_disbursed' => $loans->whereNotNull('disbursement_date')->count(),
                 'amount_disbursed' => round($disbursed, 2),
                 'amount_collected' => round((float) $collected, 2),
             ];
         })
-        ->sortByDesc('amount_disbursed')
-        ->values();
+            ->sortByDesc('amount_disbursed')
+            ->values();
 
         return [
-            'type'      => 'officer_league',
+            'type' => 'officer_league',
             'date_from' => $dateFrom,
-            'date_to'   => $dateTo,
-            'rows'      => $rows,
+            'date_to' => $dateTo,
+            'rows' => $rows,
         ];
     }
 
@@ -606,10 +607,10 @@ class ReportController extends BaseApiController
             ->limit(20)
             ->get()
             ->map(fn ($r) => [
-                'city'        => $r->city,
-                'loan_count'  => (int) $r->loan_count,
+                'city' => $r->city,
+                'loan_count' => (int) $r->loan_count,
                 'outstanding' => round((float) $r->outstanding, 2),
-                'disbursed'   => round((float) $r->disbursed, 2),
+                'disbursed' => round((float) $r->disbursed, 2),
             ])
             ->values();
 

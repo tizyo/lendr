@@ -32,12 +32,12 @@ class KycController extends BaseApiController
 
         $summary = [
             'kyc_verified' => $borrower->kyc_verified,
-            'total'        => $docs->count(),
-            'pending'      => $docs->where('status', 'pending')->count(),
+            'total' => $docs->count(),
+            'pending' => $docs->where('status', 'pending')->count(),
             'under_review' => $docs->where('status', 'under_review')->count(),
-            'verified'     => $docs->where('status', 'verified')->count(),
-            'rejected'     => $docs->where('status', 'rejected')->count(),
-            'expired'      => $docs->where('status', 'expired')->count(),
+            'verified' => $docs->where('status', 'verified')->count(),
+            'rejected' => $docs->where('status', 'rejected')->count(),
+            'expired' => $docs->where('status', 'expired')->count(),
         ];
 
         return $this->success(['summary' => $summary, 'documents' => $docs->values()]);
@@ -50,7 +50,7 @@ class KycController extends BaseApiController
                 'national_id_front', 'national_id_back', 'passport',
                 'drivers_licence', 'utility_bill', 'bank_statement', 'selfie', 'other',
             ])],
-            'file'       => ['required', 'file', 'mimes:jpg,jpeg,png,pdf,webp', 'max:10240'],
+            'file' => ['required', 'file', 'mimes:jpg,jpeg,png,pdf,webp', 'max:10240'],
             'expires_at' => ['nullable', 'date', 'after:today'],
         ]);
 
@@ -58,18 +58,18 @@ class KycController extends BaseApiController
         $path = $file->storeAs(
             "kyc/{$borrower->id}",
             now()->format('YmdHis')."_{$request->document_type}.{$file->getClientOriginalExtension()}",
-            'private'
+            'private',
         );
 
         $doc = KycDocument::create([
-            'borrower_id'   => $borrower->id,
+            'borrower_id' => $borrower->id,
             'document_type' => $request->document_type,
-            'file_path'     => $path,
-            'file_name'     => $file->getClientOriginalName(),
-            'file_size'     => $file->getSize(),
-            'mime_type'     => $file->getMimeType(),
-            'status'        => KycStatus::Pending,
-            'expires_at'    => $request->expires_at,
+            'file_path' => $path,
+            'file_name' => $file->getClientOriginalName(),
+            'file_size' => $file->getSize(),
+            'mime_type' => $file->getMimeType(),
+            'status' => KycStatus::Pending,
+            'expires_at' => $request->expires_at,
         ]);
 
         return $this->success($this->formatDoc($doc), 'Document uploaded successfully.', 201);
@@ -89,7 +89,7 @@ class KycController extends BaseApiController
     public function review(Request $request, KycDocument $document): JsonResponse
     {
         $request->validate([
-            'action'           => ['required', Rule::in(['approve', 'reject'])],
+            'action' => ['required', Rule::in(['approve', 'reject'])],
             'rejection_reason' => ['required_if:action,reject', 'nullable', 'string', 'max:500'],
         ]);
 
@@ -97,8 +97,8 @@ class KycController extends BaseApiController
 
         if (! $document->transitionTo($newStatus, [
             'rejection_reason' => $request->action === 'reject' ? $request->rejection_reason : null,
-            'reviewed_by'      => $request->user()->id,
-            'reviewed_at'      => now(),
+            'reviewed_by' => $request->user()->id,
+            'reviewed_at' => now(),
         ])) {
             return $this->error("Cannot {$request->action} from status '{$document->status->value}'.", 422);
         }
@@ -119,28 +119,28 @@ class KycController extends BaseApiController
                 'national_id_front', 'national_id_back', 'passport',
                 'drivers_licence', 'utility_bill', 'bank_statement', 'selfie', 'other',
             ])],
-            'file'       => ['required', 'file', 'mimes:jpg,jpeg,png,pdf,webp', 'max:10240'],
+            'file' => ['required', 'file', 'mimes:jpg,jpeg,png,pdf,webp', 'max:10240'],
             'expires_at' => ['nullable', 'date', 'after:today'],
         ]);
 
         /** @var \App\Models\Tenant\Borrower $borrower */
         $borrower = $request->user();
-        $file     = $request->file('file');
-        $path     = $file->storeAs(
+        $file = $request->file('file');
+        $path = $file->storeAs(
             "kyc/{$borrower->id}",
             now()->format('YmdHis')."_{$request->document_type}.{$file->getClientOriginalExtension()}",
-            'private'
+            'private',
         );
 
         $doc = KycDocument::create([
-            'borrower_id'   => $borrower->id,
+            'borrower_id' => $borrower->id,
             'document_type' => $request->document_type,
-            'file_path'     => $path,
-            'file_name'     => $file->getClientOriginalName(),
-            'file_size'     => $file->getSize(),
-            'mime_type'     => $file->getMimeType(),
-            'status'        => KycStatus::Pending,
-            'expires_at'    => $request->expires_at,
+            'file_path' => $path,
+            'file_name' => $file->getClientOriginalName(),
+            'file_size' => $file->getSize(),
+            'mime_type' => $file->getMimeType(),
+            'status' => KycStatus::Pending,
+            'expires_at' => $request->expires_at,
         ]);
 
         $this->notifications->notifyRoles(
@@ -182,24 +182,24 @@ class KycController extends BaseApiController
     private function formatDoc(KycDocument $d): array
     {
         return [
-            'id'               => $d->id,
-            'document_type'    => $d->document_type,
-            'file_url'         => $d->file_url,
-            'mime_type'        => $d->mime_type,
-            'file_size'        => $d->file_size,
-            'status'           => $d->status->value,
-            'status_label'     => $d->status->label(),
+            'id' => $d->id,
+            'document_type' => $d->document_type,
+            'file_url' => $d->file_url,
+            'mime_type' => $d->mime_type,
+            'file_size' => $d->file_size,
+            'status' => $d->status->value,
+            'status_label' => $d->status->label(),
             'rejection_reason' => $d->rejection_reason,
-            'expires_at'       => $d->expires_at?->toDateString(),
-            'is_expired'       => $d->isExpired(),
-            'reviewed_by'      => $d->reviewed_by,
-            'reviewed_at'      => $d->reviewed_at?->toIso8601String(),
-            'uploaded_at'      => $d->created_at->toIso8601String(),
-            'borrower'         => $d->relationLoaded('borrower') ? [
-                'id'              => $d->borrower->id,
+            'expires_at' => $d->expires_at?->toDateString(),
+            'is_expired' => $d->isExpired(),
+            'reviewed_by' => $d->reviewed_by,
+            'reviewed_at' => $d->reviewed_at?->toIso8601String(),
+            'uploaded_at' => $d->created_at->toIso8601String(),
+            'borrower' => $d->relationLoaded('borrower') ? [
+                'id' => $d->borrower->id,
                 'borrower_number' => $d->borrower->borrower_number,
-                'full_name'       => $d->borrower->full_name,
-                'phone'           => $d->borrower->phone,
+                'full_name' => $d->borrower->full_name,
+                'phone' => $d->borrower->phone,
             ] : null,
         ];
     }

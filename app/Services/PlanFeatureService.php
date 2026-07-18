@@ -3,7 +3,6 @@
 namespace App\Services;
 
 use App\Models\Landlord\PlanConfig;
-use Stancl\Tenancy\Database\Models\Tenant;
 
 class PlanFeatureService
 {
@@ -19,6 +18,7 @@ class PlanFeatureService
     public static function forTenant(): self
     {
         $plan = tenancy()->tenant?->plan ?? 'starter';
+
         return new self($plan);
     }
 
@@ -30,7 +30,10 @@ class PlanFeatureService
      */
     public function has(string $feature): bool
     {
-        if (!$this->config) return false;
+        if (! $this->config) {
+            return false;
+        }
+
         return $this->config->hasFeature($feature);
     }
 
@@ -42,7 +45,10 @@ class PlanFeatureService
      */
     public function withinLimit(string $feature, int $current): bool
     {
-        if (!$this->config) return false;
+        if (! $this->config) {
+            return false;
+        }
+
         return $this->config->withinLimit($feature, $current);
     }
 
@@ -51,7 +57,10 @@ class PlanFeatureService
      */
     public function limit(string $feature): int
     {
-        if (!$this->config) return 0;
+        if (! $this->config) {
+            return 0;
+        }
+
         return (int) ($this->config->features[$feature] ?? 0);
     }
 
@@ -61,6 +70,7 @@ class PlanFeatureService
     public function limitLabel(string $feature): string
     {
         $limit = $this->limit($feature);
+
         return $limit === -1 ? 'Unlimited' : (string) $limit;
     }
 

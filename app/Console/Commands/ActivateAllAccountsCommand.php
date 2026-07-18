@@ -14,7 +14,8 @@ use Illuminate\Support\Facades\DB;
  */
 class ActivateAllAccountsCommand extends Command
 {
-    protected $signature   = 'accounts:activate';
+    protected $signature = 'accounts:activate';
+
     protected $description = 'Activate all tenant accounts and mark all users as email verified';
 
     public function handle(): int
@@ -25,11 +26,11 @@ class ActivateAllAccountsCommand extends Command
         $this->line('  Updating central tenants table…');
 
         $updated = DB::table('tenants')->update([
-            'status'                  => 'active',
-            'email_verified_at'       => now(),
-            'email_verification_token'=> null,
-            'is_verified'             => true,
-            'verified_at'             => now(),
+            'status' => 'active',
+            'email_verified_at' => now(),
+            'email_verification_token' => null,
+            'is_verified' => true,
+            'verified_at' => now(),
         ]);
 
         $this->line("  <fg=green>✓</> {$updated} tenant row(s) updated");
@@ -43,6 +44,7 @@ class ActivateAllAccountsCommand extends Command
         if ($tenants->isEmpty()) {
             $this->line('  <fg=yellow>No tenants found.</>');
             $this->newLine();
+
             return self::SUCCESS;
         }
 
@@ -53,14 +55,14 @@ class ActivateAllAccountsCommand extends Command
                 tenancy()->initialize($tenant);
 
                 $users = DB::table('users')->update([
-                    'is_active'        => true,
-                    'email_verified_at'=> now(),
+                    'is_active' => true,
+                    'email_verified_at' => now(),
                 ]);
 
                 $totalUsers += $users;
                 $this->line("  <fg=green>✓</> [{$tenant->id}] {$users} user(s) activated");
             } catch (\Throwable $e) {
-                $this->line("  <fg=red>✗</> [{$tenant->id}] Failed: " . $e->getMessage());
+                $this->line("  <fg=red>✗</> [{$tenant->id}] Failed: ".$e->getMessage());
             } finally {
                 tenancy()->end();
             }

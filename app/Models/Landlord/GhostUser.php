@@ -31,8 +31,8 @@ class GhostUser extends Authenticatable
     {
         return [
             'is_phone_verified' => 'boolean',
-            'otp_expires_at'    => 'datetime',
-            'date_of_birth'     => 'date',
+            'otp_expires_at' => 'datetime',
+            'date_of_birth' => 'date',
         ];
     }
 

@@ -9,21 +9,21 @@ use App\Jobs\AutoDisburseLoanJob;
 use App\Jobs\CreateStandingOrdersJob;
 use App\Jobs\DisburseMobileMoneyJob;
 use App\Jobs\SendLoanEventNotificationJob;
-use App\Models\Landlord\TenantWallet;
 use App\Models\Landlord\RepoItem;
-use App\Models\Tenant\CollateralItem;
-use App\Models\Tenant\Loan;
-use App\Models\Tenant\LoanWriteoff;
+use App\Models\Landlord\TenantWallet;
 use App\Models\Tenant\ApprovalRequest;
 use App\Models\Tenant\ApprovalWorkflow;
-use App\Services\ApprovalService;
-use App\Services\CrbService;
-use App\Services\GlLedgerService;
-use App\Services\NotificationService;
+use App\Models\Tenant\CollateralItem;
+use App\Models\Tenant\Loan;
 use App\Models\Tenant\LoanPlan;
 use App\Models\Tenant\LoanSchedule;
+use App\Models\Tenant\LoanWriteoff;
+use App\Services\ApprovalService;
+use App\Services\CrbService;
 use App\Services\FundService;
+use App\Services\GlLedgerService;
 use App\Services\LoanCalculatorService;
+use App\Services\NotificationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -33,10 +33,10 @@ class LoanController extends BaseApiController
 {
     public function __construct(
         private LoanCalculatorService $calculator,
-        private FundService           $fund,
-        private NotificationService   $notifications,
-        private ApprovalService       $approvals,
-        private CrbService            $crb,
+        private FundService $fund,
+        private NotificationService $notifications,
+        private ApprovalService $approvals,
+        private CrbService $crb,
     ) {}
 
     // ─── CRUD ────────────────────────────────────────────────────────────────
@@ -55,11 +55,10 @@ class LoanController extends BaseApiController
             ->when($request->loan_type_id, fn ($q, $id) => $q->where('loan_type_id', $id))
             ->when($request->search, fn ($q, $s) => $q->where(function ($q) use ($s) {
                 $q->where('loan_number', 'like', "%{$s}%")
-                  ->orWhereHas('borrower', fn ($bq) =>
-                      $bq->where('first_name', 'like', "%{$s}%")
-                         ->orWhere('last_name', 'like', "%{$s}%")
-                         ->orWhere('phone', 'like', "%{$s}%")
-                  );
+                    ->orWhereHas('borrower', fn ($bq) => $bq->where('first_name', 'like', "%{$s}%")
+                        ->orWhere('last_name', 'like', "%{$s}%")
+                        ->orWhere('phone', 'like', "%{$s}%"),
+                    );
             }))
             ->when($request->date_from, fn ($q, $d) => $q->where('application_date', '>=', $d))
             ->when($request->date_to, fn ($q, $d) => $q->where('application_date', '<=', $d))
@@ -76,7 +75,7 @@ class LoanController extends BaseApiController
         $amounts = $this->calculator->calculateAmounts(
             $plan,
             (float) $request->principal_amount,
-            (int) $request->tenure
+            (int) $request->tenure,
         );
 
         $loan = DB::transaction(function () use ($request, $plan, $amounts) {
@@ -87,23 +86,23 @@ class LoanController extends BaseApiController
                     'application_date', 'collateral_description',
                     'guarantor_name', 'guarantor_phone', 'guarantor_relationship', 'notes',
                 ]),
-                'loan_number'       => $this->generateLoanNumber(),
-                'created_by'        => auth()->id(),
-                'interest_amount'   => $amounts['interest_amount'],
-                'processing_fee'    => $amounts['processing_fee'],
-                'insurance_fee'     => $amounts['insurance_fee'],
-                'total_payable'     => $amounts['total_payable'],
+                'loan_number' => $this->generateLoanNumber(),
+                'created_by' => auth()->id(),
+                'interest_amount' => $amounts['interest_amount'],
+                'processing_fee' => $amounts['processing_fee'],
+                'insurance_fee' => $amounts['insurance_fee'],
+                'total_payable' => $amounts['total_payable'],
                 'outstanding_balance' => $amounts['total_payable'],
                 // Snapshot plan terms
-                'interest_rate'     => $plan->interest_rate,
-                'interest_type'     => $plan->interest_type,
-                'interest_period'   => $plan->interest_period,
-                'tenure_type'       => $plan->tenure_type,
+                'interest_rate' => $plan->interest_rate,
+                'interest_type' => $plan->interest_type,
+                'interest_period' => $plan->interest_period,
+                'tenure_type' => $plan->tenure_type,
                 'repayment_schedule' => $plan->repayment_schedule,
-                'penalty_rate'      => $plan->penalty_rate,
+                'penalty_rate' => $plan->penalty_rate,
                 'grace_period_days' => $plan->grace_period_days,
-                'status'            => LoanStatus::Submitted->value,
-                'currency'          => tenancy()->tenant?->currency ?? 'ZMW',
+                'status' => LoanStatus::Submitted->value,
+                'currency' => tenancy()->tenant?->currency ?? 'ZMW',
             ]);
 
             $this->logStatusChange($loan, null, LoanStatus::Submitted, auth()->id(), 'Loan application submitted.');
@@ -148,12 +147,12 @@ class LoanController extends BaseApiController
         }
 
         $request->validate([
-            'loan_purpose'           => ['nullable', 'string', 'max:1000'],
+            'loan_purpose' => ['nullable', 'string', 'max:1000'],
             'collateral_description' => ['nullable', 'string', 'max:1000'],
-            'guarantor_name'         => ['nullable', 'string', 'max:150'],
-            'guarantor_phone'        => ['nullable', 'string', 'max:20'],
+            'guarantor_name' => ['nullable', 'string', 'max:150'],
+            'guarantor_phone' => ['nullable', 'string', 'max:20'],
             'guarantor_relationship' => ['nullable', 'string', 'max:100'],
-            'notes'                  => ['nullable', 'string', 'max:2000'],
+            'notes' => ['nullable', 'string', 'max:2000'],
         ]);
 
         $loan->update($request->only(['loan_purpose', 'collateral_description', 'guarantor_name', 'guarantor_phone', 'guarantor_relationship', 'notes']));
@@ -220,8 +219,8 @@ class LoanController extends BaseApiController
 
         DB::transaction(function () use ($loan, $request) {
             $loan->update([
-                'status'       => LoanStatus::Approved->value,
-                'approved_by'  => auth()->id(),
+                'status' => LoanStatus::Approved->value,
+                'approved_by' => auth()->id(),
                 'approval_date' => now()->toDateString(),
             ]);
 
@@ -234,7 +233,7 @@ class LoanController extends BaseApiController
             ['branch_manager', 'super_admin'],
             'loan_approved',
             "Loan {$loan->loan_number} approved — awaiting disbursement",
-            "Approved by ".auth()->user()?->name.". Principal: ZMW ".number_format((float) $loan->principal_amount, 2),
+            'Approved by '.auth()->user()?->name.'. Principal: ZMW '.number_format((float) $loan->principal_amount, 2),
             ['loan_id' => $loan->id, 'loan_number' => $loan->loan_number],
         );
 
@@ -276,12 +275,12 @@ class LoanController extends BaseApiController
         }
 
         // CRB check — alert if borrower has active loans at any other tenant
-        $borrower   = $loan->borrower;
+        $borrower = $loan->borrower;
         $identifier = $borrower->crbIdentifier();
-        $tenantId   = (string) (tenant('id') ?? 'local');
+        $tenantId = (string) (tenant('id') ?? 'local');
 
         if ($identifier && ! $request->boolean('crb_override')) {
-            $hash      = $this->crb->hash($identifier['value'], $identifier['type']);
+            $hash = $this->crb->hash($identifier['value'], $identifier['type']);
             $crbResult = $this->crb->check($hash, $identifier['type'], $tenantId, 'loan_disbursement');
 
             if ($crbResult['has_active_loans']) {
@@ -289,11 +288,11 @@ class LoanController extends BaseApiController
                 return response()->json([
                     'success' => false,
                     'message' => 'CRB alert: This borrower has active loan(s) at another lender. Pass crb_override=true to proceed.',
-                    'crb'     => [
-                        'credit_score'      => $crbResult['credit_score'],
-                        'score_band'        => $crbResult['score_band'],
+                    'crb' => [
+                        'credit_score' => $crbResult['credit_score'],
+                        'score_band' => $crbResult['score_band'],
                         'active_loan_count' => $crbResult['active_loan_count'],
-                        'risk_level'        => $crbResult['risk_level'],
+                        'risk_level' => $crbResult['risk_level'],
                     ],
                 ], 409);
             }
@@ -303,33 +302,33 @@ class LoanController extends BaseApiController
         if ($identifier && $request->boolean('crb_override')) {
             $hash = $this->crb->hash($identifier['value'], $identifier['type']);
             \App\Models\Landlord\CrbInquiry::create([
-                'identity_hash'        => $hash,
-                'tenant_id'            => $tenantId,
-                'purpose'              => 'loan_disbursement',
+                'identity_hash' => $hash,
+                'tenant_id' => $tenantId,
+                'purpose' => 'loan_disbursement',
                 'result_has_active_loans' => true,
-                'override_requested'   => true,
-                'override_reason'      => $request->input('crb_override_reason', 'Manual override'),
-                'created_at'           => now(),
+                'override_requested' => true,
+                'override_reason' => $request->input('crb_override_reason', 'Manual override'),
+                'created_at' => now(),
             ]);
         }
 
         DB::transaction(function () use ($loan, $request) {
             $disbursementDate = $request->disbursement_date;
-            $plan             = $loan->loanPlan;
-            $maturityDate     = $this->calculator->maturityDate($disbursementDate, $plan, $loan->tenure);
+            $plan = $loan->loanPlan;
+            $maturityDate = $this->calculator->maturityDate($disbursementDate, $plan, $loan->tenure);
 
             $firstRepaymentDate = $request->first_repayment_date
                 ?? $this->calculator->maturityDate($disbursementDate, $plan, 1);
 
             $loan->update([
-                'status'                 => LoanStatus::Active->value,
-                'disbursed_by'           => auth()->id(),
-                'disbursement_date'      => $disbursementDate,
-                'disbursement_method'    => $request->disbursement_method,
-                'disbursement_account'   => $request->disbursement_account,
+                'status' => LoanStatus::Active->value,
+                'disbursed_by' => auth()->id(),
+                'disbursement_date' => $disbursementDate,
+                'disbursement_method' => $request->disbursement_method,
+                'disbursement_account' => $request->disbursement_account,
                 'disbursement_reference' => $request->disbursement_reference,
-                'first_repayment_date'   => $firstRepaymentDate,
-                'maturity_date'          => $maturityDate,
+                'first_repayment_date' => $firstRepaymentDate,
+                'maturity_date' => $maturityDate,
             ]);
 
             // Generate schedule
@@ -338,19 +337,19 @@ class LoanController extends BaseApiController
                 (float) $loan->principal_amount,
                 $loan->tenure,
                 $disbursementDate,
-                (float) $loan->interest_amount
+                (float) $loan->interest_amount,
             );
 
             foreach ($scheduleRows as $row) {
                 LoanSchedule::create([
-                    'loan_id'           => $loan->id,
+                    'loan_id' => $loan->id,
                     'instalment_number' => $row['instalment_number'],
-                    'due_date'          => $row['due_date'],
-                    'principal_due'     => $row['principal_due'],
-                    'interest_due'      => $row['interest_due'],
-                    'fee_due'           => $row['fee_due'],
-                    'total_due'         => $row['total_due'],
-                    'outstanding'       => $row['outstanding'],
+                    'due_date' => $row['due_date'],
+                    'principal_due' => $row['principal_due'],
+                    'interest_due' => $row['interest_due'],
+                    'fee_due' => $row['fee_due'],
+                    'total_due' => $row['total_due'],
+                    'outstanding' => $row['outstanding'],
                 ]);
             }
 
@@ -385,10 +384,10 @@ class LoanController extends BaseApiController
         }
 
         // Trigger MoMo payout — Enterprise tenants use wallet credentials; others use tenant settings
-        $fresh     = $loan->fresh();
-        $tenantId  = (string) (tenant('id') ?? 'local');
+        $fresh = $loan->fresh();
+        $tenantId = (string) (tenant('id') ?? 'local');
         $tenantPlan = tenant('plan') ?? 'starter';
-        $wallet    = null;
+        $wallet = null;
 
         if ($tenantPlan === 'enterprise') {
             $wallet = TenantWallet::where('tenant_id', $tenantId)->where('is_active', true)->first();
@@ -485,10 +484,10 @@ class LoanController extends BaseApiController
 
         // Create write-off record and GL entry
         $writeoff = LoanWriteoff::create([
-            'loan_id'            => $loan->id,
-            'written_off_by'     => auth()->id(),
+            'loan_id' => $loan->id,
+            'written_off_by' => auth()->id(),
             'written_off_amount' => $loan->outstanding_balance,
-            'reason'             => $request->reason,
+            'reason' => $request->reason,
         ]);
 
         try {
@@ -500,7 +499,7 @@ class LoanController extends BaseApiController
                 ],
                 $loan,
                 now()->toDateString(),
-                auth()->id()
+                auth()->id(),
             );
         } catch (\Throwable) {
             // GL accounts may not be seeded; do not block write-off
@@ -509,7 +508,8 @@ class LoanController extends BaseApiController
         // Auto-suggest repo listings from collateral (best-effort, Growth+ only)
         try {
             $this->autoListCollateralFromWriteoff($loan);
-        } catch (\Throwable) {}
+        } catch (\Throwable) {
+        }
 
         return $this->success($this->formatLoan($loan->fresh()), 'Loan written off.');
     }
@@ -526,11 +526,17 @@ class LoanController extends BaseApiController
         $sub = \Illuminate\Support\Facades\DB::table('subscriptions')
             ->where('tenant_id', $tenantId)->where('status', 'active')
             ->orderByDesc('id')->first();
-        if (! $sub) return;
+        if (! $sub) {
+            return;
+        }
         $plan = \Illuminate\Support\Facades\DB::table('plan_configs')->where('plan', $sub->plan)->first();
-        if (! $plan) return;
+        if (! $plan) {
+            return;
+        }
         $features = json_decode($plan->features ?? '{}', true);
-        if (empty($features['repo_marketplace'])) return;
+        if (empty($features['repo_marketplace'])) {
+            return;
+        }
 
         // Resolve tenant name
         $tenantName = \Illuminate\Support\Facades\DB::table('tenants')->where('id', $tenantId)->value('name') ?? $tenantId;
@@ -539,21 +545,23 @@ class LoanController extends BaseApiController
         foreach ($collaterals as $collateral) {
             // Skip if already listed
             $alreadyListed = RepoItem::where('tenant_id', $tenantId)
-                ->where('title', 'like', '%' . $collateral->description . '%')
+                ->where('title', 'like', '%'.$collateral->description.'%')
                 ->exists();
-            if ($alreadyListed) continue;
+            if ($alreadyListed) {
+                continue;
+            }
 
             RepoItem::create([
-                'tenant_id'      => $tenantId,
-                'tenant_name'    => $tenantName,
-                'title'          => $collateral->description,
-                'description'    => "Repossessed collateral from loan {$loan->loan_number}. " . ($collateral->notes ?? ''),
-                'price'          => $collateral->estimated_value ?? 0,
+                'tenant_id' => $tenantId,
+                'tenant_name' => $tenantName,
+                'title' => $collateral->description,
+                'description' => "Repossessed collateral from loan {$loan->loan_number}. ".($collateral->notes ?? ''),
+                'price' => $collateral->estimated_value ?? 0,
                 'original_value' => $collateral->estimated_value,
-                'category'       => $this->guessCollateralCategory($collateral->type ?? ''),
-                'condition'      => 'fair',
-                'location'       => null,
-                'is_active'      => false, // draft — staff must activate manually
+                'category' => $this->guessCollateralCategory($collateral->type ?? ''),
+                'condition' => 'fair',
+                'location' => null,
+                'is_active' => false, // draft — staff must activate manually
             ]);
         }
     }
@@ -561,17 +569,20 @@ class LoanController extends BaseApiController
     private function guessCollateralCategory(string $type): string
     {
         $map = [
-            'vehicle'     => 'vehicle',
-            'car'         => 'vehicle',
-            'land'        => 'land',
-            'property'    => 'land',
+            'vehicle' => 'vehicle',
+            'car' => 'vehicle',
+            'land' => 'land',
+            'property' => 'land',
             'electronics' => 'electronics',
-            'equipment'   => 'equipment',
-            'furniture'   => 'furniture',
+            'equipment' => 'equipment',
+            'furniture' => 'furniture',
         ];
         foreach ($map as $keyword => $category) {
-            if (stripos($type, $keyword) !== false) return $category;
+            if (stripos($type, $keyword) !== false) {
+                return $category;
+            }
         }
+
         return 'other';
     }
 
@@ -582,8 +593,8 @@ class LoanController extends BaseApiController
     public function restructure(Request $request, Loan $loan): JsonResponse
     {
         $request->validate([
-            'tenure'    => ['required', 'integer', 'min:1'],
-            'reason'    => ['required', 'string', 'max:1000'],
+            'tenure' => ['required', 'integer', 'min:1'],
+            'reason' => ['required', 'string', 'max:1000'],
         ]);
 
         if (! in_array($loan->status, [LoanStatus::Active, LoanStatus::Frozen, LoanStatus::Defaulted])) {
@@ -592,16 +603,16 @@ class LoanController extends BaseApiController
 
         DB::transaction(function () use ($loan, $request) {
             // Recalculate based on outstanding balance and new tenure
-            $newTenure  = (int) $request->tenure;
-            $plan       = $loan->loanPlan;
+            $newTenure = (int) $request->tenure;
+            $plan = $loan->loanPlan;
             $outstanding = (float) $loan->outstanding_balance;
 
             $amounts = $this->calculator->calculateAmounts($plan, $outstanding, $newTenure);
 
             $loan->update([
-                'tenure'             => $newTenure,
-                'interest_amount'    => $amounts['interest_amount'],
-                'total_payable'      => bcadd((string) $loan->total_paid, (string) ($outstanding + $amounts['interest_amount']), 2),
+                'tenure' => $newTenure,
+                'interest_amount' => $amounts['interest_amount'],
+                'total_payable' => bcadd((string) $loan->total_paid, (string) ($outstanding + $amounts['interest_amount']), 2),
                 'outstanding_balance' => bcadd($outstanding, $amounts['interest_amount'], 2),
             ]);
 
@@ -613,21 +624,21 @@ class LoanController extends BaseApiController
                 $outstanding,
                 $newTenure,
                 now()->toDateString(),
-                $amounts['interest_amount']
+                $amounts['interest_amount'],
             );
 
             $lastInstalment = $loan->schedule()->where('is_paid', true)->max('instalment_number') ?? 0;
 
             foreach ($scheduleRows as $i => $row) {
                 LoanSchedule::create([
-                    'loan_id'           => $loan->id,
+                    'loan_id' => $loan->id,
                     'instalment_number' => $lastInstalment + $i + 1,
-                    'due_date'          => $row['due_date'],
-                    'principal_due'     => $row['principal_due'],
-                    'interest_due'      => $row['interest_due'],
-                    'fee_due'           => $row['fee_due'],
-                    'total_due'         => $row['total_due'],
-                    'outstanding'       => $row['outstanding'],
+                    'due_date' => $row['due_date'],
+                    'principal_due' => $row['principal_due'],
+                    'interest_due' => $row['interest_due'],
+                    'fee_due' => $row['fee_due'],
+                    'total_due' => $row['total_due'],
+                    'outstanding' => $row['outstanding'],
                 ]);
             }
 
@@ -650,21 +661,21 @@ class LoanController extends BaseApiController
         $loan->load('schedule');
 
         $rows = $loan->schedule->map(fn ($s) => [
-            'id'                => $s->id,
+            'id' => $s->id,
             'instalment_number' => $s->instalment_number,
-            'due_date'          => $s->due_date->toDateString(),
-            'principal_due'     => (float) $s->principal_due,
-            'interest_due'      => (float) $s->interest_due,
-            'fee_due'           => (float) $s->fee_due,
-            'total_due'         => (float) $s->total_due,
-            'principal_paid'    => (float) $s->principal_paid,
-            'interest_paid'     => (float) $s->interest_paid,
-            'total_paid'        => (float) $s->total_paid,
-            'outstanding'       => (float) $s->outstanding,
-            'is_paid'           => $s->is_paid,
-            'paid_date'         => $s->paid_date?->toDateString(),
-            'days_overdue'      => $s->days_overdue,
-            'penalty_accrued'   => (float) $s->penalty_accrued,
+            'due_date' => $s->due_date->toDateString(),
+            'principal_due' => (float) $s->principal_due,
+            'interest_due' => (float) $s->interest_due,
+            'fee_due' => (float) $s->fee_due,
+            'total_due' => (float) $s->total_due,
+            'principal_paid' => (float) $s->principal_paid,
+            'interest_paid' => (float) $s->interest_paid,
+            'total_paid' => (float) $s->total_paid,
+            'outstanding' => (float) $s->outstanding,
+            'is_paid' => $s->is_paid,
+            'paid_date' => $s->paid_date?->toDateString(),
+            'days_overdue' => $s->days_overdue,
+            'penalty_accrued' => (float) $s->penalty_accrued,
         ]);
 
         return $this->success($rows);
@@ -687,10 +698,10 @@ class LoanController extends BaseApiController
     private function logStatusChange(Loan $loan, ?LoanStatus $from, LoanStatus $to, ?int $userId, ?string $notes): void
     {
         $loan->statusLogs()->create([
-            'changed_by'  => $userId,
+            'changed_by' => $userId,
             'from_status' => $from?->value,
-            'to_status'   => $to->value,
-            'notes'       => $notes,
+            'to_status' => $to->value,
+            'notes' => $notes,
         ]);
     }
 
@@ -710,75 +721,75 @@ class LoanController extends BaseApiController
     private function formatLoan(Loan $l, bool $full = false): array
     {
         $data = [
-            'id'                 => $l->id,
-            'loan_number'        => $l->loan_number,
-            'status'             => $l->status->value,
-            'status_label'       => $l->status->label(),
-            'status_color'       => $l->status->color(),
-            'borrower'           => $l->relationLoaded('borrower') ? [
-                'id'              => $l->borrower->id,
-                'name'            => $l->borrower->full_name,
+            'id' => $l->id,
+            'loan_number' => $l->loan_number,
+            'status' => $l->status->value,
+            'status_label' => $l->status->label(),
+            'status_color' => $l->status->color(),
+            'borrower' => $l->relationLoaded('borrower') ? [
+                'id' => $l->borrower->id,
+                'name' => $l->borrower->full_name,
                 'borrower_number' => $l->borrower->borrower_number,
-                'phone'           => $l->borrower->phone,
+                'phone' => $l->borrower->phone,
             ] : ['id' => $l->borrower_id],
-            'loan_type'          => $l->relationLoaded('loanType') ? ['id' => $l->loanType->id, 'name' => $l->loanType->name] : null,
-            'loan_plan'          => $l->relationLoaded('loanPlan') ? ['id' => $l->loanPlan->id, 'name' => $l->loanPlan->name] : null,
-            'principal_amount'   => (float) $l->principal_amount,
-            'interest_amount'    => (float) $l->interest_amount,
-            'processing_fee'     => (float) $l->processing_fee,
-            'insurance_fee'      => (float) $l->insurance_fee,
-            'total_payable'      => (float) $l->total_payable,
-            'total_paid'         => (float) $l->total_paid,
+            'loan_type' => $l->relationLoaded('loanType') ? ['id' => $l->loanType->id, 'name' => $l->loanType->name] : null,
+            'loan_plan' => $l->relationLoaded('loanPlan') ? ['id' => $l->loanPlan->id, 'name' => $l->loanPlan->name] : null,
+            'principal_amount' => (float) $l->principal_amount,
+            'interest_amount' => (float) $l->interest_amount,
+            'processing_fee' => (float) $l->processing_fee,
+            'insurance_fee' => (float) $l->insurance_fee,
+            'total_payable' => (float) $l->total_payable,
+            'total_paid' => (float) $l->total_paid,
             'outstanding_balance' => (float) $l->outstanding_balance,
-            'penalty_balance'    => (float) $l->penalty_balance,
-            'interest_rate'      => (float) $l->interest_rate,
-            'interest_type'      => $l->interest_type,
+            'penalty_balance' => (float) $l->penalty_balance,
+            'interest_rate' => (float) $l->interest_rate,
+            'interest_type' => $l->interest_type,
             'repayment_schedule' => $l->repayment_schedule,
-            'tenure'             => $l->tenure,
-            'tenure_type'        => $l->tenure_type,
-            'application_date'   => $l->application_date?->toDateString(),
-            'approval_date'      => $l->approval_date?->toDateString(),
-            'disbursement_date'  => $l->disbursement_date?->toDateString(),
+            'tenure' => $l->tenure,
+            'tenure_type' => $l->tenure_type,
+            'application_date' => $l->application_date?->toDateString(),
+            'approval_date' => $l->approval_date?->toDateString(),
+            'disbursement_date' => $l->disbursement_date?->toDateString(),
             'first_repayment_date' => $l->first_repayment_date?->toDateString(),
-            'maturity_date'      => $l->maturity_date?->toDateString(),
-            'created_by'         => $l->relationLoaded('createdBy') ? $l->createdBy?->name : null,
+            'maturity_date' => $l->maturity_date?->toDateString(),
+            'created_by' => $l->relationLoaded('createdBy') ? $l->createdBy?->name : null,
         ];
 
         if ($full) {
-            $data['loan_purpose']           = $l->loan_purpose;
+            $data['loan_purpose'] = $l->loan_purpose;
             $data['collateral_description'] = $l->collateral_description;
-            $data['guarantor_name']         = $l->guarantor_name;
-            $data['guarantor_phone']        = $l->guarantor_phone;
+            $data['guarantor_name'] = $l->guarantor_name;
+            $data['guarantor_phone'] = $l->guarantor_phone;
             $data['guarantor_relationship'] = $l->guarantor_relationship;
-            $data['disbursement_method']    = $l->disbursement_method?->value;
-            $data['disbursement_account']   = $l->disbursement_account;
+            $data['disbursement_method'] = $l->disbursement_method?->value;
+            $data['disbursement_account'] = $l->disbursement_account;
             $data['disbursement_reference'] = $l->disbursement_reference;
-            $data['notes']                  = $l->notes;
-            $data['approved_by']            = $l->relationLoaded('approvedBy') ? $l->approvedBy?->name : null;
-            $data['disbursed_by']           = $l->relationLoaded('disbursedBy') ? $l->disbursedBy?->name : null;
+            $data['notes'] = $l->notes;
+            $data['approved_by'] = $l->relationLoaded('approvedBy') ? $l->approvedBy?->name : null;
+            $data['disbursed_by'] = $l->relationLoaded('disbursedBy') ? $l->disbursedBy?->name : null;
 
             if ($l->relationLoaded('schedule')) {
                 $data['schedule'] = $l->schedule->map(fn ($s) => [
-                    'id'                => $s->id,
+                    'id' => $s->id,
                     'instalment_number' => $s->instalment_number,
-                    'due_date'          => $s->due_date->toDateString(),
-                    'total_due'         => (float) $s->total_due,
-                    'total_paid'        => (float) $s->total_paid,
-                    'outstanding'       => (float) $s->outstanding,
-                    'is_paid'           => $s->is_paid,
-                    'days_overdue'      => $s->days_overdue,
+                    'due_date' => $s->due_date->toDateString(),
+                    'total_due' => (float) $s->total_due,
+                    'total_paid' => (float) $s->total_paid,
+                    'outstanding' => (float) $s->outstanding,
+                    'is_paid' => $s->is_paid,
+                    'days_overdue' => $s->days_overdue,
                 ])->values();
             }
 
             if ($l->relationLoaded('statusLogs')) {
                 $data['status_logs'] = $l->statusLogs->map(fn ($log) => [
                     'from_status' => $log->from_status,
-                    'from_label'  => $log->from_status ? ucwords(str_replace('_', ' ', $log->from_status)) : null,
-                    'to_status'   => $log->to_status,
-                    'to_label'    => $log->to_status ? ucwords(str_replace('_', ' ', $log->to_status)) : null,
-                    'notes'       => $log->notes,
-                    'changed_by'  => $log->changedBy?->name,
-                    'created_at'  => $log->created_at->format('d M Y H:i'),
+                    'from_label' => $log->from_status ? ucwords(str_replace('_', ' ', $log->from_status)) : null,
+                    'to_status' => $log->to_status,
+                    'to_label' => $log->to_status ? ucwords(str_replace('_', ' ', $log->to_status)) : null,
+                    'notes' => $log->notes,
+                    'changed_by' => $log->changedBy?->name,
+                    'created_at' => $log->created_at->format('d M Y H:i'),
                 ])->values();
             }
         }

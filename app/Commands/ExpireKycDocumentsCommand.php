@@ -8,7 +8,8 @@ use Illuminate\Console\Command;
 
 class ExpireKycDocumentsCommand extends Command
 {
-    protected $signature   = 'lendr:expire-kyc-documents';
+    protected $signature = 'lendr:expire-kyc-documents';
+
     protected $description = 'Mark KYC documents as expired when their expiry date has passed.';
 
     public function handle(): int
@@ -33,6 +34,7 @@ class ExpireKycDocumentsCommand extends Command
         }
 
         $this->info("Expired {$count} KYC document(s).");
+
         return self::SUCCESS;
     }
 }

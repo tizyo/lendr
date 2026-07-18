@@ -13,12 +13,12 @@ class SettingController extends BaseApiController
 {
     // Grouped default settings with types
     private const DEFAULTS = [
-        'general'  => ['company_name', 'company_phone', 'company_email', 'company_address', 'currency', 'timezone', 'date_format', 'fiscal_year_start'],
+        'general' => ['company_name', 'company_phone', 'company_email', 'company_address', 'currency', 'timezone', 'date_format', 'fiscal_year_start'],
         'branding' => ['primary_color', 'secondary_color', 'company_logo_path', 'pwa_app_name', 'pwa_theme_color'],
-        'smtp'     => ['smtp_host', 'smtp_port', 'smtp_username', 'smtp_from_email', 'smtp_from_name', 'smtp_encryption'],
-        'sms'      => ['sms_gateway', 'sms_sender_name'],
+        'smtp' => ['smtp_host', 'smtp_port', 'smtp_username', 'smtp_from_email', 'smtp_from_name', 'smtp_encryption'],
+        'sms' => ['sms_gateway', 'sms_sender_name'],
         'security' => ['require_2fa', 'session_timeout_minutes', 'password_expiry_days'],
-        'pwa'      => ['pwa_app_name', 'pwa_theme_color', 'pwa_short_name'],
+        'pwa' => ['pwa_app_name', 'pwa_theme_color', 'pwa_short_name'],
     ];
 
     // Keys that should never be returned in plaintext
@@ -26,7 +26,7 @@ class SettingController extends BaseApiController
 
     public function index(Request $request): JsonResponse
     {
-        $grouped = Cache::remember('tenant_settings_' . tenant('id'), 600, function () {
+        $grouped = Cache::remember('tenant_settings_'.tenant('id'), 600, function () {
             $settings = DB::table('settings')->get()->keyBy('key');
 
             $grouped = [];
@@ -60,7 +60,7 @@ class SettingController extends BaseApiController
 
             DB::table('settings')->updateOrInsert(
                 ['key' => $key],
-                ['value' => $value, 'updated_at' => now()]
+                ['value' => $value, 'updated_at' => now()],
             );
         }
 
@@ -81,7 +81,7 @@ class SettingController extends BaseApiController
 
         DB::table('settings')->updateOrInsert(
             ['key' => 'company_logo_path'],
-            ['value' => $path, 'updated_at' => now()]
+            ['value' => $path, 'updated_at' => now()],
         );
 
         $tenantId = tenant('id');
@@ -93,19 +93,19 @@ class SettingController extends BaseApiController
 
     public function branding(): JsonResponse
     {
-        $branding = Cache::remember('tenant_branding_' . tenant('id'), 600, function () {
+        $branding = Cache::remember('tenant_branding_'.tenant('id'), 600, function () {
             $keys = ['primary_color', 'secondary_color', 'company_logo_path', 'pwa_app_name', 'pwa_theme_color', 'company_name'];
             $rows = DB::table('settings')->whereIn('key', $keys)->pluck('value', 'key');
 
             return [
-                'primary_color'   => $rows->get('primary_color', '#0D47A1'),
+                'primary_color' => $rows->get('primary_color', '#0D47A1'),
                 'secondary_color' => $rows->get('secondary_color', '#1565C0'),
-                'logo_url'        => $rows->get('company_logo_path')
+                'logo_url' => $rows->get('company_logo_path')
                                         ? Storage::disk('s3')->url($rows->get('company_logo_path'))
                                         : null,
-                'pwa_app_name'    => $rows->get('pwa_app_name', 'LENDR'),
+                'pwa_app_name' => $rows->get('pwa_app_name', 'LENDR'),
                 'pwa_theme_color' => $rows->get('pwa_theme_color', '#0D47A1'),
-                'company_name'    => $rows->get('company_name', 'LENDR'),
+                'company_name' => $rows->get('company_name', 'LENDR'),
             ];
         });
 

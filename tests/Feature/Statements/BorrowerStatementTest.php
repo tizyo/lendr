@@ -1,13 +1,11 @@
 <?php
 
-use App\Commands\SendBorrowerStatementsCommand;
 use App\Enums\LoanStatus;
 use App\Models\Tenant\Borrower;
 use App\Models\Tenant\Loan;
 use App\Models\Tenant\LoanPlan;
 use App\Models\Tenant\LoanType;
 use App\Services\Mail\TenantMailService;
-use Illuminate\Support\Facades\Log;
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -17,10 +15,10 @@ function statementLoan(Borrower $borrower): Loan
     $plan = LoanPlan::first() ?? LoanPlan::factory()->create(['loan_type_id' => $type->id]);
 
     return Loan::factory()->create([
-        'borrower_id'  => $borrower->id,
+        'borrower_id' => $borrower->id,
         'loan_type_id' => $type->id,
         'loan_plan_id' => $plan->id,
-        'status'       => LoanStatus::Active,
+        'status' => LoanStatus::Active,
     ]);
 }
 
@@ -60,10 +58,10 @@ test('command skips borrowers with no active loans', function () {
     $plan = LoanPlan::first() ?? LoanPlan::factory()->create(['loan_type_id' => $type->id]);
     $borrower = Borrower::factory()->create(['email' => 'completed@example.com']);
     Loan::factory()->create([
-        'borrower_id'  => $borrower->id,
+        'borrower_id' => $borrower->id,
         'loan_type_id' => $type->id,
         'loan_plan_id' => $plan->id,
-        'status'       => LoanStatus::Completed,
+        'status' => LoanStatus::Completed,
     ]);
 
     $this->artisan('lendr:send-statements')

@@ -16,7 +16,7 @@ function pushBorrower(): Borrower
 
 test('register creates a device token record', function () {
     $borrower = pushBorrower();
-    $svc      = app(PushNotificationService::class);
+    $svc = app(PushNotificationService::class);
 
     $token = $svc->register($borrower, 'token-abc-123', 'fcm', 'Test Phone');
 
@@ -28,7 +28,7 @@ test('register creates a device token record', function () {
 
 test('register is idempotent — same token updates rather than duplicates', function () {
     $borrower = pushBorrower();
-    $svc      = app(PushNotificationService::class);
+    $svc = app(PushNotificationService::class);
 
     $svc->register($borrower, 'token-dup', 'fcm');
     $svc->register($borrower, 'token-dup', 'fcm', 'Updated name');
@@ -39,7 +39,7 @@ test('register is idempotent — same token updates rather than duplicates', fun
 
 test('unregister deactivates a device token', function () {
     $borrower = pushBorrower();
-    $svc      = app(PushNotificationService::class);
+    $svc = app(PushNotificationService::class);
 
     $svc->register($borrower, 'token-to-remove', 'fcm');
     $svc->unregister($borrower, 'token-to-remove');
@@ -50,7 +50,7 @@ test('unregister deactivates a device token', function () {
 
 test('sendToBorrower returns 0 when no active tokens', function () {
     $borrower = pushBorrower();
-    $svc      = app(PushNotificationService::class);
+    $svc = app(PushNotificationService::class);
 
     $sent = $svc->sendToBorrower($borrower, 'Hello', 'World');
     expect($sent)->toBe(0);
@@ -60,14 +60,14 @@ test('sendToBorrower skips inactive tokens', function () {
     $borrower = pushBorrower();
     DeviceToken::create([
         'borrower_id' => $borrower->id,
-        'token'       => 'inactive-token',
-        'platform'    => 'fcm',
-        'is_active'   => false,
+        'token' => 'inactive-token',
+        'platform' => 'fcm',
+        'is_active' => false,
     ]);
 
     Http::fake(); // should not be called
 
-    $svc  = app(PushNotificationService::class);
+    $svc = app(PushNotificationService::class);
     $sent = $svc->sendToBorrower($borrower, 'Test', 'Body');
     expect($sent)->toBe(0);
 
@@ -78,9 +78,9 @@ test('sendToBorrower attempts FCM when server key configured', function () {
     $borrower = pushBorrower();
     DeviceToken::create([
         'borrower_id' => $borrower->id,
-        'token'       => 'active-token-fcm',
-        'platform'    => 'fcm',
-        'is_active'   => true,
+        'token' => 'active-token-fcm',
+        'platform' => 'fcm',
+        'is_active' => true,
     ]);
 
     // Fake FCM success response
@@ -90,7 +90,7 @@ test('sendToBorrower attempts FCM when server key configured', function () {
 
     config(['services.fcm.server_key' => 'test-fcm-key']);
 
-    $svc  = app(PushNotificationService::class);
+    $svc = app(PushNotificationService::class);
     $sent = $svc->sendToBorrower($borrower, 'Loan Update', 'Your payment was received.');
     expect($sent)->toBe(1);
 });
@@ -99,15 +99,15 @@ test('sendToBorrower returns 0 without FCM key configured', function () {
     $borrower = pushBorrower();
     DeviceToken::create([
         'borrower_id' => $borrower->id,
-        'token'       => 'active-no-key',
-        'platform'    => 'fcm',
-        'is_active'   => true,
+        'token' => 'active-no-key',
+        'platform' => 'fcm',
+        'is_active' => true,
     ]);
 
     config(['services.fcm.server_key' => null]);
 
     Http::fake();
-    $svc  = app(PushNotificationService::class);
+    $svc = app(PushNotificationService::class);
     $sent = $svc->sendToBorrower($borrower, 'Test', 'Body');
     expect($sent)->toBe(0);
 });
@@ -116,12 +116,12 @@ test('sendToBorrower returns 0 without FCM key configured', function () {
 
 test('POST me/device-tokens registers a token for borrower', function () {
     $borrower = pushBorrower();
-    $token    = $borrower->createToken('portal')->plainTextToken;
+    $token = $borrower->createToken('portal')->plainTextToken;
 
-    $this->withHeader('Authorization', 'Bearer ' . $token)
+    $this->withHeader('Authorization', 'Bearer '.$token)
         ->postJson(route('api.v1.borrower.device-tokens.register'), [
-            'token'       => 'device-abc-456',
-            'platform'    => 'fcm',
+            'token' => 'device-abc-456',
+            'platform' => 'fcm',
             'device_name' => 'My Phone',
         ])
         ->assertStatus(201)
@@ -132,14 +132,14 @@ test('DELETE me/device-tokens unregisters a token', function () {
     $borrower = pushBorrower();
     DeviceToken::create([
         'borrower_id' => $borrower->id,
-        'token'       => 'token-to-unregister',
-        'platform'    => 'fcm',
-        'is_active'   => true,
+        'token' => 'token-to-unregister',
+        'platform' => 'fcm',
+        'is_active' => true,
     ]);
 
     $token = $borrower->createToken('portal')->plainTextToken;
 
-    $this->withHeader('Authorization', 'Bearer ' . $token)
+    $this->withHeader('Authorization', 'Bearer '.$token)
         ->deleteJson(route('api.v1.borrower.device-tokens.unregister'), [
             'token' => 'token-to-unregister',
         ])
@@ -150,7 +150,7 @@ test('DELETE me/device-tokens unregisters a token', function () {
 
 test('unauthenticated cannot register device tokens', function () {
     $this->postJson(route('api.v1.borrower.device-tokens.register'), [
-        'token'    => 'x',
+        'token' => 'x',
         'platform' => 'fcm',
     ])->assertStatus(401);
 });

@@ -7,7 +7,6 @@ use App\Models\Tenant\Loan;
 use App\Models\Tenant\Payment;
 use App\Models\Tenant\StaffCommission;
 use Carbon\Carbon;
-use Illuminate\Support\Facades\DB;
 
 class CommissionService
 {
@@ -25,17 +24,19 @@ class CommissionService
 
         foreach ($rules as $rule) {
             $amount = $rule->calculate((float) $loan->principal_amount);
-            if ($amount <= 0) continue;
+            if ($amount <= 0) {
+                continue;
+            }
 
             $created[] = StaffCommission::create([
-                'user_id'           => $loan->created_by,
-                'loan_id'           => $loan->id,
-                'rule_id'           => $rule->id,
-                'trigger'           => 'disbursement',
-                'base_amount'       => $loan->principal_amount,
+                'user_id' => $loan->created_by,
+                'loan_id' => $loan->id,
+                'rule_id' => $rule->id,
+                'trigger' => 'disbursement',
+                'base_amount' => $loan->principal_amount,
                 'commission_amount' => $amount,
-                'status'            => 'pending',
-                'period_month'      => now()->startOfMonth()->toDateString(),
+                'status' => 'pending',
+                'period_month' => now()->startOfMonth()->toDateString(),
             ]);
         }
 
@@ -58,17 +59,19 @@ class CommissionService
 
         foreach ($rules as $rule) {
             $amount = $rule->calculate($repaymentAmount);
-            if ($amount <= 0) continue;
+            if ($amount <= 0) {
+                continue;
+            }
 
             $created[] = StaffCommission::create([
-                'user_id'           => $loan->created_by,
-                'loan_id'           => $loan->id,
-                'rule_id'           => $rule->id,
-                'trigger'           => 'repayment',
-                'base_amount'       => $repaymentAmount,
+                'user_id' => $loan->created_by,
+                'loan_id' => $loan->id,
+                'rule_id' => $rule->id,
+                'trigger' => 'repayment',
+                'base_amount' => $repaymentAmount,
                 'commission_amount' => $amount,
-                'status'            => 'pending',
-                'period_month'      => now()->startOfMonth()->toDateString(),
+                'status' => 'pending',
+                'period_month' => now()->startOfMonth()->toDateString(),
             ]);
         }
 
@@ -81,12 +84,12 @@ class CommissionService
     public function approvePeriod(string $period, int $approvedBy): int
     {
         $from = Carbon::createFromFormat('Y-m', $period)->startOfMonth()->toDateString();
-        $to   = Carbon::createFromFormat('Y-m', $period)->endOfMonth()->toDateString();
+        $to = Carbon::createFromFormat('Y-m', $period)->endOfMonth()->toDateString();
 
         return StaffCommission::where('status', 'pending')
             ->whereBetween('period_month', [$from, $to])
             ->update([
-                'status'      => 'approved',
+                'status' => 'approved',
                 'approved_at' => now(),
                 'approved_by' => $approvedBy,
             ]);
@@ -100,7 +103,7 @@ class CommissionService
         return StaffCommission::whereIn('id', $commissionIds)
             ->where('status', 'approved')
             ->update([
-                'status'  => 'paid',
+                'status' => 'paid',
                 'paid_at' => now(),
                 'paid_by' => $paidBy,
             ]);
@@ -112,19 +115,19 @@ class CommissionService
     public function summary(int $userId, string $period): array
     {
         $from = Carbon::createFromFormat('Y-m', $period)->startOfMonth()->toDateString();
-        $to   = Carbon::createFromFormat('Y-m', $period)->endOfMonth()->toDateString();
+        $to = Carbon::createFromFormat('Y-m', $period)->endOfMonth()->toDateString();
 
         $rows = StaffCommission::where('user_id', $userId)
             ->whereBetween('period_month', [$from, $to])
             ->get();
 
         return [
-            'period'          => $period,
-            'user_id'         => $userId,
-            'pending'         => ['count' => $rows->where('status', 'pending')->count(),  'amount' => (float) $rows->where('status', 'pending')->sum('commission_amount')],
-            'approved'        => ['count' => $rows->where('status', 'approved')->count(), 'amount' => (float) $rows->where('status', 'approved')->sum('commission_amount')],
-            'paid'            => ['count' => $rows->where('status', 'paid')->count(),     'amount' => (float) $rows->where('status', 'paid')->sum('commission_amount')],
-            'total'           => ['count' => $rows->count(), 'amount' => (float) $rows->sum('commission_amount')],
+            'period' => $period,
+            'user_id' => $userId,
+            'pending' => ['count' => $rows->where('status', 'pending')->count(),  'amount' => (float) $rows->where('status', 'pending')->sum('commission_amount')],
+            'approved' => ['count' => $rows->where('status', 'approved')->count(), 'amount' => (float) $rows->where('status', 'approved')->sum('commission_amount')],
+            'paid' => ['count' => $rows->where('status', 'paid')->count(),     'amount' => (float) $rows->where('status', 'paid')->sum('commission_amount')],
+            'total' => ['count' => $rows->count(), 'amount' => (float) $rows->sum('commission_amount')],
         ];
     }
 

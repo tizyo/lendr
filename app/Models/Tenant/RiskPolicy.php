@@ -21,7 +21,7 @@ class RiskPolicy extends Model
     protected function casts(): array
     {
         return [
-            'is_active'  => 'boolean',
+            'is_active' => 'boolean',
             'sort_order' => 'integer',
         ];
     }
@@ -61,20 +61,20 @@ class RiskPolicy extends Model
         }
 
         return match ($this->rule_type) {
-            'max_active_loans'     => $this->checkMaxActiveLoans($context),
-            'min_credit_score'     => $this->checkMinCreditScore($context),
-            'max_loan_to_income'   => $this->checkLoanToIncome($context),
-            'blacklisted_region'   => $this->checkBlacklist($context, 'city'),
+            'max_active_loans' => $this->checkMaxActiveLoans($context),
+            'min_credit_score' => $this->checkMinCreditScore($context),
+            'max_loan_to_income' => $this->checkLoanToIncome($context),
+            'blacklisted_region' => $this->checkBlacklist($context, 'city'),
             'blacklisted_employer' => $this->checkBlacklist($context, 'employer'),
-            'max_loan_amount'      => $this->checkMaxLoanAmount($context),
-            'min_borrower_age'     => $this->checkMinAge($context),
-            default                => null,
+            'max_loan_amount' => $this->checkMaxLoanAmount($context),
+            'min_borrower_age' => $this->checkMinAge($context),
+            default => null,
         };
     }
 
     private function checkMaxActiveLoans(array $ctx): ?string
     {
-        $max    = (int) $this->value;
+        $max = (int) $this->value;
         $active = Loan::where('borrower_id', $ctx['borrower_id'] ?? 0)
             ->whereIn('status', ['disbursed', 'active'])
             ->count();
@@ -86,7 +86,7 @@ class RiskPolicy extends Model
 
     private function checkMinCreditScore(array $ctx): ?string
     {
-        $min   = (int) $this->value;
+        $min = (int) $this->value;
         $score = (int) ($ctx['credit_score'] ?? 0);
 
         return $score < $min
@@ -96,9 +96,9 @@ class RiskPolicy extends Model
 
     private function checkLoanToIncome(array $ctx): ?string
     {
-        $maxRatio  = (float) $this->value;
-        $amount    = (float) ($ctx['requested_amount'] ?? 0);
-        $income    = (float) ($ctx['monthly_income'] ?? 0);
+        $maxRatio = (float) $this->value;
+        $amount = (float) ($ctx['requested_amount'] ?? 0);
+        $income = (float) ($ctx['monthly_income'] ?? 0);
 
         if ($income <= 0) {
             return null;
@@ -113,7 +113,7 @@ class RiskPolicy extends Model
 
     private function checkBlacklist(array $ctx, string $field): ?string
     {
-        $list  = json_decode($this->value, true) ?? [$this->value];
+        $list = json_decode($this->value, true) ?? [$this->value];
         $value = strtolower(trim($ctx[$field] ?? ''));
 
         if ($value === '') {
@@ -129,18 +129,18 @@ class RiskPolicy extends Model
 
     private function checkMaxLoanAmount(array $ctx): ?string
     {
-        $max    = (float) $this->value;
+        $max = (float) $this->value;
         $amount = (float) ($ctx['requested_amount'] ?? 0);
 
         return $amount > $max
-            ? "Requested amount ".number_format($amount, 2)." exceeds maximum allowed ".number_format($max, 2)."."
+            ? 'Requested amount '.number_format($amount, 2).' exceeds maximum allowed '.number_format($max, 2).'.'
             : null;
     }
 
     private function checkMinAge(array $ctx): ?string
     {
         $minAge = (int) $this->value;
-        $dob    = $ctx['date_of_birth'] ?? null;
+        $dob = $ctx['date_of_birth'] ?? null;
 
         if (! $dob) {
             return null;

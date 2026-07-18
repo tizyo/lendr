@@ -17,9 +17,9 @@ class PlanConfig extends Model
     ];
 
     protected $casts = [
-        'price_zmw'       => 'decimal:2',
+        'price_zmw' => 'decimal:2',
         'is_custom_price' => 'boolean',
-        'features'        => 'array',
+        'features' => 'array',
     ];
 
     /** @return static|null */
@@ -52,6 +52,7 @@ class PlanConfig extends Model
     public function hasFeature(string $key): bool
     {
         $value = $this->features[$key] ?? false;
+
         return $value === true || $value === -1;
     }
 
@@ -59,7 +60,10 @@ class PlanConfig extends Model
     public function withinLimit(string $key, int $current): bool
     {
         $limit = (int) ($this->features[$key] ?? 0);
-        if ($limit === -1) return true;
+        if ($limit === -1) {
+            return true;
+        }
+
         return $current < $limit;
     }
 }

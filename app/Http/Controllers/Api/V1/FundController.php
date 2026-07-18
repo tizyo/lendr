@@ -18,14 +18,14 @@ class FundController extends BaseApiController
         $balance = FundBalance::current();
 
         return $this->success([
-            'available_balance'  => (float) $balance->available_balance,
-            'opening_balance'    => (float) $balance->opening_balance,
-            'total_deposits'     => (float) $balance->total_deposits,
-            'total_disbursed'    => (float) $balance->total_disbursed,
-            'total_repaid'       => (float) $balance->total_repaid,
-            'total_penalties'    => (float) $balance->total_penalties,
-            'total_expenses'     => (float) $balance->total_expenses,
-            'currency'           => $balance->currency,
+            'available_balance' => (float) $balance->available_balance,
+            'opening_balance' => (float) $balance->opening_balance,
+            'total_deposits' => (float) $balance->total_deposits,
+            'total_disbursed' => (float) $balance->total_disbursed,
+            'total_repaid' => (float) $balance->total_repaid,
+            'total_penalties' => (float) $balance->total_penalties,
+            'total_expenses' => (float) $balance->total_expenses,
+            'currency' => $balance->currency,
             'last_reconciled_at' => $balance->last_reconciled_at?->toDateTimeString(),
         ]);
     }
@@ -38,7 +38,7 @@ class FundController extends BaseApiController
     {
         $balance = FundBalance::current();
 
-        $totalIn  = (float) $balance->total_deposits + (float) $balance->total_repaid + (float) $balance->total_penalties;
+        $totalIn = (float) $balance->total_deposits + (float) $balance->total_repaid + (float) $balance->total_penalties;
         $totalOut = (float) $balance->total_disbursed + (float) $balance->total_expenses;
 
         $utilization = $totalIn > 0
@@ -47,10 +47,10 @@ class FundController extends BaseApiController
 
         return $this->success([
             'available_balance' => (float) $balance->available_balance,
-            'total_in'          => $totalIn,
-            'total_out'         => $totalOut,
-            'utilization_rate'  => $utilization,
-            'currency'          => $balance->currency,
+            'total_in' => $totalIn,
+            'total_out' => $totalOut,
+            'utilization_rate' => $utilization,
+            'currency' => $balance->currency,
         ]);
     }
 
@@ -74,17 +74,17 @@ class FundController extends BaseApiController
     private function formatTransaction(FundTransaction $t): array
     {
         return [
-            'id'              => $t->id,
+            'id' => $t->id,
             'transaction_ref' => $t->transaction_ref,
-            'type'            => $t->type->value,
-            'type_label'      => $t->type->label(),
-            'is_credit'       => $t->type->isCredit(),
-            'amount'          => (float) $t->amount,
-            'balance_before'  => (float) $t->balance_before,
-            'balance_after'   => (float) $t->balance_after,
-            'description'     => $t->description,
-            'performed_by'    => $t->relationLoaded('performedBy') ? $t->performedBy?->name : null,
-            'created_at'      => $t->created_at->format('d M Y H:i'),
+            'type' => $t->type->value,
+            'type_label' => $t->type->label(),
+            'is_credit' => $t->type->isCredit(),
+            'amount' => (float) $t->amount,
+            'balance_before' => (float) $t->balance_before,
+            'balance_after' => (float) $t->balance_after,
+            'description' => $t->description,
+            'performed_by' => $t->relationLoaded('performedBy') ? $t->performedBy?->name : null,
+            'created_at' => $t->created_at->format('d M Y H:i'),
         ];
     }
 }

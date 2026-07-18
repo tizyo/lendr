@@ -27,16 +27,16 @@ class NotificationTemplate extends Model
     public static function events(): array
     {
         return [
-            'loan_submitted'    => 'Loan Submitted',
-            'loan_approved'     => 'Loan Approved',
-            'loan_denied'       => 'Loan Denied',
-            'loan_disbursed'    => 'Loan Disbursed',
-            'payment_received'  => 'Payment Received',
-            'payment_reminder'  => 'Payment Reminder',
-            'overdue_reminder'  => 'Overdue Reminder',
-            'loan_completed'    => 'Loan Completed',
-            'welcome'           => 'Welcome / Registration',
-            'otp'               => 'OTP Verification',
+            'loan_submitted' => 'Loan Submitted',
+            'loan_approved' => 'Loan Approved',
+            'loan_denied' => 'Loan Denied',
+            'loan_disbursed' => 'Loan Disbursed',
+            'payment_received' => 'Payment Received',
+            'payment_reminder' => 'Payment Reminder',
+            'overdue_reminder' => 'Overdue Reminder',
+            'loan_completed' => 'Loan Completed',
+            'welcome' => 'Welcome / Registration',
+            'otp' => 'OTP Verification',
         ];
     }
 
@@ -45,14 +45,14 @@ class NotificationTemplate extends Model
     public static function placeholders(): array
     {
         return [
-            '{{borrower_name}}'  => 'Full name of the borrower',
-            '{{loan_number}}'    => 'Loan reference number',
-            '{{amount}}'         => 'Loan or payment amount',
-            '{{due_date}}'       => 'Next due date',
-            '{{outstanding}}'    => 'Outstanding balance',
-            '{{branch_name}}'    => 'Branch name',
-            '{{company_name}}'   => 'Company / tenant name',
-            '{{otp}}'            => 'One-time password (OTP)',
+            '{{borrower_name}}' => 'Full name of the borrower',
+            '{{loan_number}}' => 'Loan reference number',
+            '{{amount}}' => 'Loan or payment amount',
+            '{{due_date}}' => 'Next due date',
+            '{{outstanding}}' => 'Outstanding balance',
+            '{{branch_name}}' => 'Branch name',
+            '{{company_name}}' => 'Company / tenant name',
+            '{{otp}}' => 'One-time password (OTP)',
         ];
     }
 
@@ -66,12 +66,12 @@ class NotificationTemplate extends Model
         $replace = fn (string $text) => str_replace(
             array_keys($vars),
             array_values($vars),
-            $text
+            $text,
         );
 
         return [
             'subject' => $this->subject ? $replace($this->subject) : null,
-            'body'    => $replace($this->body),
+            'body' => $replace($this->body),
         ];
     }
 

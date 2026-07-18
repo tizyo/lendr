@@ -56,9 +56,9 @@ test('index shows stored template when present', function () {
     $admin = templateAdmin();
 
     NotificationTemplate::create([
-        'event'   => 'loan_approved',
+        'event' => 'loan_approved',
         'channel' => 'sms',
-        'body'    => 'Your loan {{loan_number}} has been approved.',
+        'body' => 'Your loan {{loan_number}} has been approved.',
     ]);
 
     $response = $this->actingAs($admin)
@@ -84,7 +84,7 @@ test('can create a new sms template', function () {
         ->assertJsonPath('message', 'Template saved.');
 
     $this->assertDatabaseHas('notification_templates', [
-        'event'   => 'loan_approved',
+        'event' => 'loan_approved',
         'channel' => 'sms',
     ]);
 })->group('notification-templates');
@@ -93,9 +93,9 @@ test('can update an existing template', function () {
     $admin = templateAdmin();
 
     NotificationTemplate::create([
-        'event'   => 'payment_received',
+        'event' => 'payment_received',
         'channel' => 'sms',
-        'body'    => 'Old body',
+        'body' => 'Old body',
     ]);
 
     $this->actingAs($admin)
@@ -105,9 +105,9 @@ test('can update an existing template', function () {
         ->assertOk();
 
     $this->assertDatabaseHas('notification_templates', [
-        'event'   => 'payment_received',
+        'event' => 'payment_received',
         'channel' => 'sms',
-        'body'    => 'New body {{amount}}',
+        'body' => 'New body {{amount}}',
     ]);
 
     $this->assertSame(1, NotificationTemplate::where('event', 'payment_received')->where('channel', 'sms')->count());
@@ -119,13 +119,13 @@ test('can create an email template with subject', function () {
     $this->actingAs($admin)
         ->putJson(route('api.v1.notification-templates.upsert', ['event' => 'loan_disbursed', 'channel' => 'email']), [
             'subject' => 'Your loan has been disbursed',
-            'body'    => 'Dear {{borrower_name}}, your loan of {{amount}} has been disbursed.',
-            'name'    => 'Disbursement Email',
+            'body' => 'Dear {{borrower_name}}, your loan of {{amount}} has been disbursed.',
+            'name' => 'Disbursement Email',
         ])
         ->assertOk();
 
     $this->assertDatabaseHas('notification_templates', [
-        'event'   => 'loan_disbursed',
+        'event' => 'loan_disbursed',
         'channel' => 'email',
         'subject' => 'Your loan has been disbursed',
     ]);
@@ -168,9 +168,9 @@ test('can delete a template', function () {
     $admin = templateAdmin();
 
     NotificationTemplate::create([
-        'event'   => 'welcome',
+        'event' => 'welcome',
         'channel' => 'sms',
-        'body'    => 'Welcome {{borrower_name}}!',
+        'body' => 'Welcome {{borrower_name}}!',
     ]);
 
     $this->actingAs($admin)
@@ -179,7 +179,7 @@ test('can delete a template', function () {
         ->assertJsonPath('message', 'Template deleted.');
 
     $this->assertDatabaseMissing('notification_templates', [
-        'event'   => 'welcome',
+        'event' => 'welcome',
         'channel' => 'sms',
     ]);
 })->group('notification-templates');
@@ -211,7 +211,7 @@ test('preview replaces subject placeholders too', function () {
     $response = $this->actingAs($admin)
         ->postJson(route('api.v1.notification-templates.preview', ['event' => 'loan_disbursed', 'channel' => 'email']), [
             'subject' => 'Loan {{loan_number}} disbursed',
-            'body'    => 'Hello {{borrower_name}}',
+            'body' => 'Hello {{borrower_name}}',
         ])
         ->assertOk();
 

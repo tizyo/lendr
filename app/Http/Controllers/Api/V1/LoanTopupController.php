@@ -44,21 +44,21 @@ class LoanTopupController extends BaseApiController
 
         $data = $request->validate([
             'topup_amount' => ['required', 'numeric', 'min:1'],
-            'new_tenure'   => ['nullable', 'integer', 'min:1'],
-            'notes'        => ['nullable', 'string', 'max:1000'],
+            'new_tenure' => ['nullable', 'integer', 'min:1'],
+            'notes' => ['nullable', 'string', 'max:1000'],
         ]);
 
         $topup = LoanTopup::create([
             ...$data,
-            'loan_id'      => $loan->id,
+            'loan_id' => $loan->id,
             'requested_by' => auth()->id(),
-            'status'       => 'pending',
+            'status' => 'pending',
         ]);
 
         return $this->success(
             $this->format($topup->load('requestedBy:id,name')),
             'Top-up request submitted.',
-            201
+            201,
         );
     }
 
@@ -77,49 +77,49 @@ class LoanTopupController extends BaseApiController
         }
 
         DB::transaction(function () use ($loan, $topup) {
-            $addAmount   = (float) $topup->topup_amount;
+            $addAmount = (float) $topup->topup_amount;
             $outstanding = (float) $loan->outstanding_balance + $addAmount;
-            $newTenure   = $topup->new_tenure ?? (int) $loan->tenure;
-            $plan        = $loan->loanPlan;
+            $newTenure = $topup->new_tenure ?? (int) $loan->tenure;
+            $plan = $loan->loanPlan;
 
             $amounts = $this->calculator->calculateAmounts($plan, $outstanding, $newTenure);
 
             $loan->update([
-                'principal_amount'    => bcadd((string) $loan->principal_amount, (string) $addAmount, 2),
-                'tenure'              => $newTenure,
-                'interest_amount'     => $amounts['interest_amount'],
-                'total_payable'       => bcadd((string) $loan->total_paid, (string) bcadd((string) $outstanding, (string) $amounts['interest_amount'], 2), 2),
+                'principal_amount' => bcadd((string) $loan->principal_amount, (string) $addAmount, 2),
+                'tenure' => $newTenure,
+                'interest_amount' => $amounts['interest_amount'],
+                'total_payable' => bcadd((string) $loan->total_paid, (string) bcadd((string) $outstanding, (string) $amounts['interest_amount'], 2), 2),
                 'outstanding_balance' => bcadd((string) $outstanding, (string) $amounts['interest_amount'], 2),
             ]);
 
             // Delete remaining unpaid instalments and regenerate
             $loan->schedule()->where('is_paid', false)->delete();
 
-            $scheduleRows   = $this->calculator->generateSchedule(
+            $scheduleRows = $this->calculator->generateSchedule(
                 $plan,
                 $outstanding,
                 $newTenure,
                 now()->toDateString(),
-                $amounts['interest_amount']
+                $amounts['interest_amount'],
             );
 
             $lastInstalment = $loan->schedule()->where('is_paid', true)->max('instalment_number') ?? 0;
 
             foreach ($scheduleRows as $i => $row) {
                 LoanSchedule::create([
-                    'loan_id'           => $loan->id,
+                    'loan_id' => $loan->id,
                     'instalment_number' => $lastInstalment + $i + 1,
-                    'due_date'          => $row['due_date'],
-                    'principal_due'     => $row['principal_due'],
-                    'interest_due'      => $row['interest_due'],
-                    'fee_due'           => $row['fee_due'],
-                    'total_due'         => $row['total_due'],
-                    'outstanding'       => $row['outstanding'],
+                    'due_date' => $row['due_date'],
+                    'principal_due' => $row['principal_due'],
+                    'interest_due' => $row['interest_due'],
+                    'fee_due' => $row['fee_due'],
+                    'total_due' => $row['total_due'],
+                    'outstanding' => $row['outstanding'],
                 ]);
             }
 
             $topup->update([
-                'status'      => 'approved',
+                'status' => 'approved',
                 'approved_by' => auth()->id(),
                 'approved_at' => now(),
             ]);
@@ -129,14 +129,14 @@ class LoanTopupController extends BaseApiController
                 ->causedBy(auth()->user())
                 ->withProperties([
                     'topup_amount' => (float) $topup->topup_amount,
-                    'new_tenure'   => $newTenure,
+                    'new_tenure' => $newTenure,
                 ])
                 ->log('topup_approved');
         });
 
         return $this->success(
             $this->format($topup->fresh()->load(['requestedBy:id,name', 'approvedBy:id,name'])),
-            'Top-up approved.'
+            'Top-up approved.',
         );
     }
 
@@ -159,10 +159,10 @@ class LoanTopupController extends BaseApiController
         ]);
 
         $topup->update([
-            'status'           => 'rejected',
+            'status' => 'rejected',
             'rejection_reason' => $data['reason'],
-            'approved_by'      => auth()->id(),
-            'approved_at'      => now(),
+            'approved_by' => auth()->id(),
+            'approved_at' => now(),
         ]);
 
         activity()
@@ -173,23 +173,23 @@ class LoanTopupController extends BaseApiController
 
         return $this->success(
             $this->format($topup->fresh()->load(['requestedBy:id,name', 'approvedBy:id,name'])),
-            'Top-up rejected.'
+            'Top-up rejected.',
         );
     }
 
     private function format(LoanTopup $t): array
     {
         return [
-            'id'               => $t->id,
-            'topup_amount'     => (float) $t->topup_amount,
-            'new_tenure'       => $t->new_tenure,
-            'status'           => $t->status,
-            'notes'            => $t->notes,
+            'id' => $t->id,
+            'topup_amount' => (float) $t->topup_amount,
+            'new_tenure' => $t->new_tenure,
+            'status' => $t->status,
+            'notes' => $t->notes,
             'rejection_reason' => $t->rejection_reason,
-            'requested_by'     => $t->requestedBy?->name,
-            'approved_by'      => $t->approvedBy?->name,
-            'approved_at'      => $t->approved_at?->format('d M Y'),
-            'created_at'       => $t->created_at->format('d M Y'),
+            'requested_by' => $t->requestedBy?->name,
+            'approved_by' => $t->approvedBy?->name,
+            'approved_at' => $t->approved_at?->format('d M Y'),
+            'created_at' => $t->created_at->format('d M Y'),
         ];
     }
 }

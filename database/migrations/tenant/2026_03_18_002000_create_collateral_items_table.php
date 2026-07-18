@@ -14,7 +14,7 @@ return new class extends Migration
             $table->enum('type', ['property', 'vehicle', 'equipment', 'land', 'savings', 'other'])->default('other');
             $table->string('description');
             $table->decimal('estimated_value', 15, 2)->nullable();
-            $table->decimal('assessed_value',  15, 2)->nullable();
+            $table->decimal('assessed_value', 15, 2)->nullable();
             $table->date('assessment_date')->nullable();
             $table->text('location')->nullable();
             $table->enum('status', ['pending', 'verified', 'released'])->default('pending');

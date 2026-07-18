@@ -17,12 +17,12 @@ function taxAdmin(): User
 function taxConfig(array $attrs = []): TaxConfiguration
 {
     return TaxConfiguration::create(array_merge([
-        'tax_type'            => 'wht',
-        'rate'                => 15.0,
-        'label'               => 'Withholding Tax',
+        'tax_type' => 'wht',
+        'rate' => 15.0,
+        'label' => 'Withholding Tax',
         'applies_to_interest' => true,
-        'applies_to_fees'     => false,
-        'is_active'           => true,
+        'applies_to_fees' => false,
+        'is_active' => true,
     ], $attrs));
 }
 
@@ -33,9 +33,9 @@ test('can create a tax configuration', function () {
 
     $resp = $this->actingAs($admin)
         ->postJson(route('api.v1.tax.configurations.store'), [
-            'tax_type'            => 'wht',
-            'rate'                => 15.0,
-            'label'               => 'WHT 15%',
+            'tax_type' => 'wht',
+            'rate' => 15.0,
+            'label' => 'WHT 15%',
             'applies_to_interest' => true,
         ])
         ->assertStatus(201);
@@ -57,7 +57,7 @@ test('can list tax configurations', function () {
 });
 
 test('can update a tax configuration', function () {
-    $admin  = taxAdmin();
+    $admin = taxAdmin();
     $config = taxConfig();
 
     $this->actingAs($admin)
@@ -72,7 +72,7 @@ test('tax configuration requires valid tax_type', function () {
     $this->actingAs($admin)
         ->postJson(route('api.v1.tax.configurations.store'), [
             'tax_type' => 'invalid',
-            'rate'     => 10.0,
+            'rate' => 10.0,
         ])
         ->assertJsonValidationErrors(['tax_type']);
 });
@@ -84,10 +84,10 @@ test('service computes WHT from interest_allocated on payment', function () {
 
     $payment = Payment::factory()->create([
         'interest_allocated' => 1000.00,
-        'payment_date'       => '2026-03-01',
+        'payment_date' => '2026-03-01',
     ]);
 
-    $service     = app(TaxComplianceService::class);
+    $service = app(TaxComplianceService::class);
     $computation = $service->computeWhtForPayment($payment);
 
     expect($computation)->not->toBeNull();
@@ -101,7 +101,7 @@ test('WHT computation is idempotent — no duplicate on repeat call', function (
 
     $payment = Payment::factory()->create([
         'interest_allocated' => 500.00,
-        'payment_date'       => '2026-03-01',
+        'payment_date' => '2026-03-01',
     ]);
 
     $service = app(TaxComplianceService::class);
@@ -116,7 +116,7 @@ test('no WHT computed when interest_allocated is zero', function () {
 
     $payment = Payment::factory()->create([
         'interest_allocated' => 0.00,
-        'payment_date'       => '2026-03-01',
+        'payment_date' => '2026-03-01',
     ]);
 
     $result = app(TaxComplianceService::class)->computeWhtForPayment($payment);
@@ -127,7 +127,7 @@ test('no WHT computed when interest_allocated is zero', function () {
 test('no WHT computed when no active WHT config exists', function () {
     $payment = Payment::factory()->create([
         'interest_allocated' => 800.00,
-        'payment_date'       => '2026-03-01',
+        'payment_date' => '2026-03-01',
     ]);
 
     $result = app(TaxComplianceService::class)->computeWhtForPayment($payment);
@@ -137,7 +137,7 @@ test('no WHT computed when no active WHT config exists', function () {
 // ─── WHT Summary Report ───────────────────────────────────────────────────────
 
 test('WHT summary returns grouped totals by period', function () {
-    $admin  = taxAdmin();
+    $admin = taxAdmin();
     $config = taxConfig(['rate' => 15.0]);
 
     TaxComputation::create(['tax_configuration_id' => $config->id, 'source_type' => 'payment', 'source_id' => 1, 'taxable_amount' => 1000, 'tax_amount' => 150, 'period' => '2026-01', 'status' => 'computed']);
@@ -151,7 +151,7 @@ test('WHT summary returns grouped totals by period', function () {
 });
 
 test('can mark a period as remitted', function () {
-    $admin  = taxAdmin();
+    $admin = taxAdmin();
     $config = taxConfig();
 
     TaxComputation::create(['tax_configuration_id' => $config->id, 'source_type' => 'payment', 'source_id' => 1, 'taxable_amount' => 500, 'tax_amount' => 75, 'period' => '2026-03', 'status' => 'computed']);
@@ -192,7 +192,7 @@ test('capital adequacy returns structure', function () {
 // ─── Computations list ────────────────────────────────────────────────────────
 
 test('can list tax computations with filters', function () {
-    $admin  = taxAdmin();
+    $admin = taxAdmin();
     $config = taxConfig();
 
     TaxComputation::create(['tax_configuration_id' => $config->id, 'source_type' => 'payment', 'source_id' => 1, 'taxable_amount' => 300, 'tax_amount' => 45, 'period' => '2026-03', 'status' => 'computed']);

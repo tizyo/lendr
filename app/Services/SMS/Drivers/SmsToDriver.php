@@ -23,20 +23,21 @@ class SmsToDriver
         try {
             $response = Http::withHeaders([
                 'Authorization' => "Bearer {$this->apiKey}",
-                'Content-Type'  => 'application/json',
+                'Content-Type' => 'application/json',
             ])->post(self::API_URL, [
-                'to'        => $phone,
-                'message'   => $message,
+                'to' => $phone,
+                'message' => $message,
                 'sender_id' => $this->senderId,
                 'bypass_optout' => false,
             ]);
 
             if (! $response->successful()) {
                 Log::warning('[SMS:SmsTo] Send failed', [
-                    'phone'  => $phone,
+                    'phone' => $phone,
                     'status' => $response->status(),
-                    'body'   => $response->body(),
+                    'body' => $response->body(),
                 ]);
+
                 return false;
             }
 
@@ -44,12 +45,14 @@ class SmsToDriver
 
             if (($data['success'] ?? false) === false) {
                 Log::warning('[SMS:SmsTo] API error', ['phone' => $phone, 'response' => $data]);
+
                 return false;
             }
 
             return true;
         } catch (\Throwable $e) {
             Log::error('[SMS:SmsTo] Exception', ['error' => $e->getMessage(), 'phone' => $phone]);
+
             return false;
         }
     }

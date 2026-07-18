@@ -45,7 +45,7 @@ class FeaturedItemController extends BaseApiController
 
         $data = $request->validate([
             'repo_item_id' => ['required', 'integer', 'exists:repo_items,id'],
-            'days'         => ['required', 'integer', 'min:1', 'max:90'],
+            'days' => ['required', 'integer', 'min:1', 'max:90'],
         ]);
 
         // Verify the item belongs to this tenant
@@ -66,37 +66,37 @@ class FeaturedItemController extends BaseApiController
         $activeCount = FeaturedRepoItem::activePaidCountForTenant($tenantId);
         if ($activeCount >= FeaturedRepoItem::MAX_ACTIVE_PER_TENANT) {
             return $this->error(
-                'You have reached the maximum of ' . FeaturedRepoItem::MAX_ACTIVE_PER_TENANT . ' active featured items. '
-                . 'Please remove an existing featured item before adding a new one.',
-                422
+                'You have reached the maximum of '.FeaturedRepoItem::MAX_ACTIVE_PER_TENANT.' active featured items. '
+                .'Please remove an existing featured item before adding a new one.',
+                422,
             );
         }
 
-        $days      = (int) $data['days'];
-        $amount    = FeaturedRepoItem::costForDays($days);
-        $reference = 'FEAT-' . strtoupper(substr(md5($tenantId . $item->id . now()->timestamp), 0, 10));
+        $days = (int) $data['days'];
+        $amount = FeaturedRepoItem::costForDays($days);
+        $reference = 'FEAT-'.strtoupper(substr(md5($tenantId.$item->id.now()->timestamp), 0, 10));
 
         // Create a pending slot — activation happens on payment confirmation
         $slot = FeaturedRepoItem::create([
-            'repo_item_id'      => $item->id,
-            'tenant_id'         => $tenantId,
-            'type'              => 'paid',
-            'amount_paid'       => $amount,
-            'days_paid'         => $days,
+            'repo_item_id' => $item->id,
+            'tenant_id' => $tenantId,
+            'type' => 'paid',
+            'amount_paid' => $amount,
+            'days_paid' => $days,
             'payment_reference' => $reference,
-            'payment_status'    => 'pending',
-            'is_active'         => false,
+            'payment_status' => 'pending',
+            'is_active' => false,
         ]);
 
         return $this->success([
-            'slot'              => $this->formatSlot($slot),
+            'slot' => $this->formatSlot($slot),
             'payment_reference' => $reference,
-            'amount_due'        => $amount,
-            'days'              => $days,
-            'rate_per_day'      => FeaturedRepoItem::RATE_PER_DAY,
-            'instructions'      => 'Pay K' . number_format($amount, 2) . ' via mobile money or bank transfer. '
-                                 . 'Use reference: ' . $reference . '. '
-                                 . 'Your item will be featured for ' . $days . ' day(s) from payment confirmation.',
+            'amount_due' => $amount,
+            'days' => $days,
+            'rate_per_day' => FeaturedRepoItem::RATE_PER_DAY,
+            'instructions' => 'Pay K'.number_format($amount, 2).' via mobile money or bank transfer. '
+                                 .'Use reference: '.$reference.'. '
+                                 .'Your item will be featured for '.$days.' day(s) from payment confirmation.',
         ], 'Featuring initiated. Complete payment to activate.', 201);
     }
 
@@ -121,9 +121,9 @@ class FeaturedItemController extends BaseApiController
         $now = now();
         $slot->update([
             'payment_status' => 'confirmed',
-            'is_active'      => true,
-            'starts_at'      => $now,
-            'expires_at'     => $now->copy()->addDays($slot->days_paid),
+            'is_active' => true,
+            'starts_at' => $now,
+            'expires_at' => $now->copy()->addDays($slot->days_paid),
         ]);
 
         return $this->success($this->formatSlot($slot->fresh()), 'Payment confirmed. Your item is now featured!');
@@ -151,14 +151,14 @@ class FeaturedItemController extends BaseApiController
      */
     public function quote(Request $request): JsonResponse
     {
-        $days   = max(1, min(90, (int) $request->get('days', 1)));
+        $days = max(1, min(90, (int) $request->get('days', 1)));
         $amount = FeaturedRepoItem::costForDays($days);
 
         return $this->success([
-            'days'         => $days,
+            'days' => $days,
             'rate_per_day' => FeaturedRepoItem::RATE_PER_DAY,
-            'total'        => $amount,
-            'summary'      => "K{$amount} for {$days} day(s) of featured placement",
+            'total' => $amount,
+            'summary' => "K{$amount} for {$days} day(s) of featured placement",
         ]);
     }
 
@@ -167,21 +167,22 @@ class FeaturedItemController extends BaseApiController
     private function formatSlot(FeaturedRepoItem $slot): array
     {
         $item = $slot->repoItem;
+
         return [
-            'id'                => $slot->id,
-            'repo_item_id'      => $slot->repo_item_id,
-            'item_title'        => $item?->title,
-            'item_price'        => $item ? (float) $item->price : null,
-            'type'              => $slot->type,
-            'amount_paid'       => $slot->amount_paid,
-            'days_paid'         => $slot->days_paid,
+            'id' => $slot->id,
+            'repo_item_id' => $slot->repo_item_id,
+            'item_title' => $item?->title,
+            'item_price' => $item ? (float) $item->price : null,
+            'type' => $slot->type,
+            'amount_paid' => $slot->amount_paid,
+            'days_paid' => $slot->days_paid,
             'payment_reference' => $slot->payment_reference,
-            'payment_status'    => $slot->payment_status,
-            'is_active'         => $slot->is_active,
-            'starts_at'         => $slot->starts_at?->toDateTimeString(),
-            'expires_at'        => $slot->expires_at?->toDateTimeString(),
-            'days_remaining'    => $slot->daysRemaining(),
-            'is_expired'        => $slot->isExpired(),
+            'payment_status' => $slot->payment_status,
+            'is_active' => $slot->is_active,
+            'starts_at' => $slot->starts_at?->toDateTimeString(),
+            'expires_at' => $slot->expires_at?->toDateTimeString(),
+            'days_remaining' => $slot->daysRemaining(),
+            'is_expired' => $slot->isExpired(),
         ];
     }
 }

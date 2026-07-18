@@ -24,16 +24,16 @@ class ExpenseController extends BaseApiController
                 'submittedBy:id,name',
                 'approvedBy:id,name',
             ])
-            ->when($request->status,      fn ($q, $s) => $q->where('status', $s))
+            ->when($request->status, fn ($q, $s) => $q->where('status', $s))
             ->when($request->category_id, fn ($q, $id) => $q->where('expense_category_id', $id))
             ->when($request->submitted_by, fn ($q, $id) => $q->where('submitted_by', $id))
             ->when($request->search, fn ($q, $s) => $q->where(function ($q) use ($s) {
                 $q->where('expense_number', 'like', "%{$s}%")
-                  ->orWhere('title', 'like', "%{$s}%")
-                  ->orWhere('vendor', 'like', "%{$s}%");
+                    ->orWhere('title', 'like', "%{$s}%")
+                    ->orWhere('vendor', 'like', "%{$s}%");
             }))
             ->when($request->date_from, fn ($q, $d) => $q->where('expense_date', '>=', $d))
-            ->when($request->date_to,   fn ($q, $d) => $q->where('expense_date', '<=', $d))
+            ->when($request->date_to, fn ($q, $d) => $q->where('expense_date', '<=', $d))
             ->latest('expense_date')
             ->paginate(20);
 
@@ -44,29 +44,29 @@ class ExpenseController extends BaseApiController
     {
         $request->validate([
             'expense_category_id' => ['required', 'exists:expense_categories,id'],
-            'title'               => ['required', 'string', 'max:200'],
-            'description'         => ['nullable', 'string', 'max:1000'],
-            'amount'              => ['required', 'numeric', 'min:0.01'],
-            'currency'            => ['nullable', 'string', 'max:3'],
-            'payment_method'      => ['nullable', 'string', 'max:50'],
-            'vendor'              => ['nullable', 'string', 'max:200'],
-            'receipt_reference'   => ['nullable', 'string', 'max:100'],
-            'expense_date'        => ['required', 'date'],
+            'title' => ['required', 'string', 'max:200'],
+            'description' => ['nullable', 'string', 'max:1000'],
+            'amount' => ['required', 'numeric', 'min:0.01'],
+            'currency' => ['nullable', 'string', 'max:3'],
+            'payment_method' => ['nullable', 'string', 'max:50'],
+            'vendor' => ['nullable', 'string', 'max:200'],
+            'receipt_reference' => ['nullable', 'string', 'max:100'],
+            'expense_date' => ['required', 'date'],
         ]);
 
         $expense = Expense::create([
-            'expense_number'      => $this->generateNumber(),
+            'expense_number' => $this->generateNumber(),
             'expense_category_id' => $request->expense_category_id,
-            'submitted_by'        => auth()->id(),
-            'title'               => $request->title,
-            'description'         => $request->description,
-            'amount'              => $request->amount,
-            'currency'            => $request->currency ?? 'ZMW',
-            'payment_method'      => $request->payment_method,
-            'vendor'              => $request->vendor,
-            'receipt_reference'   => $request->receipt_reference,
-            'expense_date'        => $request->expense_date,
-            'status'              => ExpenseStatus::Draft,
+            'submitted_by' => auth()->id(),
+            'title' => $request->title,
+            'description' => $request->description,
+            'amount' => $request->amount,
+            'currency' => $request->currency ?? 'ZMW',
+            'payment_method' => $request->payment_method,
+            'vendor' => $request->vendor,
+            'receipt_reference' => $request->receipt_reference,
+            'expense_date' => $request->expense_date,
+            'status' => ExpenseStatus::Draft,
         ]);
 
         return $this->success($this->formatExpense($expense->load(['category', 'submittedBy'])), 'Expense created.', 201);
@@ -87,14 +87,14 @@ class ExpenseController extends BaseApiController
 
         $request->validate([
             'expense_category_id' => ['sometimes', 'exists:expense_categories,id'],
-            'title'               => ['sometimes', 'string', 'max:200'],
-            'description'         => ['nullable', 'string', 'max:1000'],
-            'amount'              => ['sometimes', 'numeric', 'min:0.01'],
-            'currency'            => ['nullable', 'string', 'max:3'],
-            'payment_method'      => ['nullable', 'string', 'max:50'],
-            'vendor'              => ['nullable', 'string', 'max:200'],
-            'receipt_reference'   => ['nullable', 'string', 'max:100'],
-            'expense_date'        => ['sometimes', 'date'],
+            'title' => ['sometimes', 'string', 'max:200'],
+            'description' => ['nullable', 'string', 'max:1000'],
+            'amount' => ['sometimes', 'numeric', 'min:0.01'],
+            'currency' => ['nullable', 'string', 'max:3'],
+            'payment_method' => ['nullable', 'string', 'max:50'],
+            'vendor' => ['nullable', 'string', 'max:200'],
+            'receipt_reference' => ['nullable', 'string', 'max:100'],
+            'expense_date' => ['sometimes', 'date'],
         ]);
 
         $expense->update($request->only([
@@ -125,7 +125,7 @@ class ExpenseController extends BaseApiController
         }
 
         $expense->update([
-            'status'       => ExpenseStatus::Pending,
+            'status' => ExpenseStatus::Pending,
             'submitted_at' => now(),
             'submitted_by' => auth()->id(),
         ]);
@@ -145,7 +145,7 @@ class ExpenseController extends BaseApiController
 
         DB::transaction(function () use ($expense) {
             $expense->update([
-                'status'      => ExpenseStatus::Approved,
+                'status' => ExpenseStatus::Approved,
                 'approved_by' => auth()->id(),
                 'approved_at' => now(),
             ]);
@@ -167,7 +167,7 @@ class ExpenseController extends BaseApiController
         }
 
         $expense->update([
-            'status'           => ExpenseStatus::Rejected,
+            'status' => ExpenseStatus::Rejected,
             'rejection_reason' => $request->rejection_reason,
         ]);
 
@@ -179,8 +179,8 @@ class ExpenseController extends BaseApiController
     private function generateNumber(): string
     {
         $prefix = 'EXP-'.now()->format('Ym').'-';
-        $last   = Expense::withTrashed()->where('expense_number', 'like', $prefix.'%')->max('expense_number');
-        $seq    = $last ? ((int) Str::afterLast($last, '-')) + 1 : 1;
+        $last = Expense::withTrashed()->where('expense_number', 'like', $prefix.'%')->max('expense_number');
+        $seq = $last ? ((int) Str::afterLast($last, '-')) + 1 : 1;
 
         return $prefix.str_pad($seq, 5, '0', STR_PAD_LEFT);
     }
@@ -188,35 +188,35 @@ class ExpenseController extends BaseApiController
     private function formatExpense(Expense $e, bool $full = false): array
     {
         $data = [
-            'id'             => $e->id,
+            'id' => $e->id,
             'expense_number' => $e->expense_number,
-            'title'          => $e->title,
-            'amount'         => (float) $e->amount,
-            'currency'       => $e->currency,
-            'expense_date'   => $e->expense_date?->toDateString(),
-            'status'         => $e->status instanceof ExpenseStatus ? $e->status->value : $e->status,
+            'title' => $e->title,
+            'amount' => (float) $e->amount,
+            'currency' => $e->currency,
+            'expense_date' => $e->expense_date?->toDateString(),
+            'status' => $e->status instanceof ExpenseStatus ? $e->status->value : $e->status,
             'payment_method' => $e->payment_method,
-            'vendor'         => $e->vendor,
-            'category'       => $e->relationLoaded('category') && $e->category
+            'vendor' => $e->vendor,
+            'category' => $e->relationLoaded('category') && $e->category
                 ? ['id' => $e->category->id, 'name' => $e->category->name, 'colour' => $e->category->colour]
                 : null,
-            'submitted_by'   => $e->relationLoaded('submittedBy') && $e->submittedBy
+            'submitted_by' => $e->relationLoaded('submittedBy') && $e->submittedBy
                 ? ['id' => $e->submittedBy->id, 'name' => $e->submittedBy->name]
                 : null,
-            'submitted_at'   => $e->submitted_at?->toDateTimeString(),
-            'approved_by'    => $e->relationLoaded('approvedBy') && $e->approvedBy
+            'submitted_at' => $e->submitted_at?->toDateTimeString(),
+            'approved_by' => $e->relationLoaded('approvedBy') && $e->approvedBy
                 ? ['id' => $e->approvedBy->id, 'name' => $e->approvedBy->name]
                 : null,
-            'approved_at'    => $e->approved_at?->toDateTimeString(),
+            'approved_at' => $e->approved_at?->toDateTimeString(),
         ];
 
         if ($full) {
-            $data['description']      = $e->description;
+            $data['description'] = $e->description;
             $data['receipt_reference'] = $e->receipt_reference;
             $data['rejection_reason'] = $e->rejection_reason;
-            $data['documents']        = $e->relationLoaded('documents')
+            $data['documents'] = $e->relationLoaded('documents')
                 ? $e->documents->map(fn ($d) => [
-                    'id'        => $d->id,
+                    'id' => $d->id,
                     'file_name' => $d->file_name,
                     'file_path' => $d->file_path,
                     'mime_type' => $d->mime_type,

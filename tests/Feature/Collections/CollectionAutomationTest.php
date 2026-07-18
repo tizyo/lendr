@@ -19,32 +19,33 @@ function overdueCollectionLoan(int $dpdDays = 10): Loan
 {
     $loan = Loan::factory()->active()->create();
     LoanSchedule::create([
-        'loan_id'           => $loan->id,
+        'loan_id' => $loan->id,
         'instalment_number' => 1,
-        'due_date'          => now()->subDays($dpdDays)->toDateString(),
-        'principal_due'     => 500,
-        'interest_due'      => 50,
-        'fee_due'           => 0,
-        'total_due'         => 550,
-        'principal_paid'    => 0,
-        'interest_paid'     => 0,
-        'fee_paid'          => 0,
-        'penalty_paid'      => 0,
-        'total_paid'        => 0,
-        'outstanding'       => 550,
-        'is_paid'           => false,
+        'due_date' => now()->subDays($dpdDays)->toDateString(),
+        'principal_due' => 500,
+        'interest_due' => 50,
+        'fee_due' => 0,
+        'total_due' => 550,
+        'principal_paid' => 0,
+        'interest_paid' => 0,
+        'fee_paid' => 0,
+        'penalty_paid' => 0,
+        'total_paid' => 0,
+        'outstanding' => 550,
+        'is_paid' => false,
     ]);
+
     return $loan;
 }
 
 function escalationRule(int $dpd, string $action = 'assign_collector'): EscalationRule
 {
     return EscalationRule::create([
-        'name'          => "DPD {$dpd} rule",
+        'name' => "DPD {$dpd} rule",
         'dpd_threshold' => $dpd,
-        'action'        => $action,
-        'is_active'     => true,
-        'sort_order'    => $dpd,
+        'action' => $action,
+        'is_active' => true,
+        'sort_order' => $dpd,
     ]);
 }
 
@@ -55,9 +56,9 @@ test('can create escalation rule', function () {
 
     $response = $this->actingAs($admin)
         ->postJson(route('api.v1.escalation-rules.store'), [
-            'name'          => 'Early Delinquency',
+            'name' => 'Early Delinquency',
             'dpd_threshold' => 5,
-            'action'        => 'assign_collector',
+            'action' => 'assign_collector',
         ]);
 
     $response->assertCreated();
@@ -79,7 +80,7 @@ test('can list escalation rules ordered by threshold', function () {
 
 test('can update escalation rule', function () {
     $admin = collectionAdmin();
-    $rule  = escalationRule(5);
+    $rule = escalationRule(5);
 
     $response = $this->actingAs($admin)
         ->putJson(route('api.v1.escalation-rules.update', $rule), ['dpd_threshold' => 7]);
@@ -90,7 +91,7 @@ test('can update escalation rule', function () {
 
 test('can delete escalation rule', function () {
     $admin = collectionAdmin();
-    $rule  = escalationRule(5);
+    $rule = escalationRule(5);
 
     $this->actingAs($admin)->deleteJson(route('api.v1.escalation-rules.destroy', $rule))->assertOk();
     expect(EscalationRule::count())->toBe(0);
@@ -103,7 +104,7 @@ test('escalation service creates collection case when dpd exceeds threshold', fu
     $loan = overdueCollectionLoan(10);
 
     $service = app(CollectionAutomationService::class);
-    $action  = $service->escalate($loan);
+    $action = $service->escalate($loan);
 
     expect($action)->toBe('assign_collector');
     expect(CollectionCase::where('loan_id', $loan->id)->count())->toBe(1);
@@ -115,7 +116,7 @@ test('escalation picks highest matching rule', function () {
     $loan = overdueCollectionLoan(20);
 
     $service = app(CollectionAutomationService::class);
-    $action  = $service->escalate($loan);
+    $action = $service->escalate($loan);
 
     expect($action)->toBe('field_visit');
 });
@@ -175,9 +176,9 @@ test('can update collection case status', function () {
     escalationRule(5);
     $loan = overdueCollectionLoan(10);
     $case = CollectionCase::create([
-        'loan_id'     => $loan->id,
+        'loan_id' => $loan->id,
         'borrower_id' => $loan->borrower_id,
-        'status'      => 'open',
+        'status' => 'open',
         'dpd_at_creation' => 10,
     ]);
 
@@ -192,17 +193,17 @@ test('can update collection case status', function () {
 
 test('can record a promise-to-pay on a collection case', function () {
     $admin = collectionAdmin();
-    $loan  = overdueCollectionLoan(10);
-    $case  = CollectionCase::create([
-        'loan_id'         => $loan->id,
-        'borrower_id'     => $loan->borrower_id,
-        'status'          => 'open',
+    $loan = overdueCollectionLoan(10);
+    $case = CollectionCase::create([
+        'loan_id' => $loan->id,
+        'borrower_id' => $loan->borrower_id,
+        'status' => 'open',
         'dpd_at_creation' => 10,
     ]);
 
     $response = $this->actingAs($admin)
         ->postJson(route('api.v1.collection-cases.promises.store', $case), [
-            'promise_date'   => now()->addDays(7)->toDateString(),
+            'promise_date' => now()->addDays(7)->toDateString(),
             'promise_amount' => 500.00,
         ]);
 
@@ -214,21 +215,21 @@ test('can record a promise-to-pay on a collection case', function () {
 test('evaluate promises marks overdue pending promises as broken', function () {
     $loan = Loan::factory()->create(['status' => LoanStatus::Defaulted->value]);
     $case = CollectionCase::create([
-        'loan_id'         => $loan->id,
-        'borrower_id'     => $loan->borrower_id,
-        'status'          => 'promised',
+        'loan_id' => $loan->id,
+        'borrower_id' => $loan->borrower_id,
+        'status' => 'promised',
         'dpd_at_creation' => 5,
     ]);
     PromiseToPay::create([
         'collection_case_id' => $case->id,
-        'loan_id'            => $loan->id,
-        'promise_date'       => now()->subDay()->toDateString(),
-        'promise_amount'     => 500,
-        'status'             => 'pending',
+        'loan_id' => $loan->id,
+        'promise_date' => now()->subDay()->toDateString(),
+        'promise_amount' => 500,
+        'status' => 'pending',
     ]);
 
     $service = app(CollectionAutomationService::class);
-    $broken  = $service->evaluatePromises();
+    $broken = $service->evaluatePromises();
 
     expect($broken)->toBe(1);
     expect(PromiseToPay::first()->status)->toBe('broken');

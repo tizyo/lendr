@@ -22,7 +22,7 @@ class LoyaltyController extends BaseApiController
     public function redeem(Request $request, Borrower $borrower): JsonResponse
     {
         $data = $request->validate([
-            'points'      => ['required', 'integer', 'min:1'],
+            'points' => ['required', 'integer', 'min:1'],
             'description' => ['nullable', 'string'],
         ]);
 
@@ -34,7 +34,7 @@ class LoyaltyController extends BaseApiController
 
         return $this->success([
             'total_points' => $account->total_points,
-            'tier'         => $account->tier,
+            'tier' => $account->tier,
         ], 'Points redeemed successfully.');
     }
 
@@ -45,9 +45,9 @@ class LoyaltyController extends BaseApiController
             ->orderBy('min_points')
             ->get()
             ->map(fn ($t) => [
-                'id'               => $t->id,
-                'name'             => $t->name,
-                'min_points'       => $t->min_points,
+                'id' => $t->id,
+                'name' => $t->name,
+                'min_points' => $t->min_points,
                 'fee_discount_pct' => $t->fee_discount_pct,
             ]);
 
@@ -58,25 +58,25 @@ class LoyaltyController extends BaseApiController
     public function upsertTier(Request $request): JsonResponse
     {
         $data = $request->validate([
-            'name'             => ['required', 'string', 'max:50'],
-            'min_points'       => ['required', 'integer', 'min:0'],
+            'name' => ['required', 'string', 'max:50'],
+            'min_points' => ['required', 'integer', 'min:0'],
             'fee_discount_pct' => ['required', 'numeric', 'min:0', 'max:100'],
-            'is_active'        => ['boolean'],
+            'is_active' => ['boolean'],
         ]);
 
         $tier = LoyaltyTier::updateOrCreate(
             ['name' => $data['name']],
             [
-                'min_points'       => $data['min_points'],
+                'min_points' => $data['min_points'],
                 'fee_discount_pct' => $data['fee_discount_pct'],
-                'is_active'        => $data['is_active'] ?? true,
-            ]
+                'is_active' => $data['is_active'] ?? true,
+            ],
         );
 
         return $this->success([
-            'id'               => $tier->id,
-            'name'             => $tier->name,
-            'min_points'       => $tier->min_points,
+            'id' => $tier->id,
+            'name' => $tier->name,
+            'min_points' => $tier->min_points,
             'fee_discount_pct' => $tier->fee_discount_pct,
         ], 'Tier saved.', 201);
     }

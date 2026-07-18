@@ -23,18 +23,18 @@ class CampaignController extends BaseApiController
     public function store(Request $request): JsonResponse
     {
         $data = $request->validate([
-            'name'                 => ['required', 'string', 'max:200'],
-            'type'                 => ['required', 'in:sms,email'],
-            'subject'              => ['nullable', 'string', 'max:200'],
-            'content'              => ['required', 'string'],
-            'target_segment'       => ['required', 'in:all_borrowers,active_borrowers,overdue_borrowers,custom'],
-            'custom_borrower_ids'  => ['nullable', 'array'],
+            'name' => ['required', 'string', 'max:200'],
+            'type' => ['required', 'in:sms,email'],
+            'subject' => ['nullable', 'string', 'max:200'],
+            'content' => ['required', 'string'],
+            'target_segment' => ['required', 'in:all_borrowers,active_borrowers,overdue_borrowers,custom'],
+            'custom_borrower_ids' => ['nullable', 'array'],
             'custom_borrower_ids.*' => ['integer'],
-            'scheduled_at'         => ['nullable', 'date'],
+            'scheduled_at' => ['nullable', 'date'],
         ]);
 
         $data['created_by'] = auth()->id();
-        $data['status']     = ! empty($data['scheduled_at']) ? 'scheduled' : 'draft';
+        $data['status'] = ! empty($data['scheduled_at']) ? 'scheduled' : 'draft';
 
         $campaign = Campaign::create($data);
 
@@ -49,11 +49,11 @@ class CampaignController extends BaseApiController
     public function update(Request $request, Campaign $campaign): JsonResponse
     {
         $data = $request->validate([
-            'name'         => ['sometimes', 'string', 'max:200'],
-            'subject'      => ['nullable', 'string', 'max:200'],
-            'content'      => ['sometimes', 'string'],
+            'name' => ['sometimes', 'string', 'max:200'],
+            'subject' => ['nullable', 'string', 'max:200'],
+            'content' => ['sometimes', 'string'],
             'scheduled_at' => ['nullable', 'date'],
-            'status'       => ['sometimes', 'in:draft,scheduled,cancelled'],
+            'status' => ['sometimes', 'in:draft,scheduled,cancelled'],
         ]);
 
         $campaign->update($data);
@@ -64,6 +64,7 @@ class CampaignController extends BaseApiController
     public function destroy(Campaign $campaign): JsonResponse
     {
         $campaign->delete();
+
         return $this->success(null, 'Campaign deleted.');
     }
 
@@ -102,19 +103,19 @@ class CampaignController extends BaseApiController
     private function format(Campaign $c): array
     {
         return [
-            'id'               => $c->id,
-            'name'             => $c->name,
-            'type'             => $c->type,
-            'status'           => $c->status,
-            'subject'          => $c->subject,
-            'target_segment'   => $c->target_segment,
-            'scheduled_at'     => $c->scheduled_at?->toDateTimeString(),
-            'started_at'       => $c->started_at?->toDateTimeString(),
-            'completed_at'     => $c->completed_at?->toDateTimeString(),
+            'id' => $c->id,
+            'name' => $c->name,
+            'type' => $c->type,
+            'status' => $c->status,
+            'subject' => $c->subject,
+            'target_segment' => $c->target_segment,
+            'scheduled_at' => $c->scheduled_at?->toDateTimeString(),
+            'started_at' => $c->started_at?->toDateTimeString(),
+            'completed_at' => $c->completed_at?->toDateTimeString(),
             'total_recipients' => $c->total_recipients,
-            'sent_count'       => $c->sent_count,
-            'failed_count'     => $c->failed_count,
-            'opened_count'     => $c->opened_count,
+            'sent_count' => $c->sent_count,
+            'failed_count' => $c->failed_count,
+            'opened_count' => $c->opened_count,
         ];
     }
 }

@@ -4,13 +4,11 @@ use App\Enums\LoanStatus;
 use App\Enums\UserRole;
 use App\Models\Tenant\Borrower;
 use App\Models\Tenant\Loan;
-use App\Models\Tenant\LoanType;
 use App\Models\Tenant\LoanPlan;
+use App\Models\Tenant\LoanType;
 use App\Models\Tenant\RiskFlag;
 use App\Models\Tenant\RiskPolicy;
 use App\Models\Tenant\User;
-use App\Services\RiskAssessmentService;
-use Database\Factories\Tenant\LoanFactory;
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -22,11 +20,11 @@ function riskAdmin(): User
 function makeRiskPolicy(array $attrs = []): RiskPolicy
 {
     return RiskPolicy::create(array_merge([
-        'name'       => 'Test Policy',
-        'rule_type'  => 'max_active_loans',
-        'value'      => '2',
-        'action'     => 'warn',
-        'is_active'  => true,
+        'name' => 'Test Policy',
+        'rule_type' => 'max_active_loans',
+        'value' => '2',
+        'action' => 'warn',
+        'is_active' => true,
         'sort_order' => 0,
     ], $attrs));
 }
@@ -37,10 +35,10 @@ function riskLoan(Borrower $borrower, array $attrs = []): Loan
     $plan = LoanPlan::first() ?? LoanPlan::factory()->create(['loan_type_id' => $type->id]);
 
     return Loan::factory()->create(array_merge([
-        'borrower_id'  => $borrower->id,
+        'borrower_id' => $borrower->id,
         'loan_type_id' => $type->id,
         'loan_plan_id' => $plan->id,
-        'status'       => LoanStatus::Draft,
+        'status' => LoanStatus::Draft,
     ], $attrs));
 }
 
@@ -61,11 +59,11 @@ test('can create a risk policy', function () {
 
     $resp = $this->actingAs($admin)
         ->postJson(route('api.v1.risk-policies.store'), [
-            'name'       => 'Max 3 Active Loans',
-            'rule_type'  => 'max_active_loans',
-            'value'      => '3',
-            'action'     => 'block',
-            'is_active'  => true,
+            'name' => 'Max 3 Active Loans',
+            'rule_type' => 'max_active_loans',
+            'value' => '3',
+            'action' => 'block',
+            'is_active' => true,
             'sort_order' => 1,
         ])
         ->assertStatus(201)
@@ -75,7 +73,7 @@ test('can create a risk policy', function () {
 })->group('risk');
 
 test('can update a risk policy', function () {
-    $admin  = riskAdmin();
+    $admin = riskAdmin();
     $policy = makeRiskPolicy();
 
     $this->actingAs($admin)
@@ -85,7 +83,7 @@ test('can update a risk policy', function () {
 })->group('risk');
 
 test('can delete a risk policy', function () {
-    $admin  = riskAdmin();
+    $admin = riskAdmin();
     $policy = makeRiskPolicy();
 
     $this->actingAs($admin)
@@ -108,9 +106,9 @@ test('can fetch rule types', function () {
 // ─── Assessment tests ─────────────────────────────────────────────────────────
 
 test('risk assessment returns pass when no policies triggered', function () {
-    $admin    = riskAdmin();
+    $admin = riskAdmin();
     $borrower = Borrower::factory()->create(['credit_score' => 750]);
-    $loan     = riskLoan($borrower, ['principal_amount' => 5000]);
+    $loan = riskLoan($borrower, ['principal_amount' => 5000]);
 
     // Inactive policy should not trigger
     makeRiskPolicy(['is_active' => false, 'rule_type' => 'max_active_loans', 'value' => '0']);
@@ -123,14 +121,14 @@ test('risk assessment returns pass when no policies triggered', function () {
 })->group('risk');
 
 test('risk assessment creates warn flag for triggered warn policy', function () {
-    $admin    = riskAdmin();
+    $admin = riskAdmin();
     $borrower = Borrower::factory()->create(['credit_score' => 400]);
-    $loan     = riskLoan($borrower);
+    $loan = riskLoan($borrower);
 
     makeRiskPolicy([
         'rule_type' => 'min_credit_score',
-        'value'     => '600',
-        'action'    => 'warn',
+        'value' => '600',
+        'action' => 'warn',
     ]);
 
     $resp = $this->actingAs($admin)
@@ -143,14 +141,14 @@ test('risk assessment creates warn flag for triggered warn policy', function () 
 })->group('risk');
 
 test('risk assessment returns block when block policy triggered', function () {
-    $admin    = riskAdmin();
+    $admin = riskAdmin();
     $borrower = Borrower::factory()->create(['credit_score' => 300]);
-    $loan     = riskLoan($borrower);
+    $loan = riskLoan($borrower);
 
     makeRiskPolicy([
         'rule_type' => 'min_credit_score',
-        'value'     => '500',
-        'action'    => 'block',
+        'value' => '500',
+        'action' => 'block',
     ]);
 
     $resp = $this->actingAs($admin)
@@ -161,17 +159,17 @@ test('risk assessment returns block when block policy triggered', function () {
 })->group('risk');
 
 test('can list risk flags for a loan', function () {
-    $admin    = riskAdmin();
+    $admin = riskAdmin();
     $borrower = Borrower::factory()->create();
-    $loan     = riskLoan($borrower);
-    $policy   = makeRiskPolicy();
+    $loan = riskLoan($borrower);
+    $policy = makeRiskPolicy();
 
     RiskFlag::create([
-        'loan_id'        => $loan->id,
+        'loan_id' => $loan->id,
         'risk_policy_id' => $policy->id,
-        'severity'       => 'warn',
-        'detail'         => 'Test flag detail',
-        'overridden'     => false,
+        'severity' => 'warn',
+        'detail' => 'Test flag detail',
+        'overridden' => false,
     ]);
 
     $resp = $this->actingAs($admin)
@@ -182,17 +180,17 @@ test('can list risk flags for a loan', function () {
 })->group('risk');
 
 test('can override a risk flag', function () {
-    $admin    = riskAdmin();
+    $admin = riskAdmin();
     $borrower = Borrower::factory()->create();
-    $loan     = riskLoan($borrower);
-    $policy   = makeRiskPolicy();
+    $loan = riskLoan($borrower);
+    $policy = makeRiskPolicy();
 
     $flag = RiskFlag::create([
-        'loan_id'        => $loan->id,
+        'loan_id' => $loan->id,
         'risk_policy_id' => $policy->id,
-        'severity'       => 'warn',
-        'detail'         => 'Override me',
-        'overridden'     => false,
+        'severity' => 'warn',
+        'detail' => 'Override me',
+        'overridden' => false,
     ]);
 
     $this->actingAs($admin)
@@ -204,20 +202,20 @@ test('can override a risk flag', function () {
 })->group('risk');
 
 test('cannot override an already-overridden flag', function () {
-    $admin    = riskAdmin();
+    $admin = riskAdmin();
     $borrower = Borrower::factory()->create();
-    $loan     = riskLoan($borrower);
-    $policy   = makeRiskPolicy();
+    $loan = riskLoan($borrower);
+    $policy = makeRiskPolicy();
 
     $flag = RiskFlag::create([
-        'loan_id'        => $loan->id,
+        'loan_id' => $loan->id,
         'risk_policy_id' => $policy->id,
-        'severity'       => 'warn',
-        'detail'         => 'Already overridden',
-        'overridden'     => true,
-        'overridden_by'  => $admin->id,
+        'severity' => 'warn',
+        'detail' => 'Already overridden',
+        'overridden' => true,
+        'overridden_by' => $admin->id,
         'override_reason' => 'reason',
-        'overridden_at'  => now(),
+        'overridden_at' => now(),
     ]);
 
     $this->actingAs($admin)

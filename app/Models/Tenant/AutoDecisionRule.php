@@ -15,11 +15,11 @@ class AutoDecisionRule extends Model
     protected function casts(): array
     {
         return [
-            'min_credit_score'   => 'decimal:2',
-            'max_dti_pct'        => 'decimal:2',
-            'min_income'         => 'decimal:2',
-            'max_loan_amount'    => 'decimal:2',
-            'is_active'          => 'boolean',
+            'min_credit_score' => 'decimal:2',
+            'max_dti_pct' => 'decimal:2',
+            'min_income' => 'decimal:2',
+            'max_loan_amount' => 'decimal:2',
+            'is_active' => 'boolean',
         ];
     }
 }

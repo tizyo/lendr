@@ -19,18 +19,19 @@ function offerAdmin(): User
 function offerPlan(): LoanPlan
 {
     $type = LoanType::factory()->create();
+
     return LoanPlan::factory()->create([
         'loan_type_id' => $type->id,
         'interest_rate' => 24.0,
-        'min_tenure'    => 6,
-        'max_tenure'    => 24,
+        'min_tenure' => 6,
+        'max_tenure' => 24,
     ]);
 }
 
 function offerBorrower(int $creditScore = 720): Borrower
 {
     return Borrower::factory()->create([
-        'is_active'    => true,
+        'is_active' => true,
         'credit_score' => $creditScore,
     ]);
 }
@@ -38,14 +39,14 @@ function offerBorrower(int $creditScore = 720): Borrower
 function offerRule(LoanPlan $plan, array $attrs = []): LoanOfferRule
 {
     return LoanOfferRule::create(array_merge([
-        'name'               => 'Standard Offer',
-        'min_credit_score'   => 650,
-        'max_credit_score'   => 850,
-        'loan_plan_id'       => $plan->id,
+        'name' => 'Standard Offer',
+        'min_credit_score' => 650,
+        'max_credit_score' => 850,
+        'loan_plan_id' => $plan->id,
         'min_offered_amount' => 5000.00,
         'max_offered_amount' => 50000.00,
-        'validity_days'      => 30,
-        'is_active'          => true,
+        'validity_days' => 30,
+        'is_active' => true,
     ], $attrs));
 }
 
@@ -53,17 +54,17 @@ function offerRule(LoanPlan $plan, array $attrs = []): LoanOfferRule
 
 test('can create a loan offer rule', function () {
     $admin = offerAdmin();
-    $plan  = offerPlan();
+    $plan = offerPlan();
 
     $resp = $this->actingAs($admin)
         ->postJson(route('api.v1.loan-offers.rules.store'), [
-            'name'               => 'Gold Rule',
-            'min_credit_score'   => 700,
-            'max_credit_score'   => 850,
-            'loan_plan_id'       => $plan->id,
+            'name' => 'Gold Rule',
+            'min_credit_score' => 700,
+            'max_credit_score' => 850,
+            'loan_plan_id' => $plan->id,
             'min_offered_amount' => 10000,
             'max_offered_amount' => 100000,
-            'validity_days'      => 14,
+            'validity_days' => 14,
         ])
         ->assertStatus(201);
 
@@ -73,7 +74,7 @@ test('can create a loan offer rule', function () {
 
 test('can list offer rules', function () {
     $admin = offerAdmin();
-    $plan  = offerPlan();
+    $plan = offerPlan();
     offerRule($plan);
     offerRule($plan, ['name' => 'Silver Rule', 'min_credit_score' => 550, 'max_credit_score' => 649]);
 
@@ -86,8 +87,8 @@ test('can list offer rules', function () {
 
 test('can update a rule', function () {
     $admin = offerAdmin();
-    $plan  = offerPlan();
-    $rule  = offerRule($plan);
+    $plan = offerPlan();
+    $rule = offerRule($plan);
 
     $this->actingAs($admin)
         ->putJson(route('api.v1.loan-offers.rules.update', $rule), ['validity_days' => 60])
@@ -97,8 +98,8 @@ test('can update a rule', function () {
 
 test('can delete a rule', function () {
     $admin = offerAdmin();
-    $plan  = offerPlan();
-    $rule  = offerRule($plan);
+    $plan = offerPlan();
+    $rule = offerRule($plan);
 
     $this->actingAs($admin)
         ->deleteJson(route('api.v1.loan-offers.rules.destroy', $rule))
@@ -109,14 +110,14 @@ test('can delete a rule', function () {
 
 test('rule validation rejects invalid credit scores', function () {
     $admin = offerAdmin();
-    $plan  = offerPlan();
+    $plan = offerPlan();
 
     $this->actingAs($admin)
         ->postJson(route('api.v1.loan-offers.rules.store'), [
-            'name'               => 'Bad',
-            'min_credit_score'   => 900,   // > 850
-            'max_credit_score'   => 850,
-            'loan_plan_id'       => $plan->id,
+            'name' => 'Bad',
+            'min_credit_score' => 900,   // > 850
+            'max_credit_score' => 850,
+            'loan_plan_id' => $plan->id,
             'min_offered_amount' => 1000,
             'max_offered_amount' => 5000,
         ])
@@ -126,8 +127,8 @@ test('rule validation rejects invalid credit scores', function () {
 // ─── Offer Generation ─────────────────────────────────────────────────────────
 
 test('service generates offer for borrower matching rule credit score', function () {
-    $plan     = offerPlan();
-    $rule     = offerRule($plan, ['min_credit_score' => 700, 'max_credit_score' => 850]);
+    $plan = offerPlan();
+    $rule = offerRule($plan, ['min_credit_score' => 700, 'max_credit_score' => 850]);
     $borrower = offerBorrower(750);
 
     $offers = app(LoanOfferService::class)->generateForBorrower($borrower);
@@ -150,24 +151,24 @@ test('no offer generated when borrower score is below rule minimum', function ()
 test('offered amount scales with credit score within rule range', function () {
     $plan = offerPlan();
     offerRule($plan, [
-        'min_credit_score'   => 600,
-        'max_credit_score'   => 800,
+        'min_credit_score' => 600,
+        'max_credit_score' => 800,
         'min_offered_amount' => 10000,
         'max_offered_amount' => 50000,
     ]);
 
-    $lowBorrower  = offerBorrower(600);
+    $lowBorrower = offerBorrower(600);
     $highBorrower = offerBorrower(800);
 
-    $service   = app(LoanOfferService::class);
-    $lowOffers  = $service->generateForBorrower($lowBorrower);
+    $service = app(LoanOfferService::class);
+    $lowOffers = $service->generateForBorrower($lowBorrower);
     $highOffers = $service->generateForBorrower($highBorrower);
 
     expect($highOffers[0]->offered_amount)->toBeGreaterThan($lowOffers[0]->offered_amount);
 });
 
 test('duplicate offer not created for same rule and borrower', function () {
-    $plan     = offerPlan();
+    $plan = offerPlan();
     offerRule($plan, ['min_credit_score' => 600, 'max_credit_score' => 850]);
     $borrower = offerBorrower(700);
 
@@ -181,8 +182,8 @@ test('duplicate offer not created for same rule and borrower', function () {
 // ─── Generate via API ─────────────────────────────────────────────────────────
 
 test('can generate offer via API', function () {
-    $admin    = offerAdmin();
-    $plan     = offerPlan();
+    $admin = offerAdmin();
+    $plan = offerPlan();
     offerRule($plan);
     $borrower = offerBorrower(720);
 
@@ -196,21 +197,21 @@ test('can generate offer via API', function () {
 // ─── Accept / Decline / Expire ────────────────────────────────────────────────
 
 test('can accept a pending offer', function () {
-    $admin    = offerAdmin();
-    $plan     = offerPlan();
-    $rule     = offerRule($plan);
+    $admin = offerAdmin();
+    $plan = offerPlan();
+    $rule = offerRule($plan);
     $borrower = offerBorrower(720);
 
     $offer = LoanOffer::create([
-        'loan_offer_rule_id'    => $rule->id,
-        'borrower_id'           => $borrower->id,
-        'loan_plan_id'          => $plan->id,
-        'offered_amount'        => 20000,
-        'interest_rate'         => 24.0,
-        'tenure'                => 12,
+        'loan_offer_rule_id' => $rule->id,
+        'borrower_id' => $borrower->id,
+        'loan_plan_id' => $plan->id,
+        'offered_amount' => 20000,
+        'interest_rate' => 24.0,
+        'tenure' => 12,
         'credit_score_at_offer' => 720,
-        'status'                => 'pending',
-        'expires_at'            => now()->addDays(30),
+        'status' => 'pending',
+        'expires_at' => now()->addDays(30),
     ]);
 
     $resp = $this->actingAs($admin)
@@ -222,21 +223,21 @@ test('can accept a pending offer', function () {
 });
 
 test('can decline a pending offer with reason', function () {
-    $admin    = offerAdmin();
-    $plan     = offerPlan();
-    $rule     = offerRule($plan);
+    $admin = offerAdmin();
+    $plan = offerPlan();
+    $rule = offerRule($plan);
     $borrower = offerBorrower(720);
 
     $offer = LoanOffer::create([
-        'loan_offer_rule_id'    => $rule->id,
-        'borrower_id'           => $borrower->id,
-        'loan_plan_id'          => $plan->id,
-        'offered_amount'        => 15000,
-        'interest_rate'         => 24.0,
-        'tenure'                => 12,
+        'loan_offer_rule_id' => $rule->id,
+        'borrower_id' => $borrower->id,
+        'loan_plan_id' => $plan->id,
+        'offered_amount' => 15000,
+        'interest_rate' => 24.0,
+        'tenure' => 12,
         'credit_score_at_offer' => 720,
-        'status'                => 'pending',
-        'expires_at'            => now()->addDays(30),
+        'status' => 'pending',
+        'expires_at' => now()->addDays(30),
     ]);
 
     $this->actingAs($admin)
@@ -248,21 +249,21 @@ test('can decline a pending offer with reason', function () {
 });
 
 test('cannot accept an already-declined offer', function () {
-    $admin    = offerAdmin();
-    $plan     = offerPlan();
-    $rule     = offerRule($plan);
+    $admin = offerAdmin();
+    $plan = offerPlan();
+    $rule = offerRule($plan);
     $borrower = offerBorrower(720);
 
     $offer = LoanOffer::create([
-        'loan_offer_rule_id'    => $rule->id,
-        'borrower_id'           => $borrower->id,
-        'loan_plan_id'          => $plan->id,
-        'offered_amount'        => 10000,
-        'interest_rate'         => 24.0,
-        'tenure'                => 12,
+        'loan_offer_rule_id' => $rule->id,
+        'borrower_id' => $borrower->id,
+        'loan_plan_id' => $plan->id,
+        'offered_amount' => 10000,
+        'interest_rate' => 24.0,
+        'tenure' => 12,
         'credit_score_at_offer' => 720,
-        'status'                => 'declined',
-        'expires_at'            => now()->addDays(30),
+        'status' => 'declined',
+        'expires_at' => now()->addDays(30),
     ]);
 
     $this->actingAs($admin)
@@ -271,19 +272,19 @@ test('cannot accept an already-declined offer', function () {
 });
 
 test('expire stale offers command marks expired', function () {
-    $plan     = offerPlan();
-    $rule     = offerRule($plan);
+    $plan = offerPlan();
+    $rule = offerRule($plan);
     $borrower = offerBorrower(720);
 
     LoanOffer::create([
-        'loan_offer_rule_id'    => $rule->id,
-        'borrower_id'           => $borrower->id,
-        'loan_plan_id'          => $plan->id,
-        'offered_amount'        => 10000,
-        'interest_rate'         => 24.0,
-        'tenure'                => 12,
-        'status'                => 'pending',
-        'expires_at'            => now()->subDay(),  // already expired
+        'loan_offer_rule_id' => $rule->id,
+        'borrower_id' => $borrower->id,
+        'loan_plan_id' => $plan->id,
+        'offered_amount' => 10000,
+        'interest_rate' => 24.0,
+        'tenure' => 12,
+        'status' => 'pending',
+        'expires_at' => now()->subDay(),  // already expired
     ]);
 
     $count = app(LoanOfferService::class)->expireStale();
@@ -295,9 +296,9 @@ test('expire stale offers command marks expired', function () {
 // ─── List / Show ──────────────────────────────────────────────────────────────
 
 test('can list offers with filters', function () {
-    $admin    = offerAdmin();
-    $plan     = offerPlan();
-    $rule     = offerRule($plan);
+    $admin = offerAdmin();
+    $plan = offerPlan();
+    $rule = offerRule($plan);
     $borrower = offerBorrower(720);
 
     LoanOffer::create(['loan_offer_rule_id' => $rule->id, 'borrower_id' => $borrower->id, 'loan_plan_id' => $plan->id, 'offered_amount' => 10000, 'interest_rate' => 24, 'tenure' => 12, 'status' => 'pending', 'expires_at' => now()->addDays(30)]);

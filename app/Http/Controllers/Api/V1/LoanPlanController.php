@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Requests\Api\V1\LoanPlan\StoreLoanPlanRequest;
 use App\Http\Requests\Api\V1\LoanPlan\UpdateLoanPlanRequest;
 use App\Models\Tenant\LoanPlan;
-use App\Models\Tenant\LoanType;
 use App\Services\LoanCalculatorService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -68,13 +67,13 @@ class LoanPlanController extends BaseApiController
     public function calculate(Request $request, LoanPlan $loanPlan): JsonResponse
     {
         $request->validate([
-            'principal'         => ['required', 'numeric', 'min:0.01'],
-            'tenure'            => ['required', 'integer', 'min:1'],
+            'principal' => ['required', 'numeric', 'min:0.01'],
+            'tenure' => ['required', 'integer', 'min:1'],
             'disbursement_date' => ['required', 'date'],
         ]);
 
         $principal = (float) $request->principal;
-        $tenure    = (int) $request->tenure;
+        $tenure = (int) $request->tenure;
 
         if ($principal < $loanPlan->min_amount || $principal > $loanPlan->max_amount) {
             return $this->error("Principal must be between {$loanPlan->min_amount} and {$loanPlan->max_amount}.", 422);
@@ -92,26 +91,26 @@ class LoanPlanController extends BaseApiController
     private function formatPlan(LoanPlan $p): array
     {
         return [
-            'id'                 => $p->id,
-            'loan_type_id'       => $p->loan_type_id,
-            'loan_type'          => $p->relationLoaded('loanType') ? ['id' => $p->loanType->id, 'name' => $p->loanType->name] : null,
-            'name'               => $p->name,
-            'code'               => $p->code,
-            'interest_rate'      => (float) $p->interest_rate,
-            'interest_type'      => $p->interest_type,
-            'interest_period'    => $p->interest_period,
-            'min_tenure'         => $p->min_tenure,
-            'max_tenure'         => $p->max_tenure,
-            'tenure_type'        => $p->tenure_type,
-            'min_amount'         => (float) $p->min_amount,
-            'max_amount'         => (float) $p->max_amount,
-            'penalty_rate'       => (float) $p->penalty_rate,
-            'penalty_type'       => $p->penalty_type,
-            'grace_period_days'  => $p->grace_period_days,
+            'id' => $p->id,
+            'loan_type_id' => $p->loan_type_id,
+            'loan_type' => $p->relationLoaded('loanType') ? ['id' => $p->loanType->id, 'name' => $p->loanType->name] : null,
+            'name' => $p->name,
+            'code' => $p->code,
+            'interest_rate' => (float) $p->interest_rate,
+            'interest_type' => $p->interest_type,
+            'interest_period' => $p->interest_period,
+            'min_tenure' => $p->min_tenure,
+            'max_tenure' => $p->max_tenure,
+            'tenure_type' => $p->tenure_type,
+            'min_amount' => (float) $p->min_amount,
+            'max_amount' => (float) $p->max_amount,
+            'penalty_rate' => (float) $p->penalty_rate,
+            'penalty_type' => $p->penalty_type,
+            'grace_period_days' => $p->grace_period_days,
             'repayment_schedule' => $p->repayment_schedule,
-            'processing_fee'     => (float) $p->processing_fee,
-            'insurance_fee'      => (float) $p->insurance_fee,
-            'is_active'          => $p->is_active,
+            'processing_fee' => (float) $p->processing_fee,
+            'insurance_fee' => (float) $p->insurance_fee,
+            'is_active' => $p->is_active,
         ];
     }
 }

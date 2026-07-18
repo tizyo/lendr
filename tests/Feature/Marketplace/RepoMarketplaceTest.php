@@ -18,7 +18,7 @@ function repoAdmin(): \App\Models\Tenant\User
 function repoGhost(array $attrs = []): GhostUser
 {
     return GhostUser::create(array_merge([
-        'name'  => 'Test Ghost',
+        'name' => 'Test Ghost',
         'phone' => '+260971000'.rand(100, 999),
         'email' => 'ghost'.rand(1000, 9999).'@test.com',
     ], $attrs));
@@ -27,16 +27,16 @@ function repoGhost(array $attrs = []): GhostUser
 function repoItem(array $attrs = []): RepoItem
 {
     return RepoItem::create(array_merge([
-        'tenant_id'   => 'local',
+        'tenant_id' => 'local',
         'tenant_name' => 'Test Tenant',
-        'title'       => 'Samsung TV 55"',
+        'title' => 'Samsung TV 55"',
         'description' => 'Good condition repossessed TV.',
-        'price'       => 1500.00,
-        'category'    => 'electronics',
-        'condition'   => 'good',
-        'location'    => 'Lusaka',
-        'is_active'   => true,
-        'is_sold'     => false,
+        'price' => 1500.00,
+        'category' => 'electronics',
+        'condition' => 'good',
+        'location' => 'Lusaka',
+        'is_active' => true,
+        'is_sold' => false,
     ], $attrs));
 }
 
@@ -51,9 +51,9 @@ function seedGrowthPlan(): void
     $existing = DB::table('plan_configs')->where('plan', 'growth')->first();
     if (! $existing) {
         DB::table('plan_configs')->insert([
-            'plan'     => 'growth',
+            'plan' => 'growth',
             'features' => json_encode(['repo_marketplace' => true]),
-            'limits'   => json_encode([]),
+            'limits' => json_encode([]),
         ]);
     } else {
         $features = json_decode($existing->features ?? '{}', true);
@@ -64,21 +64,21 @@ function seedGrowthPlan(): void
     // subscriptions has FK to tenants — ensure 'local' tenant exists
     if (! DB::table('tenants')->where('id', 'local')->exists()) {
         DB::table('tenants')->insert([
-            'id'         => 'local',
-            'name'       => 'Local Test Tenant',
-            'slug'       => 'local',
-            'plan'       => 'growth',
-            'status'     => 'active',
-            'currency'   => 'ZMW',
+            'id' => 'local',
+            'name' => 'Local Test Tenant',
+            'slug' => 'local',
+            'plan' => 'growth',
+            'status' => 'active',
+            'currency' => 'ZMW',
             'created_at' => now(),
             'updated_at' => now(),
         ]);
     }
 
     DB::table('subscriptions')->insert([
-        'tenant_id'  => 'local',
-        'plan'       => 'growth',
-        'status'     => 'active',
+        'tenant_id' => 'local',
+        'plan' => 'growth',
+        'status' => 'active',
         'created_at' => now(),
         'updated_at' => now(),
     ]);
@@ -88,7 +88,7 @@ function seedGrowthPlan(): void
 
 test('ghost user can register', function () {
     $response = $this->postJson('/api/v1/public/auth/register', [
-        'name'  => 'John Buyer',
+        'name' => 'John Buyer',
         'phone' => '+260971111001',
         'email' => 'johnbuyer@test.com',
     ]);
@@ -103,7 +103,7 @@ test('ghost register is idempotent', function () {
     GhostUser::create(['name' => 'Existing', 'phone' => '+260971111002', 'email' => null]);
 
     $response = $this->postJson('/api/v1/public/auth/register', [
-        'name'  => 'Existing Again',
+        'name' => 'Existing Again',
         'phone' => '+260971111002',
     ]);
 
@@ -122,7 +122,7 @@ test('ghost user can request OTP and verify', function () {
 
     $verify = $this->postJson('/api/v1/public/auth/verify-otp', [
         'phone' => $ghost->phone,
-        'otp'   => $otp,
+        'otp' => $otp,
     ]);
 
     $verify->assertOk()
@@ -135,7 +135,7 @@ test('otp verify fails with wrong code', function () {
 
     $this->postJson('/api/v1/public/auth/verify-otp', [
         'phone' => $ghost->phone,
-        'otp'   => '000000',
+        'otp' => '000000',
     ])->assertStatus(422);
 });
 
@@ -215,10 +215,10 @@ test('viewing item detail increments views_count', function () {
 test('item detail returns images', function () {
     $item = repoItem();
     RepoItemImage::create([
-        'item_id'   => $item->id,
+        'item_id' => $item->id,
         'image_url' => 'https://cdn.example.com/tv.jpg',
-        'is_primary'=> true,
-        'sort_order'=> 0,
+        'is_primary' => true,
+        'sort_order' => 0,
     ]);
 
     $response = $this->getJson("/api/v1/public/items/{$item->id}");
@@ -233,7 +233,7 @@ test('item detail returns images', function () {
 // ─── Ghost-Auth: Enquire ─────────────────────────────────────────────────────
 
 test('ghost user can enquire on an item', function () {
-    $item  = repoItem();
+    $item = repoItem();
     $ghost = repoGhost();
     $token = ghostToken($ghost);
 
@@ -244,9 +244,9 @@ test('ghost user can enquire on an item', function () {
     $response->assertStatus(201);
 
     $this->assertDatabaseHas('repo_enquiries', [
-        'item_id'       => $item->id,
+        'item_id' => $item->id,
         'ghost_user_id' => $ghost->id,
-        'message'       => 'Is this still available?',
+        'message' => 'Is this still available?',
     ]);
 
     expect($item->fresh()->enquiries_count)->toBe(1);
@@ -260,12 +260,12 @@ test('enquiry requires ghost auth', function () {
 });
 
 test('ghost user can view their enquiries', function () {
-    $item  = repoItem();
+    $item = repoItem();
     $ghost = repoGhost();
     RepoEnquiry::create([
-        'item_id'       => $item->id,
+        'item_id' => $item->id,
         'ghost_user_id' => $ghost->id,
-        'message'       => 'My enquiry',
+        'message' => 'My enquiry',
     ]);
 
     $token = ghostToken($ghost);
@@ -280,7 +280,7 @@ test('ghost user can view their enquiries', function () {
 // ─── Ghost-Auth: Cart ────────────────────────────────────────────────────────
 
 test('ghost user can add item to cart', function () {
-    $item  = repoItem();
+    $item = repoItem();
     $ghost = repoGhost();
     $token = ghostToken($ghost);
 
@@ -291,12 +291,12 @@ test('ghost user can add item to cart', function () {
     $response->assertStatus(201);
     $this->assertDatabaseHas('repo_carts', [
         'ghost_user_id' => $ghost->id,
-        'item_id'       => $item->id,
+        'item_id' => $item->id,
     ]);
 });
 
 test('cart add is idempotent', function () {
-    $item  = repoItem();
+    $item = repoItem();
     $ghost = repoGhost();
     $token = ghostToken($ghost);
 
@@ -307,7 +307,7 @@ test('cart add is idempotent', function () {
 });
 
 test('ghost user can view cart', function () {
-    $item  = repoItem();
+    $item = repoItem();
     $ghost = repoGhost();
     RepoCart::create(['ghost_user_id' => $ghost->id, 'item_id' => $item->id]);
     $token = ghostToken($ghost);
@@ -321,9 +321,9 @@ test('ghost user can view cart', function () {
 });
 
 test('ghost user can remove item from cart', function () {
-    $item  = repoItem();
+    $item = repoItem();
     $ghost = repoGhost();
-    $cart  = RepoCart::create(['ghost_user_id' => $ghost->id, 'item_id' => $item->id]);
+    $cart = RepoCart::create(['ghost_user_id' => $ghost->id, 'item_id' => $item->id]);
     $token = ghostToken($ghost);
 
     $this->withToken($token)->deleteJson("/api/v1/public/cart/{$cart->id}")
@@ -352,11 +352,11 @@ test('tenant with growth plan can create a repo item', function () {
     $admin = repoAdmin();
 
     $response = $this->actingAs($admin)->postJson('/api/v1/repo-items', [
-        'title'     => 'Repossessed Fridge',
-        'price'     => 800,
-        'category'  => 'furniture',
+        'title' => 'Repossessed Fridge',
+        'price' => 800,
+        'category' => 'furniture',
         'condition' => 'fair',
-        'images'    => [
+        'images' => [
             ['url' => 'https://cdn.example.com/fridge.jpg', 'caption' => 'Front view'],
         ],
     ]);
@@ -365,7 +365,7 @@ test('tenant with growth plan can create a repo item', function () {
         ->assertJsonPath('data.title', 'Repossessed Fridge');
 
     $this->assertDatabaseHas('repo_item_images', [
-        'image_url'  => 'https://cdn.example.com/fridge.jpg',
+        'image_url' => 'https://cdn.example.com/fridge.jpg',
         'is_primary' => true,
     ]);
 });
@@ -375,16 +375,16 @@ test('tenant without growth plan cannot create repo item', function () {
     $admin = repoAdmin();
 
     $this->actingAs($admin)->postJson('/api/v1/repo-items', [
-        'title'     => 'Blocked Item',
-        'price'     => 100,
-        'category'  => 'other',
+        'title' => 'Blocked Item',
+        'price' => 100,
+        'category' => 'other',
         'condition' => 'poor',
     ])->assertStatus(403);
 });
 
 test('tenant can update their repo item', function () {
     $admin = repoAdmin();
-    $item  = repoItem();
+    $item = repoItem();
 
     $this->actingAs($admin)->putJson("/api/v1/repo-items/{$item->id}", [
         'price' => 2000,
@@ -395,7 +395,7 @@ test('tenant can update their repo item', function () {
 
 test('tenant can mark item as sold', function () {
     $admin = repoAdmin();
-    $item  = repoItem();
+    $item = repoItem();
 
     $this->actingAs($admin)->postJson("/api/v1/repo-items/{$item->id}/mark-sold")
         ->assertOk();
@@ -405,7 +405,7 @@ test('tenant can mark item as sold', function () {
 
 test('tenant can deactivate (destroy) a listing', function () {
     $admin = repoAdmin();
-    $item  = repoItem();
+    $item = repoItem();
 
     $this->actingAs($admin)->deleteJson("/api/v1/repo-items/{$item->id}")
         ->assertOk();
@@ -415,12 +415,12 @@ test('tenant can deactivate (destroy) a listing', function () {
 
 test('tenant can view enquiries on their item with ghost user contact info', function () {
     $admin = repoAdmin();
-    $item  = repoItem();
+    $item = repoItem();
     $ghost = repoGhost(['name' => 'Enquiring Ghost', 'phone' => '+260971555000']);
     RepoEnquiry::create([
-        'item_id'       => $item->id,
+        'item_id' => $item->id,
         'ghost_user_id' => $ghost->id,
-        'message'       => 'Still available?',
+        'message' => 'Still available?',
     ]);
 
     $response = $this->actingAs($admin)->getJson("/api/v1/repo-items/{$item->id}/enquiries");
@@ -433,13 +433,13 @@ test('tenant can view enquiries on their item with ghost user contact info', fun
 });
 
 test('tenant can reply to an enquiry', function () {
-    $admin   = repoAdmin();
-    $item    = repoItem();
-    $ghost   = repoGhost();
+    $admin = repoAdmin();
+    $item = repoItem();
+    $ghost = repoGhost();
     $enquiry = RepoEnquiry::create([
-        'item_id'       => $item->id,
+        'item_id' => $item->id,
         'ghost_user_id' => $ghost->id,
-        'message'       => 'Is it available?',
+        'message' => 'Is it available?',
     ]);
 
     $this->actingAs($admin)->postJson("/api/v1/repo-items/{$item->id}/enquiries/{$enquiry->id}/reply", [
@@ -452,7 +452,7 @@ test('tenant can reply to an enquiry', function () {
 
 test('tenant cannot access another tenant item', function () {
     $admin = repoAdmin();
-    $item  = repoItem(['tenant_id' => 'other_tenant']);
+    $item = repoItem(['tenant_id' => 'other_tenant']);
 
     $this->actingAs($admin)->getJson("/api/v1/repo-items/{$item->id}")
         ->assertStatus(404);
@@ -463,9 +463,9 @@ test('tenant cannot access another tenant item', function () {
 test('staff can lookup ghost user by national id', function () {
     $admin = repoAdmin();
     $ghost = repoGhost();
-    $svc   = app(\App\Services\GhostUserService::class);
+    $svc = app(\App\Services\GhostUserService::class);
     $ghost->update([
-        'national_id'      => 'NRC123456/78/1',
+        'national_id' => 'NRC123456/78/1',
         'national_id_hash' => $svc->hash('NRC123456/78/1', 'nrc'),
     ]);
 
@@ -500,13 +500,13 @@ test('kyc lookup requires at least one identifier', function () {
 });
 
 test('staff can import selected fields from ghost user into borrower', function () {
-    $admin    = repoAdmin();
-    $ghost    = repoGhost(['name' => 'Jane Ghost', 'email' => 'jane@ghost.test']);
+    $admin = repoAdmin();
+    $ghost = repoGhost(['name' => 'Jane Ghost', 'email' => 'jane@ghost.test']);
     $borrower = Borrower::factory()->create(['email' => null]);
 
     $this->actingAs($admin)->postJson("/api/v1/borrowers/{$borrower->id}/kyc-import", [
         'ghost_user_id' => $ghost->id,
-        'fields'        => ['email'],
+        'fields' => ['email'],
     ])->assertOk();
 
     expect($borrower->fresh()->email)->toBe('jane@ghost.test')

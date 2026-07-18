@@ -14,9 +14,9 @@ class LoanTypeController extends BaseApiController
 {
     public function index(Request $request): JsonResponse
     {
-        $withPlans       = $request->boolean('with_plans');
+        $withPlans = $request->boolean('with_plans');
         $includeInactive = $request->boolean('include_inactive');
-        $cacheKey        = 'loan_types_' . tenant('id') . ($withPlans ? '_with_plans' : '') . ($includeInactive ? '_all' : '');
+        $cacheKey = 'loan_types_'.tenant('id').($withPlans ? '_with_plans' : '').($includeInactive ? '_all' : '');
 
         $types = Cache::remember($cacheKey, 3600, function () use ($withPlans, $includeInactive) {
             return LoanType::query()
@@ -40,7 +40,7 @@ class LoanTypeController extends BaseApiController
         if (! $svc->canAddLoanProduct(LoanType::count())) {
             return $this->error(
                 "Your plan allows a maximum of {$svc->limitLabel('max_loan_products')} loan products. Upgrade to add more.",
-                422
+                422,
             );
         }
 
@@ -92,37 +92,37 @@ class LoanTypeController extends BaseApiController
     private function formatType(LoanType $t, bool $withPlans = false): array
     {
         $data = [
-            'id'                  => $t->id,
-            'name'                => $t->name,
-            'code'                => $t->code,
-            'description'         => $t->description,
+            'id' => $t->id,
+            'name' => $t->name,
+            'code' => $t->code,
+            'description' => $t->description,
             'requires_collateral' => $t->requires_collateral,
-            'requires_guarantor'  => $t->requires_guarantor,
-            'required_documents'  => $t->required_documents ?? [],
-            'is_active'           => $t->is_active,
-            'sort_order'          => $t->sort_order,
-            'plans_count'         => $t->plans_count ?? 0,
+            'requires_guarantor' => $t->requires_guarantor,
+            'required_documents' => $t->required_documents ?? [],
+            'is_active' => $t->is_active,
+            'sort_order' => $t->sort_order,
+            'plans_count' => $t->plans_count ?? 0,
         ];
 
         if ($withPlans && $t->relationLoaded('plans')) {
             $data['plans'] = $t->plans->map(fn ($p) => [
-                'id'                 => $p->id,
-                'name'               => $p->name,
-                'code'               => $p->code,
-                'interest_rate'      => (float) $p->interest_rate,
-                'interest_type'      => $p->interest_type,
-                'interest_period'    => $p->interest_period,
-                'min_tenure'         => $p->min_tenure,
-                'max_tenure'         => $p->max_tenure,
-                'tenure_type'        => $p->tenure_type,
-                'min_amount'         => (float) $p->min_amount,
-                'max_amount'         => (float) $p->max_amount,
+                'id' => $p->id,
+                'name' => $p->name,
+                'code' => $p->code,
+                'interest_rate' => (float) $p->interest_rate,
+                'interest_type' => $p->interest_type,
+                'interest_period' => $p->interest_period,
+                'min_tenure' => $p->min_tenure,
+                'max_tenure' => $p->max_tenure,
+                'tenure_type' => $p->tenure_type,
+                'min_amount' => (float) $p->min_amount,
+                'max_amount' => (float) $p->max_amount,
                 'repayment_schedule' => $p->repayment_schedule,
-                'processing_fee'     => (float) $p->processing_fee,
-                'insurance_fee'      => (float) $p->insurance_fee,
-                'penalty_rate'       => (float) $p->penalty_rate,
-                'grace_period_days'  => $p->grace_period_days,
-                'is_active'          => $p->is_active,
+                'processing_fee' => (float) $p->processing_fee,
+                'insurance_fee' => (float) $p->insurance_fee,
+                'penalty_rate' => (float) $p->penalty_rate,
+                'grace_period_days' => $p->grace_period_days,
+                'is_active' => $p->is_active,
             ])->values();
         }
 

@@ -15,7 +15,8 @@ class RecalculateCreditScoreJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    public int $tries   = 3;
+    public int $tries = 3;
+
     public int $backoff = 10;
 
     public function __construct(public readonly int $borrowerId) {}
@@ -33,14 +34,14 @@ class RecalculateCreditScoreJob implements ShouldQueue
         $tier = Borrower::tierFromScore($score);
 
         $borrower->forceFill([
-            'credit_score'            => $score,
+            'credit_score' => $score,
             'credit_score_updated_at' => now(),
-            'verification_tier'       => $tier,
+            'verification_tier' => $tier,
         ])->save();
 
         Log::info('[CreditScore] Recalculated', [
-            'borrower_id'       => $borrower->id,
-            'score'             => $score,
+            'borrower_id' => $borrower->id,
+            'score' => $score,
             'verification_tier' => $tier,
         ]);
     }

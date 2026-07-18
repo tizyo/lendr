@@ -18,8 +18,8 @@ class RegulatoryReport extends Model
     protected function casts(): array
     {
         return [
-            'data'       => 'array',
-            'emailed'    => 'boolean',
+            'data' => 'array',
+            'emailed' => 'boolean',
             'emailed_at' => 'datetime',
         ];
     }

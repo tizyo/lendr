@@ -14,7 +14,7 @@ class DeviceToken extends Model
     protected function casts(): array
     {
         return [
-            'is_active'    => 'boolean',
+            'is_active' => 'boolean',
             'last_used_at' => 'datetime',
         ];
     }

@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Models\Tenant\CommissionRule;
 use App\Models\Tenant\StaffCommission;
-use App\Models\Tenant\User;
 use App\Services\CommissionService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -20,30 +19,30 @@ class CommissionController extends BaseApiController
         $rules = CommissionRule::with(['user:id,name', 'loanType:id,name'])->get();
 
         return $this->success($rules->map(fn ($r) => [
-            'id'            => $r->id,
-            'user'          => $r->user ? ['id' => $r->user->id, 'name' => $r->user->name] : null,
-            'loan_type'     => $r->loanType ? ['id' => $r->loanType->id, 'name' => $r->loanType->name] : null,
-            'trigger'       => $r->trigger,
-            'calc_type'     => $r->calc_type,
-            'rate'          => (float) $r->rate,
-            'min_amount'    => $r->min_amount ? (float) $r->min_amount : null,
-            'max_amount'    => $r->max_amount ? (float) $r->max_amount : null,
-            'is_active'     => $r->is_active,
-            'notes'         => $r->notes,
+            'id' => $r->id,
+            'user' => $r->user ? ['id' => $r->user->id, 'name' => $r->user->name] : null,
+            'loan_type' => $r->loanType ? ['id' => $r->loanType->id, 'name' => $r->loanType->name] : null,
+            'trigger' => $r->trigger,
+            'calc_type' => $r->calc_type,
+            'rate' => (float) $r->rate,
+            'min_amount' => $r->min_amount ? (float) $r->min_amount : null,
+            'max_amount' => $r->max_amount ? (float) $r->max_amount : null,
+            'is_active' => $r->is_active,
+            'notes' => $r->notes,
         ])->values());
     }
 
     public function storeRule(Request $request): JsonResponse
     {
         $data = $request->validate([
-            'user_id'      => ['nullable', 'integer', 'exists:users,id'],
+            'user_id' => ['nullable', 'integer', 'exists:users,id'],
             'loan_type_id' => ['nullable', 'integer', 'exists:loan_types,id'],
-            'trigger'      => ['required', 'string', 'in:disbursement,repayment,loan_completion'],
-            'calc_type'    => ['required', 'string', 'in:percentage,flat'],
-            'rate'         => ['required', 'numeric', 'min:0'],
-            'min_amount'   => ['nullable', 'numeric', 'min:0'],
-            'max_amount'   => ['nullable', 'numeric', 'min:0'],
-            'notes'        => ['nullable', 'string'],
+            'trigger' => ['required', 'string', 'in:disbursement,repayment,loan_completion'],
+            'calc_type' => ['required', 'string', 'in:percentage,flat'],
+            'rate' => ['required', 'numeric', 'min:0'],
+            'min_amount' => ['nullable', 'numeric', 'min:0'],
+            'max_amount' => ['nullable', 'numeric', 'min:0'],
+            'notes' => ['nullable', 'string'],
         ]);
 
         $rule = CommissionRule::create($data);
@@ -54,15 +53,15 @@ class CommissionController extends BaseApiController
     public function updateRule(Request $request, CommissionRule $rule): JsonResponse
     {
         $data = $request->validate([
-            'user_id'      => ['nullable', 'integer', 'exists:users,id'],
+            'user_id' => ['nullable', 'integer', 'exists:users,id'],
             'loan_type_id' => ['nullable', 'integer', 'exists:loan_types,id'],
-            'trigger'      => ['sometimes', 'string', 'in:disbursement,repayment,loan_completion'],
-            'calc_type'    => ['sometimes', 'string', 'in:percentage,flat'],
-            'rate'         => ['sometimes', 'numeric', 'min:0'],
-            'min_amount'   => ['nullable', 'numeric', 'min:0'],
-            'max_amount'   => ['nullable', 'numeric', 'min:0'],
-            'is_active'    => ['sometimes', 'boolean'],
-            'notes'        => ['nullable', 'string'],
+            'trigger' => ['sometimes', 'string', 'in:disbursement,repayment,loan_completion'],
+            'calc_type' => ['sometimes', 'string', 'in:percentage,flat'],
+            'rate' => ['sometimes', 'numeric', 'min:0'],
+            'min_amount' => ['nullable', 'numeric', 'min:0'],
+            'max_amount' => ['nullable', 'numeric', 'min:0'],
+            'is_active' => ['sometimes', 'boolean'],
+            'notes' => ['nullable', 'string'],
         ]);
 
         $rule->update($data);
@@ -82,20 +81,20 @@ class CommissionController extends BaseApiController
     public function index(Request $request): JsonResponse
     {
         $query = StaffCommission::with(['user:id,name', 'loan:id,loan_number'])
-            ->when($request->user_id,   fn ($q) => $q->where('user_id', $request->user_id))
-            ->when($request->status,    fn ($q) => $q->where('status', $request->status))
-            ->when($request->period,    fn ($q) => $q->where('period_month', 'like', $request->period . '%'))
+            ->when($request->user_id, fn ($q) => $q->where('user_id', $request->user_id))
+            ->when($request->status, fn ($q) => $q->where('status', $request->status))
+            ->when($request->period, fn ($q) => $q->where('period_month', 'like', $request->period.'%'))
             ->orderByDesc('created_at');
 
         return $this->paginated($query->paginate(50), fn ($c) => [
-            'id'                => $c->id,
-            'user'              => $c->user ? ['id' => $c->user->id, 'name' => $c->user->name] : null,
-            'loan_number'       => $c->loan?->loan_number,
-            'trigger'           => $c->trigger,
-            'base_amount'       => (float) $c->base_amount,
+            'id' => $c->id,
+            'user' => $c->user ? ['id' => $c->user->id, 'name' => $c->user->name] : null,
+            'loan_number' => $c->loan?->loan_number,
+            'trigger' => $c->trigger,
+            'base_amount' => (float) $c->base_amount,
             'commission_amount' => (float) $c->commission_amount,
-            'status'            => $c->status,
-            'period_month'      => $c->period_month?->format('Y-m'),
+            'status' => $c->status,
+            'period_month' => $c->period_month?->format('Y-m'),
         ]);
     }
 

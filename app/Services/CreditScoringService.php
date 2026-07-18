@@ -19,7 +19,8 @@ use Illuminate\Support\Facades\DB;
  */
 class CreditScoringService
 {
-    private const BASE  = 300;
+    private const BASE = 300;
+
     private const RANGE = 550; // 300 + 550 = 850 max
 
     public function calculate(Borrower $borrower): int
@@ -58,7 +59,7 @@ class CreditScoringService
         }
 
         $onTime = $payments->where('is_overdue_payment', false)->count();
-        $ratio  = $onTime / $total;
+        $ratio = $onTime / $total;
 
         return round($ratio * self::RANGE * 0.35, 2);
     }
@@ -66,7 +67,7 @@ class CreditScoringService
     /** 30% weight → max 165 pts (lower utilization = higher score) */
     private function utilizationScore(\Illuminate\Support\Collection $loans): float
     {
-        $totalExtended    = $loans->sum('principal_amount');
+        $totalExtended = $loans->sum('principal_amount');
         $totalOutstanding = $loans->whereIn('status', ['disbursed', 'active'])->sum('outstanding_balance');
 
         if ($totalExtended <= 0) {
@@ -101,7 +102,7 @@ class CreditScoringService
     private function completedLoanScore(\Illuminate\Support\Collection $loans): float
     {
         $completed = $loans->whereIn('status', ['completed'])->count();
-        $capped    = min($completed, 5);
+        $capped = min($completed, 5);
 
         return round(($capped / 5) * self::RANGE * 0.10, 2);
     }
@@ -112,7 +113,7 @@ class CreditScoringService
         $maxPoints = self::RANGE * 0.10;
 
         $defaults = $loans->whereIn('status', ['defaulted', 'written_off'])->count();
-        $total    = $loans->count();
+        $total = $loans->count();
 
         $deductRatio = $total > 0 ? min(1.0, $defaults / $total) : 0;
 
@@ -147,43 +148,43 @@ class CreditScoringService
             ->whereIn('status', ['disbursed', 'active', 'completed', 'defaulted', 'written_off'])
             ->get();
 
-        $loanIds  = $loans->pluck('id');
+        $loanIds = $loans->pluck('id');
         $payments = $loanIds->isNotEmpty() ? Payment::whereIn('loan_id', $loanIds)->get() : collect();
 
         // Factor subscores (0–100)
-        $repaymentScore  = $this->computeRepaymentHistoryFactor($payments);
-        $debtScore       = $this->computeDebtLoadFactor($loans, $borrower);
-        $historyScore    = $this->computeHistoryLengthFactor($loans);
-        $mixScore        = $this->computeAccountMixFactor($loans);
-        $newCreditScore  = $this->computeNewCreditFactor($loans);
+        $repaymentScore = $this->computeRepaymentHistoryFactor($payments);
+        $debtScore = $this->computeDebtLoadFactor($loans, $borrower);
+        $historyScore = $this->computeHistoryLengthFactor($loans);
+        $mixScore = $this->computeAccountMixFactor($loans);
+        $newCreditScore = $this->computeNewCreditFactor($loans);
 
         // Weighted composite raw score (0–100)
         $raw = ($repaymentScore * 0.40)
-             + ($debtScore      * 0.25)
-             + ($historyScore   * 0.15)
-             + ($mixScore       * 0.10)
+             + ($debtScore * 0.25)
+             + ($historyScore * 0.15)
+             + ($mixScore * 0.10)
              + ($newCreditScore * 0.10);
 
         // Convert to 300–850 range
         $score = (int) max(300, min(850, round($raw * 5.5 + 300)));
-        $band  = $this->scoreBand($score);
+        $band = $this->scoreBand($score);
 
         $record = DB::connection('mysql')->table('credit_scores')->updateOrInsert(
             ['borrower_global_id' => $borrowerGlobalId],
             [
-                'score'                  => $score,
-                'score_band'             => $band,
-                'repayment_history_score'=> $repaymentScore,
-                'debt_load_score'        => $debtScore,
-                'history_length_score'   => $historyScore,
-                'account_mix_score'      => $mixScore,
-                'new_credit_score'       => $newCreditScore,
-                'total_loans'            => $loans->count(),
-                'total_completed'        => $loans->where('status', 'completed')->count(),
-                'total_defaulted'        => $loans->whereIn('status', ['defaulted', 'written_off'])->count(),
-                'last_updated'           => now(),
-                'updated_at'             => now(),
-            ]
+                'score' => $score,
+                'score_band' => $band,
+                'repayment_history_score' => $repaymentScore,
+                'debt_load_score' => $debtScore,
+                'history_length_score' => $historyScore,
+                'account_mix_score' => $mixScore,
+                'new_credit_score' => $newCreditScore,
+                'total_loans' => $loans->count(),
+                'total_completed' => $loans->where('status', 'completed')->count(),
+                'total_defaulted' => $loans->whereIn('status', ['defaulted', 'written_off'])->count(),
+                'last_updated' => now(),
+                'updated_at' => now(),
+            ],
         );
 
         return DB::connection('mysql')->table('credit_scores')
@@ -193,11 +194,11 @@ class CreditScoringService
 
     public function scoreBand(int $score): string
     {
-        return match(true) {
+        return match (true) {
             $score >= 750 => 'excellent',
             $score >= 650 => 'good',
             $score >= 550 => 'fair',
-            default       => 'poor',
+            default => 'poor',
         };
     }
 
@@ -210,13 +211,14 @@ class CreditScoringService
             return 50; // neutral
         }
         $onTime = $payments->where('is_overdue_payment', false)->count();
+
         return (int) round(($onTime / $total) * 100);
     }
 
     private function computeDebtLoadFactor(\Illuminate\Support\Collection $loans, Borrower $borrower): int
     {
         $outstanding = $loans->whereIn('status', ['active', 'disbursed'])->sum('outstanding_balance');
-        $income      = (float) ($borrower->monthly_income ?? 0);
+        $income = (float) ($borrower->monthly_income ?? 0);
         $annualIncome = $income * 12;
 
         if ($annualIncome <= 0 || $outstanding <= 0) {
@@ -224,6 +226,7 @@ class CreditScoringService
         }
 
         $ratio = $outstanding / $annualIncome;
+
         return (int) max(0, min(100, round((1 - min($ratio, 1)) * 100)));
     }
 
@@ -234,19 +237,21 @@ class CreditScoringService
             return 0;
         }
         $months = (int) now()->diffInMonths($first->disbursement_date);
+
         return (int) min(100, round(($months / 60) * 100));
     }
 
     private function computeAccountMixFactor(\Illuminate\Support\Collection $loans): int
     {
         $types = $loans->pluck('loan_type_id')->unique()->count();
+
         return (int) min(100, $types * 25);
     }
 
     private function computeNewCreditFactor(\Illuminate\Support\Collection $loans): int
     {
         $recentApps = $loans->filter(
-            fn ($l) => $l->created_at && $l->created_at->gte(now()->subMonths(6))
+            fn ($l) => $l->created_at && $l->created_at->gte(now()->subMonths(6)),
         )->count();
 
         // Fewer applications = better score (max at 0, zero at 5+)

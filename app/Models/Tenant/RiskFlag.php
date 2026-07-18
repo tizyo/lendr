@@ -21,7 +21,7 @@ class RiskFlag extends Model
     protected function casts(): array
     {
         return [
-            'overridden'    => 'boolean',
+            'overridden' => 'boolean',
             'overridden_at' => 'datetime',
         ];
     }

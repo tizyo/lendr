@@ -4,12 +4,11 @@ namespace App\Models\Tenant;
 
 use Database\Factories\BorrowerFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Support\Str;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Str;
 use Laravel\Sanctum\HasApiTokens;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
@@ -63,12 +62,12 @@ class Borrower extends Authenticatable
     protected function casts(): array
     {
         return [
-            'date_of_birth'          => 'date',
-            'is_active'              => 'boolean',
-            'is_blacklisted'         => 'boolean',
-            'kyc_verified'           => 'boolean',
-            'otp_expires_at'         => 'datetime',
-            'credit_score_updated_at'=> 'datetime',
+            'date_of_birth' => 'date',
+            'is_active' => 'boolean',
+            'is_blacklisted' => 'boolean',
+            'kyc_verified' => 'boolean',
+            'otp_expires_at' => 'datetime',
+            'credit_score_updated_at' => 'datetime',
         ];
     }
 
@@ -142,13 +141,14 @@ class Borrower extends Authenticatable
         if ($score >= 550) {
             return 'yellow';
         }
+
         return 'grey';
     }
 
     public static function generateBorrowerNumber(): string
     {
         $prefix = 'BRW-'.now()->format('Ym').'-';
-        $last   = self::withTrashed()
+        $last = self::withTrashed()
             ->where('borrower_number', 'like', "{$prefix}%")
             ->max('borrower_number');
 
@@ -184,6 +184,7 @@ class Borrower extends Authenticatable
         if ($this->company_reg_number) {
             return ['value' => $this->company_reg_number, 'type' => 'company_reg'];
         }
+
         return null;
     }
 
@@ -191,9 +192,16 @@ class Borrower extends Authenticatable
     public function allCrbIdentifiers(): array
     {
         $ids = [];
-        if ($this->national_id)       $ids[] = ['value' => $this->national_id, 'type' => 'nrc'];
-        if ($this->tpin_number)        $ids[] = ['value' => $this->tpin_number, 'type' => 'tpin'];
-        if ($this->company_reg_number) $ids[] = ['value' => $this->company_reg_number, 'type' => 'company_reg'];
+        if ($this->national_id) {
+            $ids[] = ['value' => $this->national_id, 'type' => 'nrc'];
+        }
+        if ($this->tpin_number) {
+            $ids[] = ['value' => $this->tpin_number, 'type' => 'tpin'];
+        }
+        if ($this->company_reg_number) {
+            $ids[] = ['value' => $this->company_reg_number, 'type' => 'company_reg'];
+        }
+
         return $ids;
     }
 }

@@ -17,8 +17,8 @@ function crbAdmin(): User
 function crbBorrower(array $extra = []): Borrower
 {
     return Borrower::factory()->create(array_merge([
-        'national_id' => 'NRC' . fake()->unique()->numerify('######/##/1'),
-        'is_active'   => true,
+        'national_id' => 'NRC'.fake()->unique()->numerify('######/##/1'),
+        'is_active' => true,
     ], $extra));
 }
 
@@ -53,8 +53,8 @@ test('hash is case-insensitive and trims whitespace', function () {
 // ─── Check tests ──────────────────────────────────────────────────────────────
 
 test('check on unknown hash returns safe defaults', function () {
-    $crb    = crbService();
-    $hash   = $crb->hash('999999/00/1', 'nrc');
+    $crb = crbService();
+    $hash = $crb->hash('999999/00/1', 'nrc');
     $result = $crb->check($hash, 'nrc', 'tenant-1', 'manual_check');
 
     expect($result['found'])->toBeFalse()
@@ -65,7 +65,7 @@ test('check on unknown hash returns safe defaults', function () {
 });
 
 test('check creates an inquiry log entry', function () {
-    $crb  = crbService();
+    $crb = crbService();
     $hash = $crb->hash('111111/01/1', 'nrc');
     $crb->check($hash, 'nrc', 'tenant-A', 'manual_check');
 
@@ -78,7 +78,7 @@ test('check creates an inquiry log entry', function () {
 // ─── Score event tests ────────────────────────────────────────────────────────
 
 test('recordLoanOpened creates identity and applies loan_opened event', function () {
-    $crb  = crbService();
+    $crb = crbService();
     $hash = $crb->hash('200001/01/1', 'nrc');
 
     $crb->recordLoanOpened($hash, 'nrc', 'tenant-1', 5000.0, 'LN-0001');
@@ -94,7 +94,7 @@ test('recordLoanOpened creates identity and applies loan_opened event', function
 });
 
 test('multiple_loans_penalty fires when a second loan is opened', function () {
-    $crb  = crbService();
+    $crb = crbService();
     $hash = $crb->hash('200002/02/1', 'nrc');
 
     $crb->recordLoanOpened($hash, 'nrc', 'tenant-1', 5000.0, 'LN-0002');
@@ -108,7 +108,7 @@ test('multiple_loans_penalty fires when a second loan is opened', function () {
 });
 
 test('early repayment raises credit score', function () {
-    $crb  = crbService();
+    $crb = crbService();
     $hash = $crb->hash('300001/01/1', 'nrc');
 
     $crb->recordLoanOpened($hash, 'nrc', 'tenant-1', 2000.0, 'LN-EARLY');
@@ -123,7 +123,7 @@ test('early repayment raises credit score', function () {
 });
 
 test('late payment reduces credit score proportionally to DPD', function () {
-    $crb  = crbService();
+    $crb = crbService();
     $hash = $crb->hash('300002/01/1', 'nrc');
 
     $crb->recordLoanOpened($hash, 'nrc', 'tenant-1', 2000.0, 'LN-LATE');
@@ -137,7 +137,7 @@ test('late payment reduces credit score proportionally to DPD', function () {
 });
 
 test('completed loan decrements active count and adds loan_completed points', function () {
-    $crb  = crbService();
+    $crb = crbService();
     $hash = $crb->hash('300003/01/1', 'nrc');
 
     $crb->recordLoanOpened($hash, 'nrc', 'tenant-1', 2000.0, 'LN-COMP');
@@ -152,7 +152,7 @@ test('completed loan decrements active count and adds loan_completed points', fu
 });
 
 test('severe default reduces score significantly', function () {
-    $crb  = crbService();
+    $crb = crbService();
     $hash = $crb->hash('300004/01/1', 'nrc');
 
     $crb->recordLoanOpened($hash, 'nrc', 'tenant-1', 5000.0, 'LN-DEF');
@@ -166,7 +166,7 @@ test('severe default reduces score significantly', function () {
 });
 
 test('writeoff reduces active_loan_count and applies writeoff penalty', function () {
-    $crb  = crbService();
+    $crb = crbService();
     $hash = $crb->hash('300005/01/1', 'nrc');
 
     $crb->recordLoanOpened($hash, 'nrc', 'tenant-1', 5000.0, 'LN-WO');
@@ -182,15 +182,15 @@ test('writeoff reduces active_loan_count and applies writeoff penalty', function
 });
 
 test('score is clamped at 300 minimum', function () {
-    $crb  = crbService();
+    $crb = crbService();
     $hash = $crb->hash('CLAMP001', 'tpin');
 
     // Pre-set score near minimum
     CrbIdentity::create([
         'identity_hash' => $hash,
         'identity_type' => 'tpin',
-        'credit_score'  => 320,
-        'score_band'    => 'very_poor',
+        'credit_score' => 320,
+        'score_band' => 'very_poor',
     ]);
 
     // writeoff(-150) should not go below 300
@@ -201,16 +201,16 @@ test('score is clamped at 300 minimum', function () {
 });
 
 test('score is clamped at 850 maximum', function () {
-    $crb  = crbService();
+    $crb = crbService();
     $hash = $crb->hash('CLAMP002', 'tpin');
 
     CrbIdentity::create([
-        'identity_hash'    => $hash,
-        'identity_type'    => 'tpin',
-        'credit_score'     => 845,
-        'score_band'       => 'excellent',
-        'active_loan_count'=> 1,
-        'total_loans_taken'=> 1,
+        'identity_hash' => $hash,
+        'identity_type' => 'tpin',
+        'credit_score' => 845,
+        'score_band' => 'excellent',
+        'active_loan_count' => 1,
+        'total_loans_taken' => 1,
     ]);
 
     // early_repayment(+15) → 845 + 15 = 860 → clamped to 850
@@ -221,7 +221,7 @@ test('score is clamped at 850 maximum', function () {
 });
 
 test('recalculateFromEvents replays all events', function () {
-    $crb  = crbService();
+    $crb = crbService();
     $hash = $crb->hash('RECALC001', 'nrc');
 
     $crb->recordLoanOpened($hash, 'nrc', 'tenant-1', 2000.0, 'LN-R1');
@@ -241,7 +241,7 @@ test('recalculateFromEvents replays all events', function () {
 });
 
 test('score events are recorded with correct before/after values', function () {
-    $crb  = crbService();
+    $crb = crbService();
     $hash = $crb->hash('EVENTS001', 'nrc');
 
     $crb->recordLoanOpened($hash, 'nrc', 'tenant-1', 2000.0, 'LN-EV1');
@@ -260,14 +260,14 @@ test('score events are recorded with correct before/after values', function () {
 
 test('POST crb/check returns profile for known identifier', function () {
     $admin = crbAdmin();
-    $crb   = crbService();
+    $crb = crbService();
     $crb->recordLoanOpened(
-        $crb->hash('500001/01/1', 'nrc'), 'nrc', 'tenant-x', 3000.0, 'LN-API1'
+        $crb->hash('500001/01/1', 'nrc'), 'nrc', 'tenant-x', 3000.0, 'LN-API1',
     );
 
     $response = $this->actingAs($admin)
         ->postJson(route('api.v1.crb.check'), [
-            'type'  => 'nrc',
+            'type' => 'nrc',
             'value' => '500001/01/1',
         ])
         ->assertOk()
@@ -282,7 +282,7 @@ test('POST crb/check returns defaults for unknown identifier', function () {
 
     $this->actingAs($admin)
         ->postJson(route('api.v1.crb.check'), [
-            'type'  => 'nrc',
+            'type' => 'nrc',
             'value' => '999999/99/1',
         ])
         ->assertOk()
@@ -296,19 +296,19 @@ test('POST crb/check validates type field', function () {
 
     $this->actingAs($admin)
         ->postJson(route('api.v1.crb.check'), [
-            'type'  => 'passport',  // invalid
+            'type' => 'passport',  // invalid
             'value' => '12345',
         ])
         ->assertStatus(422);
 });
 
 test('GET borrowers/{borrower}/crb returns borrower CRB report', function () {
-    $admin    = crbAdmin();
+    $admin = crbAdmin();
     $borrower = crbBorrower(['national_id' => '600001/01/1']);
 
     $crb = crbService();
     $crb->recordLoanOpened(
-        $crb->hash('600001/01/1', 'nrc'), 'nrc', 'tenant-1', 4000.0, 'LN-BRW1'
+        $crb->hash('600001/01/1', 'nrc'), 'nrc', 'tenant-1', 4000.0, 'LN-BRW1',
     );
 
     $this->actingAs($admin)
@@ -319,12 +319,12 @@ test('GET borrowers/{borrower}/crb returns borrower CRB report', function () {
 });
 
 test('GET borrowers/{borrower}/crb returns 422 when borrower has no CRB identifier', function () {
-    $admin    = crbAdmin();
+    $admin = crbAdmin();
     $borrower = Borrower::factory()->create([
-        'national_id'       => null,
-        'tpin_number'       => null,
-        'company_reg_number'=> null,
-        'is_active'         => true,
+        'national_id' => null,
+        'tpin_number' => null,
+        'company_reg_number' => null,
+        'is_active' => true,
     ]);
 
     $this->actingAs($admin)
@@ -333,10 +333,10 @@ test('GET borrowers/{borrower}/crb returns 422 when borrower has no CRB identifi
 });
 
 test('POST borrowers/{borrower}/crb/recalculate recalculates the score', function () {
-    $admin    = crbAdmin();
+    $admin = crbAdmin();
     $borrower = crbBorrower(['national_id' => '700001/01/1']);
 
-    $crb  = crbService();
+    $crb = crbService();
     $hash = $crb->hash('700001/01/1', 'nrc');
     $crb->recordLoanOpened($hash, 'nrc', 'tenant-1', 2000.0, 'LN-REC1');
 
@@ -351,8 +351,8 @@ test('POST borrowers/{borrower}/crb/recalculate recalculates the score', functio
 
 test('GET crb/report/{hash} returns full report', function () {
     $admin = crbAdmin();
-    $crb   = crbService();
-    $hash  = $crb->hash('800001/01/1', 'nrc');
+    $crb = crbService();
+    $hash = $crb->hash('800001/01/1', 'nrc');
 
     $crb->recordLoanOpened($hash, 'nrc', 'tenant-1', 5000.0, 'LN-RPT1');
     $crb->recordPayment($hash, 'nrc', 'tenant-1', 'LN-RPT1', 0, true, true, 5000.0);
@@ -378,7 +378,7 @@ test('GET crb/report/{hash} returns success null for unknown hash', function () 
 // ─── Cross-tenant active loan detection ──────────────────────────────────────
 
 test('check shows has_active_loans true when another tenant opened a loan', function () {
-    $crb  = crbService();
+    $crb = crbService();
     $hash = $crb->hash('CROSS001/01/1', 'nrc');
 
     // Simulate a loan opened at tenant-A
@@ -393,7 +393,7 @@ test('check shows has_active_loans true when another tenant opened a loan', func
 });
 
 test('fullReport completion_rate is correct', function () {
-    $crb  = crbService();
+    $crb = crbService();
     $hash = $crb->hash('COMP-RATE-001', 'tpin');
 
     $crb->recordLoanOpened($hash, 'tpin', 'tenant-1', 1000.0, 'LN-C1');

@@ -23,12 +23,12 @@ class FundBalance extends Model
     protected function casts(): array
     {
         return [
-            'opening_balance'   => 'decimal:2',
-            'total_deposits'    => 'decimal:2',
-            'total_disbursed'   => 'decimal:2',
-            'total_repaid'      => 'decimal:2',
-            'total_penalties'   => 'decimal:2',
-            'total_expenses'    => 'decimal:2',
+            'opening_balance' => 'decimal:2',
+            'total_deposits' => 'decimal:2',
+            'total_disbursed' => 'decimal:2',
+            'total_repaid' => 'decimal:2',
+            'total_penalties' => 'decimal:2',
+            'total_expenses' => 'decimal:2',
             'available_balance' => 'decimal:2',
             'last_reconciled_at' => 'datetime',
         ];
@@ -40,14 +40,14 @@ class FundBalance extends Model
     public static function current(): static
     {
         return static::firstOrCreate([], [
-            'opening_balance'   => 0,
-            'total_deposits'    => 0,
-            'total_disbursed'   => 0,
-            'total_repaid'      => 0,
-            'total_penalties'   => 0,
-            'total_expenses'    => 0,
+            'opening_balance' => 0,
+            'total_deposits' => 0,
+            'total_disbursed' => 0,
+            'total_repaid' => 0,
+            'total_penalties' => 0,
+            'total_expenses' => 0,
             'available_balance' => 0,
-            'currency'          => 'ZMW',
+            'currency' => 'ZMW',
         ]);
     }
 }

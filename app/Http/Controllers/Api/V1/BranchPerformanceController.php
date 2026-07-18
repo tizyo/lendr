@@ -25,7 +25,7 @@ class BranchPerformanceController extends BaseApiController
 
         return $this->success([
             'branch' => ['id' => $branch->id, 'name' => $branch->name, 'code' => $branch->code],
-            'pnl'    => $this->svc->pnl($branch, $period),
+            'pnl' => $this->svc->pnl($branch, $period),
         ]);
     }
 
@@ -35,7 +35,7 @@ class BranchPerformanceController extends BaseApiController
     public function portfolio(Branch $branch): JsonResponse
     {
         return $this->success([
-            'branch'    => ['id' => $branch->id, 'name' => $branch->name, 'code' => $branch->code],
+            'branch' => ['id' => $branch->id, 'name' => $branch->name, 'code' => $branch->code],
             'portfolio' => $this->svc->portfolioHealth($branch),
         ]);
     }
@@ -48,8 +48,8 @@ class BranchPerformanceController extends BaseApiController
         $period = $request->get('period');
 
         return $this->success([
-            'branch'  => ['id' => $branch->id, 'name' => $branch->name, 'code' => $branch->code],
-            'officers'=> $this->svc->officerLeague($branch, $period),
+            'branch' => ['id' => $branch->id, 'name' => $branch->name, 'code' => $branch->code],
+            'officers' => $this->svc->officerLeague($branch, $period),
         ]);
     }
 }

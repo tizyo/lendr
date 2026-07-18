@@ -22,13 +22,13 @@ class PublicLoanProduct extends Model
     protected function casts(): array
     {
         return [
-            'min_amount'          => 'decimal:2',
-            'max_amount'          => 'decimal:2',
-            'interest_rate'       => 'decimal:4',
-            'processing_fee'      => 'decimal:4',
+            'min_amount' => 'decimal:2',
+            'max_amount' => 'decimal:2',
+            'interest_rate' => 'decimal:4',
+            'processing_fee' => 'decimal:4',
             'requires_collateral' => 'boolean',
-            'requires_guarantor'  => 'boolean',
-            'is_active'           => 'boolean',
+            'requires_guarantor' => 'boolean',
+            'is_active' => 'boolean',
         ];
     }
 

@@ -4,7 +4,6 @@ namespace App\Console\Commands\Migration;
 
 use App\Services\Migration\MigrationResult;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 
 /**
@@ -27,11 +26,11 @@ class MigrateDocumentsCommand extends BaseMigrationCommand
 
     public function handle(): int
     {
-        $svc        = $this->makeService();
-        $dryRun     = $this->isDryRun();
-        $errors     = [];
-        $migrated   = 0;
-        $skipped    = 0;
+        $svc = $this->makeService();
+        $dryRun = $this->isDryRun();
+        $errors = [];
+        $migrated = 0;
+        $skipped = 0;
         $sourcePath = $this->option('source-path') ?? '/var/www/vozara/uploads';
 
         // ── Inventory legacy files ─────────────────────────────────────────────
@@ -39,13 +38,13 @@ class MigrateDocumentsCommand extends BaseMigrationCommand
 
         if (! is_dir($sourcePath)) {
             $this->warn("Source path does not exist: {$sourcePath}. Skipping document migration.");
-            $this->warn("Set --source-path to the VOZARA uploads directory to enable this step.");
+            $this->warn('Set --source-path to the VOZARA uploads directory to enable this step.');
 
             return self::SUCCESS;
         }
 
         $files = new \RecursiveIteratorIterator(
-            new \RecursiveDirectoryIterator($sourcePath, \FilesystemIterator::SKIP_DOTS)
+            new \RecursiveDirectoryIterator($sourcePath, \FilesystemIterator::SKIP_DOTS),
         );
 
         $uploaded = [];
@@ -55,8 +54,8 @@ class MigrateDocumentsCommand extends BaseMigrationCommand
                 continue;
             }
 
-            $relativePath = str_replace($sourcePath . DIRECTORY_SEPARATOR, '', $file->getPathname());
-            $s3Key        = 'vozara-migration/' . str_replace('\\', '/', $relativePath);
+            $relativePath = str_replace($sourcePath.DIRECTORY_SEPARATOR, '', $file->getPathname());
+            $s3Key = 'vozara-migration/'.str_replace('\\', '/', $relativePath);
 
             // Check idempotency via migration_log using filename as legacy_ref
             if ($svc->alreadyMigrated('documents', 0)) {
@@ -70,6 +69,7 @@ class MigrateDocumentsCommand extends BaseMigrationCommand
 
                 if ($alreadyUploaded) {
                     $skipped++;
+
                     continue;
                 }
             }
@@ -79,13 +79,13 @@ class MigrateDocumentsCommand extends BaseMigrationCommand
                     Storage::disk('s3')->put($s3Key, file_get_contents($file->getPathname()));
 
                     DB::table('migration_log')->insert([
-                        'tenant_id'   => $svc->tenantId(),
-                        'table_name'  => 'documents',
-                        'legacy_id'   => null,
-                        'new_id'      => null,
-                        'legacy_ref'  => $s3Key,
-                        'status'      => 'success',
-                        'notes'       => "Uploaded to S3: {$s3Key}",
+                        'tenant_id' => $svc->tenantId(),
+                        'table_name' => 'documents',
+                        'legacy_id' => null,
+                        'new_id' => null,
+                        'legacy_ref' => $s3Key,
+                        'status' => 'success',
+                        'notes' => "Uploaded to S3: {$s3Key}",
                         'migrated_at' => now(),
                     ]);
 
@@ -95,13 +95,13 @@ class MigrateDocumentsCommand extends BaseMigrationCommand
             } catch (\Throwable $e) {
                 $errors[] = "file {$relativePath}: {$e->getMessage()}";
                 DB::table('migration_log')->insert([
-                    'tenant_id'   => $svc->tenantId(),
-                    'table_name'  => 'documents',
-                    'legacy_id'   => null,
-                    'new_id'      => null,
-                    'legacy_ref'  => $s3Key,
-                    'status'      => 'failed',
-                    'notes'       => $e->getMessage(),
+                    'tenant_id' => $svc->tenantId(),
+                    'table_name' => 'documents',
+                    'legacy_id' => null,
+                    'new_id' => null,
+                    'legacy_ref' => $s3Key,
+                    'status' => 'failed',
+                    'notes' => $e->getMessage(),
                     'migrated_at' => now(),
                 ]);
             }
@@ -119,12 +119,12 @@ class MigrateDocumentsCommand extends BaseMigrationCommand
         }
 
         $result = new MigrationResult(
-            step:     'documents',
+            step: 'documents',
             migrated: $migrated,
-            skipped:  $skipped,
-            failed:   count($errors),
-            dryRun:   $dryRun,
-            errors:   $errors,
+            skipped: $skipped,
+            failed: count($errors),
+            dryRun: $dryRun,
+            errors: $errors,
         );
 
         $this->printResult($result);
@@ -141,7 +141,7 @@ class MigrateDocumentsCommand extends BaseMigrationCommand
             // Heuristic: match by borrower_id and document_type in S3 key
             $match = collect($uploaded)->first(
                 fn ($key) => str_contains($key, (string) $doc->borrower_id)
-                          && str_contains(strtolower($key), str_replace('_', '-', $doc->document_type))
+                          && str_contains(strtolower($key), str_replace('_', '-', $doc->document_type)),
             );
 
             if ($match) {

@@ -43,11 +43,11 @@ class InterestAccrualController extends BaseApiController
     public function run(Request $request): JsonResponse
     {
         $data = $request->validate([
-            'date'    => ['nullable', 'date'],
+            'date' => ['nullable', 'date'],
             'dry_run' => ['nullable', 'boolean'],
         ]);
 
-        $date   = isset($data['date']) ? Carbon::parse($data['date']) : now()->subDay();
+        $date = isset($data['date']) ? Carbon::parse($data['date']) : now()->subDay();
         $dryRun = (bool) ($data['dry_run'] ?? false);
 
         $result = $this->service->accrueForDate($date, $dryRun);
@@ -60,43 +60,43 @@ class InterestAccrualController extends BaseApiController
      */
     public function summary(Request $request): JsonResponse
     {
-        $year  = (int) ($request->year ?? now()->year);
+        $year = (int) ($request->year ?? now()->year);
         $month = now()->month;
-        $rows  = $this->service->monthlySummary($year);
+        $rows = $this->service->monthlySummary($year);
 
-        $totalYear  = round(array_sum(array_column($rows, 'total_accrued')), 2);
+        $totalYear = round(array_sum(array_column($rows, 'total_accrued')), 2);
         $monthTotal = round((float) ($rows[$month - 1]['total_accrued'] ?? 0), 2);
 
-        $activeLoans    = LoanInterestAccrual::distinct('loan_id')->count('loan_id');
-        $nonPerforming  = LoanInterestAccrual::where('is_suspended', true)->distinct('loan_id')->count('loan_id');
+        $activeLoans = LoanInterestAccrual::distinct('loan_id')->count('loan_id');
+        $nonPerforming = LoanInterestAccrual::where('is_suspended', true)->distinct('loan_id')->count('loan_id');
 
         return $this->success([
-            'active_loans'        => $activeLoans,
+            'active_loans' => $activeLoans,
             'total_accrued_month' => $monthTotal,
-            'non_performing'      => $nonPerforming,
-            'total_accrued_all'   => $totalYear,
-            'year'                => $year,
-            'months'              => $rows,
-            'annual_total'        => $totalYear,
+            'non_performing' => $nonPerforming,
+            'total_accrued_all' => $totalYear,
+            'year' => $year,
+            'months' => $rows,
+            'annual_total' => $totalYear,
         ]);
     }
 
     private function format(LoanInterestAccrual $a): array
     {
-        $loan     = $a->relationLoaded('loan') ? $a->loan : null;
+        $loan = $a->relationLoaded('loan') ? $a->loan : null;
         $borrower = $loan?->relationLoaded('borrower') ? $loan->borrower : null;
 
         return [
-            'id'                    => $a->id,
-            'loan_id'               => $a->loan_id,
-            'loan_number'           => $loan?->loan_number,
-            'borrower_name'         => $borrower ? trim($borrower->first_name . ' ' . $borrower->last_name) : null,
-            'accrual_date'          => $a->accrual_date?->toDateString(),
+            'id' => $a->id,
+            'loan_id' => $a->loan_id,
+            'loan_number' => $loan?->loan_number,
+            'borrower_name' => $borrower ? trim($borrower->first_name.' '.$borrower->last_name) : null,
+            'accrual_date' => $a->accrual_date?->toDateString(),
             'principal_outstanding' => (float) $a->principal_outstanding,
-            'daily_rate'            => (float) $a->daily_rate,
-            'accrued_amount'        => (float) $a->accrued_amount,
-            'status'                => $a->status,
-            'is_non_performing'     => (bool) $a->is_suspended,
+            'daily_rate' => (float) $a->daily_rate,
+            'accrued_amount' => (float) $a->accrued_amount,
+            'status' => $a->status,
+            'is_non_performing' => (bool) $a->is_suspended,
         ];
     }
 }

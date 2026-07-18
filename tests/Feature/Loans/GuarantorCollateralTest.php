@@ -15,22 +15,22 @@ use App\Models\Tenant\User;
 function gcUser(): User
 {
     return User::factory()->create([
-        'role'      => UserRole::SuperAdmin,
+        'role' => UserRole::SuperAdmin,
         'is_active' => true,
     ]);
 }
 
 function gcLoan(): Loan
 {
-    $type     = LoanType::factory()->create();
-    $plan     = LoanPlan::factory()->create(['loan_type_id' => $type->id]);
+    $type = LoanType::factory()->create();
+    $plan = LoanPlan::factory()->create(['loan_type_id' => $type->id]);
     $borrower = Borrower::factory()->create();
 
     return Loan::factory()->create([
-        'borrower_id'  => $borrower->id,
+        'borrower_id' => $borrower->id,
         'loan_type_id' => $type->id,
         'loan_plan_id' => $plan->id,
-        'status'       => LoanStatus::Draft,
+        'status' => LoanStatus::Draft,
     ]);
 }
 
@@ -42,8 +42,8 @@ test('can list guarantors for a loan', function () {
 
     Guarantor::create([
         'loan_id' => $loan->id,
-        'name'    => 'Jane Mwila',
-        'phone'   => '0977000001',
+        'name' => 'Jane Mwila',
+        'phone' => '0977000001',
     ]);
 
     $this->actingAs($user)
@@ -58,10 +58,10 @@ test('can add a guarantor to a loan', function () {
 
     $this->actingAs($user)
         ->postJson(route('api.v1.loans.guarantors.store', $loan->id), [
-            'name'         => 'John Banda',
-            'phone'        => '0966123456',
+            'name' => 'John Banda',
+            'phone' => '0966123456',
             'relationship' => 'Spouse',
-            'employer'     => 'ZRA',
+            'employer' => 'ZRA',
             'monthly_income' => 12000,
         ])
         ->assertCreated()
@@ -82,8 +82,8 @@ test('guarantor name is required', function () {
 });
 
 test('can update a guarantor status to approved', function () {
-    $user      = gcUser();
-    $loan      = gcLoan();
+    $user = gcUser();
+    $loan = gcLoan();
     $guarantor = Guarantor::create(['loan_id' => $loan->id, 'name' => 'Test Person']);
 
     $this->actingAs($user)
@@ -97,8 +97,8 @@ test('can update a guarantor status to approved', function () {
 });
 
 test('can delete a guarantor', function () {
-    $user      = gcUser();
-    $loan      = gcLoan();
+    $user = gcUser();
+    $loan = gcLoan();
     $guarantor = Guarantor::create(['loan_id' => $loan->id, 'name' => 'Delete Me']);
 
     $this->actingAs($user)
@@ -128,8 +128,8 @@ test('can list collateral items for a loan', function () {
     $loan = gcLoan();
 
     CollateralItem::create([
-        'loan_id'     => $loan->id,
-        'type'        => 'vehicle',
+        'loan_id' => $loan->id,
+        'type' => 'vehicle',
         'description' => 'Toyota Hilux 2020',
     ]);
 
@@ -145,10 +145,10 @@ test('can add a collateral item to a loan', function () {
 
     $this->actingAs($user)
         ->postJson(route('api.v1.loans.collateral.store', $loan->id), [
-            'type'            => 'property',
-            'description'     => 'House Plot 123, Lusaka',
+            'type' => 'property',
+            'description' => 'House Plot 123, Lusaka',
             'estimated_value' => 500000,
-            'location'        => 'Lusaka, Zambia',
+            'location' => 'Lusaka, Zambia',
         ])
         ->assertCreated()
         ->assertJsonPath('data.description', 'House Plot 123, Lusaka')
@@ -175,7 +175,7 @@ test('collateral type must be a valid enum value', function () {
 
     $this->actingAs($user)
         ->postJson(route('api.v1.loans.collateral.store', $loan->id), [
-            'type'        => 'crypto',
+            'type' => 'crypto',
             'description' => 'Bitcoin wallet',
         ])
         ->assertUnprocessable()
@@ -186,14 +186,14 @@ test('can update a collateral item status to verified', function () {
     $user = gcUser();
     $loan = gcLoan();
     $item = CollateralItem::create([
-        'loan_id'     => $loan->id,
-        'type'        => 'land',
+        'loan_id' => $loan->id,
+        'type' => 'land',
         'description' => 'Farm land 5 hectares',
     ]);
 
     $this->actingAs($user)
         ->putJson(route('api.v1.collateral.update', $item->id), [
-            'status'         => 'verified',
+            'status' => 'verified',
             'assessed_value' => 250000,
             'assessment_date' => now()->toDateString(),
         ])
@@ -208,8 +208,8 @@ test('can delete a collateral item', function () {
     $user = gcUser();
     $loan = gcLoan();
     $item = CollateralItem::create([
-        'loan_id'     => $loan->id,
-        'type'        => 'equipment',
+        'loan_id' => $loan->id,
+        'type' => 'equipment',
         'description' => 'Industrial Generator',
     ]);
 
@@ -243,8 +243,8 @@ test('a loan can have multiple guarantors and collateral items', function () {
 });
 
 test('guarantors are soft deleted and excluded from index', function () {
-    $user      = gcUser();
-    $loan      = gcLoan();
+    $user = gcUser();
+    $loan = gcLoan();
     $guarantor = Guarantor::create(['loan_id' => $loan->id, 'name' => 'Soft Delete Test']);
 
     $guarantor->delete();

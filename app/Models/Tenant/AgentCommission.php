@@ -22,9 +22,9 @@ class AgentCommission extends Model
     protected function casts(): array
     {
         return [
-            'disbursed_amount'  => 'decimal:2',
+            'disbursed_amount' => 'decimal:2',
             'commission_amount' => 'decimal:2',
-            'paid_date'         => 'date',
+            'paid_date' => 'date',
         ];
     }
 

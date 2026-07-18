@@ -3,11 +3,11 @@
 namespace App\Services;
 
 use App\Models\Landlord\GhostUser;
-use Illuminate\Support\Str;
 
 class GhostUserService
 {
     private const OTP_TTL_MINUTES = 10;
+
     private const OTP_LENGTH = 6;
 
     /**
@@ -30,9 +30,9 @@ class GhostUserService
         $otp = str_pad((string) random_int(0, 999999), self::OTP_LENGTH, '0', STR_PAD_LEFT);
 
         $user->update([
-            'otp_code'       => $otp,
+            'otp_code' => $otp,
             'otp_expires_at' => now()->addMinutes(self::OTP_TTL_MINUTES),
-            'otp_attempts'   => 0,
+            'otp_attempts' => 0,
         ]);
 
         return $otp;
@@ -57,9 +57,9 @@ class GhostUserService
         // Clear OTP and mark verified
         $user->update([
             'is_phone_verified' => true,
-            'otp_code'          => null,
-            'otp_expires_at'    => null,
-            'otp_attempts'      => 0,
+            'otp_code' => null,
+            'otp_expires_at' => null,
+            'otp_attempts' => 0,
         ]);
 
         return true;
@@ -131,6 +131,6 @@ class GhostUserService
 
     public function hash(string $value, string $type): string
     {
-        return hash('sha256', strtolower($type) . ':' . strtolower(trim($value)));
+        return hash('sha256', strtolower($type).':'.strtolower(trim($value)));
     }
 }

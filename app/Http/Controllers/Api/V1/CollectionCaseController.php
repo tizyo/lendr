@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Api\V1;
 use App\Models\Tenant\CollectionCase;
 use App\Models\Tenant\EscalationRule;
 use App\Models\Tenant\Loan;
-use App\Models\Tenant\PromiseToPay;
 use App\Services\CollectionAutomationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -20,49 +19,52 @@ class CollectionCaseController extends BaseApiController
     public function rules(): JsonResponse
     {
         return $this->success(EscalationRule::orderBy('dpd_threshold')->get()->map(fn ($r) => [
-            'id'            => $r->id,
-            'name'          => $r->name,
+            'id' => $r->id,
+            'name' => $r->name,
             'dpd_threshold' => $r->dpd_threshold,
-            'action'        => $r->action,
-            'assigned_to'   => $r->assigned_to,
-            'is_active'     => $r->is_active,
-            'sort_order'    => $r->sort_order,
+            'action' => $r->action,
+            'assigned_to' => $r->assigned_to,
+            'is_active' => $r->is_active,
+            'sort_order' => $r->sort_order,
         ]));
     }
 
     public function storeRule(Request $request): JsonResponse
     {
         $data = $request->validate([
-            'name'          => ['required', 'string', 'max:150'],
+            'name' => ['required', 'string', 'max:150'],
             'dpd_threshold' => ['required', 'integer', 'min:1'],
-            'action'        => ['required', Rule::in(['assign_collector', 'field_visit', 'legal_action', 'write_off_notice'])],
-            'assigned_to'   => ['nullable', 'exists:users,id'],
-            'is_active'     => ['sometimes', 'boolean'],
-            'sort_order'    => ['sometimes', 'integer', 'min:0'],
+            'action' => ['required', Rule::in(['assign_collector', 'field_visit', 'legal_action', 'write_off_notice'])],
+            'assigned_to' => ['nullable', 'exists:users,id'],
+            'is_active' => ['sometimes', 'boolean'],
+            'sort_order' => ['sometimes', 'integer', 'min:0'],
         ]);
 
         $rule = EscalationRule::create($data);
+
         return $this->success(['id' => $rule->id, 'name' => $rule->name], 'Escalation rule created.', 201);
     }
 
     public function updateRule(Request $request, EscalationRule $rule): JsonResponse
     {
         $data = $request->validate([
-            'name'          => ['sometimes', 'string', 'max:150'],
+            'name' => ['sometimes', 'string', 'max:150'],
             'dpd_threshold' => ['sometimes', 'integer', 'min:1'],
-            'action'        => ['sometimes', Rule::in(['assign_collector', 'field_visit', 'legal_action', 'write_off_notice'])],
-            'assigned_to'   => ['nullable', 'exists:users,id'],
-            'is_active'     => ['sometimes', 'boolean'],
-            'sort_order'    => ['sometimes', 'integer', 'min:0'],
+            'action' => ['sometimes', Rule::in(['assign_collector', 'field_visit', 'legal_action', 'write_off_notice'])],
+            'assigned_to' => ['nullable', 'exists:users,id'],
+            'is_active' => ['sometimes', 'boolean'],
+            'sort_order' => ['sometimes', 'integer', 'min:0'],
         ]);
 
         $rule->update($data);
+
         return $this->success(['id' => $rule->id], 'Rule updated.');
     }
 
     public function destroyRule(EscalationRule $rule): JsonResponse
     {
         $rule->delete();
+
         return $this->success(null, 'Rule deleted.');
     }
 
@@ -82,15 +84,16 @@ class CollectionCaseController extends BaseApiController
     public function show(CollectionCase $collectionCase): JsonResponse
     {
         $collectionCase->load(['loan', 'borrower', 'assignedTo', 'escalationRule', 'promises']);
+
         return $this->success($this->formatCase($collectionCase));
     }
 
     public function update(Request $request, CollectionCase $collectionCase): JsonResponse
     {
         $data = $request->validate([
-            'status'      => ['sometimes', Rule::in(['open', 'promised', 'escalated', 'resolved', 'closed'])],
+            'status' => ['sometimes', Rule::in(['open', 'promised', 'escalated', 'resolved', 'closed'])],
             'assigned_to' => ['nullable', 'exists:users,id'],
-            'notes'       => ['nullable', 'string'],
+            'notes' => ['nullable', 'string'],
         ]);
 
         if (isset($data['status']) && in_array($data['status'], ['resolved', 'closed'])) {
@@ -98,6 +101,7 @@ class CollectionCaseController extends BaseApiController
         }
 
         $collectionCase->update($data);
+
         return $this->success($this->formatCase($collectionCase->fresh()), 'Case updated.');
     }
 
@@ -118,30 +122,30 @@ class CollectionCaseController extends BaseApiController
     public function promises(CollectionCase $collectionCase): JsonResponse
     {
         return $this->success($collectionCase->promises()->latest()->get()->map(fn ($p) => [
-            'id'             => $p->id,
-            'promise_date'   => $p->promise_date->toDateString(),
+            'id' => $p->id,
+            'promise_date' => $p->promise_date->toDateString(),
             'promise_amount' => (float) $p->promise_amount,
-            'status'         => $p->status,
-            'notes'          => $p->notes,
-            'created_at'     => $p->created_at->toIso8601String(),
+            'status' => $p->status,
+            'notes' => $p->notes,
+            'created_at' => $p->created_at->toIso8601String(),
         ]));
     }
 
     public function storePromise(Request $request, CollectionCase $collectionCase): JsonResponse
     {
         $data = $request->validate([
-            'promise_date'   => ['required', 'date', 'after:today'],
+            'promise_date' => ['required', 'date', 'after:today'],
             'promise_amount' => ['required', 'numeric', 'min:0.01'],
-            'notes'          => ['nullable', 'string', 'max:500'],
+            'notes' => ['nullable', 'string', 'max:500'],
         ]);
 
         $promise = $collectionCase->promises()->create([
-            'loan_id'        => $collectionCase->loan_id,
-            'promise_date'   => $data['promise_date'],
+            'loan_id' => $collectionCase->loan_id,
+            'promise_date' => $data['promise_date'],
             'promise_amount' => $data['promise_amount'],
-            'notes'          => $data['notes'] ?? null,
-            'status'         => 'pending',
-            'created_by'     => $request->user()->id,
+            'notes' => $data['notes'] ?? null,
+            'status' => 'pending',
+            'created_by' => $request->user()->id,
         ]);
 
         // Update case status to promised
@@ -155,26 +159,26 @@ class CollectionCaseController extends BaseApiController
     private function formatCase(CollectionCase $c): array
     {
         return [
-            'id'                 => $c->id,
-            'status'             => $c->status,
-            'action_taken'       => $c->action_taken,
-            'dpd_at_creation'    => $c->dpd_at_creation,
-            'notes'              => $c->notes,
-            'resolved_at'        => $c->resolved_at?->toIso8601String(),
-            'created_at'         => $c->created_at->toIso8601String(),
-            'loan'               => $c->relationLoaded('loan') && $c->loan ? [
-                'id'                  => $c->loan->id,
-                'loan_number'         => $c->loan->loan_number,
+            'id' => $c->id,
+            'status' => $c->status,
+            'action_taken' => $c->action_taken,
+            'dpd_at_creation' => $c->dpd_at_creation,
+            'notes' => $c->notes,
+            'resolved_at' => $c->resolved_at?->toIso8601String(),
+            'created_at' => $c->created_at->toIso8601String(),
+            'loan' => $c->relationLoaded('loan') && $c->loan ? [
+                'id' => $c->loan->id,
+                'loan_number' => $c->loan->loan_number,
                 'outstanding_balance' => (float) $c->loan->outstanding_balance,
             ] : null,
             'outstanding_balance' => $c->relationLoaded('loan') && $c->loan ? (float) $c->loan->outstanding_balance : null,
-            'borrower'           => $c->relationLoaded('borrower') && $c->borrower ? [
-                'id'        => $c->borrower->id,
+            'borrower' => $c->relationLoaded('borrower') && $c->borrower ? [
+                'id' => $c->borrower->id,
                 'full_name' => $c->borrower->full_name,
             ] : null,
-            'assigned_to'        => $c->relationLoaded('assignedTo') ? $c->assignedTo?->name : null,
-            'escalation_rule'    => $c->relationLoaded('escalationRule') ? $c->escalationRule?->name : null,
-            'promise_count'      => $c->relationLoaded('promises') ? $c->promises->count() : null,
+            'assigned_to' => $c->relationLoaded('assignedTo') ? $c->assignedTo?->name : null,
+            'escalation_rule' => $c->relationLoaded('escalationRule') ? $c->escalationRule?->name : null,
+            'promise_count' => $c->relationLoaded('promises') ? $c->promises->count() : null,
         ];
     }
 }

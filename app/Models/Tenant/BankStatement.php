@@ -17,7 +17,7 @@ class BankStatement extends Model
     {
         return [
             'statement_from' => 'date',
-            'statement_to'   => 'date',
+            'statement_to' => 'date',
         ];
     }
 

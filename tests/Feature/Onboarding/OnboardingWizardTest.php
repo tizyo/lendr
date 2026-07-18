@@ -15,7 +15,7 @@ function onboardAdmin(): User
 // ─── Service unit tests ───────────────────────────────────────────────────────
 
 test('progress seeds all 6 steps on first call', function () {
-    $svc      = app(TenantOnboardingService::class);
+    $svc = app(TenantOnboardingService::class);
     $progress = $svc->progress();
 
     expect($progress['total_steps'])->toBe(6)
@@ -33,7 +33,7 @@ test('progress is idempotent — calling twice does not duplicate', function () 
 
 test('complete marks a step done', function () {
     $admin = onboardAdmin();
-    $svc   = app(TenantOnboardingService::class);
+    $svc = app(TenantOnboardingService::class);
     $svc->progress(); // seed
 
     $result = $svc->complete('configure_settings', $admin);
@@ -46,7 +46,7 @@ test('complete marks a step done', function () {
 
 test('complete returns false for already completed step', function () {
     $admin = onboardAdmin();
-    $svc   = app(TenantOnboardingService::class);
+    $svc = app(TenantOnboardingService::class);
     $svc->progress();
     $svc->complete('configure_settings', $admin);
 
@@ -56,7 +56,7 @@ test('complete returns false for already completed step', function () {
 
 test('complete returns false for unknown key', function () {
     $admin = onboardAdmin();
-    $svc   = app(TenantOnboardingService::class);
+    $svc = app(TenantOnboardingService::class);
     $svc->progress();
 
     $result = $svc->complete('non_existent_step', $admin);
@@ -65,7 +65,7 @@ test('complete returns false for unknown key', function () {
 
 test('reset clears a completed step', function () {
     $admin = onboardAdmin();
-    $svc   = app(TenantOnboardingService::class);
+    $svc = app(TenantOnboardingService::class);
     $svc->progress();
     $svc->complete('configure_settings', $admin);
 
@@ -76,8 +76,8 @@ test('reset clears a completed step', function () {
 });
 
 test('isComplete returns true when all required steps done', function () {
-    $admin    = onboardAdmin();
-    $svc      = app(TenantOnboardingService::class);
+    $admin = onboardAdmin();
+    $svc = app(TenantOnboardingService::class);
     $progress = $svc->progress();
 
     $requiredKeys = collect($progress['steps'])->where('is_required', true)->pluck('key');
@@ -90,7 +90,7 @@ test('isComplete returns true when all required steps done', function () {
 
 test('completion_pct increases as steps are completed', function () {
     $admin = onboardAdmin();
-    $svc   = app(TenantOnboardingService::class);
+    $svc = app(TenantOnboardingService::class);
 
     $before = $svc->progress()['completion_pct'];
     $svc->complete('configure_settings', $admin);

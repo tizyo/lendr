@@ -18,9 +18,28 @@ class CollectionCase extends Model
         return ['resolved_at' => 'datetime', 'dpd_at_creation' => 'integer'];
     }
 
-    public function loan(): BelongsTo      { return $this->belongsTo(Loan::class); }
-    public function borrower(): BelongsTo  { return $this->belongsTo(Borrower::class); }
-    public function assignedTo(): BelongsTo { return $this->belongsTo(User::class, 'assigned_to'); }
-    public function escalationRule(): BelongsTo { return $this->belongsTo(EscalationRule::class); }
-    public function promises(): HasMany    { return $this->hasMany(PromiseToPay::class); }
+    public function loan(): BelongsTo
+    {
+        return $this->belongsTo(Loan::class);
+    }
+
+    public function borrower(): BelongsTo
+    {
+        return $this->belongsTo(Borrower::class);
+    }
+
+    public function assignedTo(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'assigned_to');
+    }
+
+    public function escalationRule(): BelongsTo
+    {
+        return $this->belongsTo(EscalationRule::class);
+    }
+
+    public function promises(): HasMany
+    {
+        return $this->hasMany(PromiseToPay::class);
+    }
 }

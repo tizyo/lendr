@@ -14,11 +14,11 @@ function calendarAdmin(): User
 function makeEvent(array $attrs = []): ComplianceEvent
 {
     return ComplianceEvent::create(array_merge([
-        'title'     => 'Test Event ' . rand(100, 999),
-        'category'  => 'regulatory',
-        'due_date'  => now()->addDays(10)->toDateString(),
+        'title' => 'Test Event '.rand(100, 999),
+        'category' => 'regulatory',
+        'due_date' => now()->addDays(10)->toDateString(),
         'frequency' => 'once',
-        'status'    => 'pending',
+        'status' => 'pending',
     ], $attrs));
 }
 
@@ -40,7 +40,7 @@ test('can create a compliance event', function () {
 
     $resp = $this->actingAs($admin)
         ->postJson(route('api.v1.compliance-events.store'), [
-            'title'    => 'Annual Audit',
+            'title' => 'Annual Audit',
             'category' => 'audit',
             'due_date' => now()->addMonths(2)->toDateString(),
             'frequency' => 'annually',
@@ -103,8 +103,8 @@ test('can complete a compliance event', function () {
 test('completing a recurring event spawns a next occurrence', function () {
     $admin = calendarAdmin();
     $event = makeEvent([
-        'title'     => 'Monthly Submission',
-        'due_date'  => now()->subDays(5)->toDateString(),  // past
+        'title' => 'Monthly Submission',
+        'due_date' => now()->subDays(5)->toDateString(),  // past
         'frequency' => 'monthly',
     ]);
 

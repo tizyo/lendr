@@ -19,7 +19,7 @@ class RegulatoryReportController extends BaseApiController
     {
         $data = $request->validate([
             'report_type' => ['required', 'in:car,liquidity,large_exposure,par'],
-            'period'      => ['required', 'string', 'max:20'], // e.g. '2026-03'
+            'period' => ['required', 'string', 'max:20'], // e.g. '2026-03'
         ]);
 
         $report = $this->reporting->generate($data['report_type'], $data['period']);
@@ -51,7 +51,7 @@ class RegulatoryReportController extends BaseApiController
     public function email(Request $request, RegulatoryReport $report): JsonResponse
     {
         $data = $request->validate([
-            'recipients'   => ['required', 'array', 'min:1'],
+            'recipients' => ['required', 'array', 'min:1'],
             'recipients.*' => ['email'],
         ]);
 
@@ -73,21 +73,21 @@ class RegulatoryReportController extends BaseApiController
     public function upsertConfig(Request $request): JsonResponse
     {
         $data = $request->validate([
-            'report_type'      => ['required', 'in:car,liquidity,large_exposure,par'],
-            'name'             => ['required', 'string', 'max:100'],
-            'frequency'        => ['required', 'in:monthly,quarterly,on_demand'],
+            'report_type' => ['required', 'in:car,liquidity,large_exposure,par'],
+            'name' => ['required', 'string', 'max:100'],
+            'frequency' => ['required', 'in:monthly,quarterly,on_demand'],
             'recipient_emails' => ['required', 'string'],
-            'is_active'        => ['boolean'],
+            'is_active' => ['boolean'],
         ]);
 
         $config = RegulatoryReportConfig::updateOrCreate(
             ['report_type' => $data['report_type']],
             [
-                'name'             => $data['name'],
-                'frequency'        => $data['frequency'],
+                'name' => $data['name'],
+                'frequency' => $data['frequency'],
                 'recipient_emails' => $data['recipient_emails'],
-                'is_active'        => $data['is_active'] ?? true,
-            ]
+                'is_active' => $data['is_active'] ?? true,
+            ],
         );
 
         return $this->success($this->formatConfig($config), 'Config saved.', 201);
@@ -98,27 +98,27 @@ class RegulatoryReportController extends BaseApiController
     private function format(RegulatoryReport $r): array
     {
         return [
-            'id'           => $r->id,
-            'report_type'  => $r->report_type,
-            'period'       => $r->period,
-            'data'         => $r->data,
+            'id' => $r->id,
+            'report_type' => $r->report_type,
+            'period' => $r->period,
+            'data' => $r->data,
             'generated_by' => $r->generated_by,
-            'emailed'      => $r->emailed,
-            'emailed_at'   => $r->emailed_at?->toDateTimeString(),
-            'created_at'   => $r->created_at?->toDateTimeString(),
+            'emailed' => $r->emailed,
+            'emailed_at' => $r->emailed_at?->toDateTimeString(),
+            'created_at' => $r->created_at?->toDateTimeString(),
         ];
     }
 
     private function formatConfig(RegulatoryReportConfig $c): array
     {
         return [
-            'id'               => $c->id,
-            'report_type'      => $c->report_type,
-            'name'             => $c->name,
-            'frequency'        => $c->frequency,
+            'id' => $c->id,
+            'report_type' => $c->report_type,
+            'name' => $c->name,
+            'frequency' => $c->frequency,
             'recipient_emails' => $c->recipient_emails,
-            'is_active'        => $c->is_active,
-            'last_sent_at'     => $c->last_sent_at?->toDateTimeString(),
+            'is_active' => $c->is_active,
+            'last_sent_at' => $c->last_sent_at?->toDateTimeString(),
         ];
     }
 }

@@ -36,11 +36,11 @@ class GlAccount extends Model
      */
     public function balance(): float
     {
-        $debits  = (float) $this->journalLines()->where('side', 'debit')->sum('amount');
+        $debits = (float) $this->journalLines()->where('side', 'debit')->sum('amount');
         $credits = (float) $this->journalLines()->where('side', 'credit')->sum('amount');
 
         return match ($this->type) {
-            'asset', 'expense'              => $debits - $credits,
+            'asset', 'expense' => $debits - $credits,
             'liability', 'equity', 'income' => $credits - $debits,
         };
     }

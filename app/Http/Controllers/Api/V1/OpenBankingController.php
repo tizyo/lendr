@@ -22,16 +22,16 @@ class OpenBankingController extends BaseApiController
             ->with(['plans' => fn ($q) => $q->where('is_active', true)])
             ->get()
             ->map(fn ($t) => [
-                'id'          => $t->id,
-                'name'        => $t->name,
+                'id' => $t->id,
+                'name' => $t->name,
                 'description' => $t->description ?? null,
-                'plans'       => $t->plans->map(fn ($p) => [
-                    'id'              => $p->id,
-                    'name'            => $p->name,
-                    'min_amount'      => (float) $p->min_amount,
-                    'max_amount'      => (float) $p->max_amount,
-                    'interest_rate'   => (float) $p->interest_rate,
-                    'tenure_unit'     => $p->tenure_type,
+                'plans' => $t->plans->map(fn ($p) => [
+                    'id' => $p->id,
+                    'name' => $p->name,
+                    'min_amount' => (float) $p->min_amount,
+                    'max_amount' => (float) $p->max_amount,
+                    'interest_rate' => (float) $p->interest_rate,
+                    'tenure_unit' => $p->tenure_type,
                 ]),
             ]);
 
@@ -45,14 +45,14 @@ class OpenBankingController extends BaseApiController
     public function applyLoan(Request $request): JsonResponse
     {
         $data = $request->validate([
-            'first_name'       => ['required', 'string', 'max:100'],
-            'last_name'        => ['nullable', 'string', 'max:100'],
-            'phone'            => ['required', 'string', 'max:20'],
-            'email'            => ['nullable', 'email'],
-            'loan_plan_id'     => ['required', 'integer', 'exists:loan_plans,id'],
-            'amount'           => ['required', 'numeric', 'min:1'],
-            'tenure'           => ['required', 'integer', 'min:1'],
-            'purpose'          => ['nullable', 'string', 'max:500'],
+            'first_name' => ['required', 'string', 'max:100'],
+            'last_name' => ['nullable', 'string', 'max:100'],
+            'phone' => ['required', 'string', 'max:20'],
+            'email' => ['nullable', 'email'],
+            'loan_plan_id' => ['required', 'integer', 'exists:loan_plans,id'],
+            'amount' => ['required', 'numeric', 'min:1'],
+            'tenure' => ['required', 'integer', 'min:1'],
+            'purpose' => ['nullable', 'string', 'max:500'],
         ]);
 
         $plan = LoanPlan::with('loanType')->findOrFail($data['loan_plan_id']);
@@ -61,37 +61,37 @@ class OpenBankingController extends BaseApiController
         $borrower = Borrower::firstOrCreate(
             ['phone' => $data['phone']],
             [
-                'first_name'      => $data['first_name'],
-                'last_name'       => $data['last_name'] ?? null,
-                'email'           => $data['email'] ?? null,
+                'first_name' => $data['first_name'],
+                'last_name' => $data['last_name'] ?? null,
+                'email' => $data['email'] ?? null,
                 'borrower_number' => Borrower::generateBorrowerNumber(),
-            ]
+            ],
         );
 
-        $reference = 'LN-EXT-' . strtoupper(Str::random(8));
+        $reference = 'LN-EXT-'.strtoupper(Str::random(8));
 
         $loan = Loan::create([
-            'borrower_id'      => $borrower->id,
-            'loan_type_id'     => $plan->loan_type_id,
-            'loan_plan_id'     => $plan->id,
-            'loan_number'      => $reference,
+            'borrower_id' => $borrower->id,
+            'loan_type_id' => $plan->loan_type_id,
+            'loan_plan_id' => $plan->id,
+            'loan_number' => $reference,
             'principal_amount' => $data['amount'],
             'outstanding_balance' => $data['amount'],
-            'interest_rate'    => $plan->interest_rate,
-            'interest_type'    => $plan->interest_type ?? 'flat',
-            'interest_period'  => $plan->interest_period ?? 'monthly',
-            'tenure'              => $data['tenure'],
-            'tenure_type'         => $plan->tenure_type ?? 'months',
-            'repayment_schedule'  => $plan->repayment_schedule ?? 'monthly',
-            'purpose'             => $data['purpose'] ?? null,
-            'status'              => 'submitted',
-            'application_date'    => now()->toDateString(),
+            'interest_rate' => $plan->interest_rate,
+            'interest_type' => $plan->interest_type ?? 'flat',
+            'interest_period' => $plan->interest_period ?? 'monthly',
+            'tenure' => $data['tenure'],
+            'tenure_type' => $plan->tenure_type ?? 'months',
+            'repayment_schedule' => $plan->repayment_schedule ?? 'monthly',
+            'purpose' => $data['purpose'] ?? null,
+            'status' => 'submitted',
+            'application_date' => now()->toDateString(),
         ]);
 
         return $this->success([
-            'reference'   => $reference,
-            'loan_id'     => $loan->id,
-            'status'      => $loan->status,
+            'reference' => $reference,
+            'loan_id' => $loan->id,
+            'status' => $loan->status,
             'borrower_id' => $borrower->id,
         ], 'Loan application submitted successfully.', 201);
     }
@@ -111,12 +111,12 @@ class OpenBankingController extends BaseApiController
         }
 
         return $this->success([
-            'reference'           => $loan->loan_number,
-            'status'              => $loan->status instanceof \BackedEnum ? $loan->status->value : $loan->status,
-            'principal_amount'    => (float) $loan->principal_amount,
+            'reference' => $loan->loan_number,
+            'status' => $loan->status instanceof \BackedEnum ? $loan->status->value : $loan->status,
+            'principal_amount' => (float) $loan->principal_amount,
             'outstanding_balance' => (float) $loan->outstanding_balance,
-            'application_date'    => $loan->application_date?->toDateString(),
-            'disbursement_date'   => $loan->disbursement_date?->toDateString(),
+            'application_date' => $loan->application_date?->toDateString(),
+            'disbursement_date' => $loan->disbursement_date?->toDateString(),
         ]);
     }
 
@@ -128,9 +128,9 @@ class OpenBankingController extends BaseApiController
     {
         $data = $request->validate([
             'loan_reference' => ['required', 'string'],
-            'amount'         => ['required', 'numeric', 'min:0.01'],
-            'phone'          => ['required', 'string'],
-            'notes'          => ['nullable', 'string', 'max:300'],
+            'amount' => ['required', 'numeric', 'min:0.01'],
+            'phone' => ['required', 'string'],
+            'notes' => ['nullable', 'string', 'max:300'],
         ]);
 
         $loan = Loan::where('loan_number', $data['loan_reference'])->first();
@@ -143,14 +143,14 @@ class OpenBankingController extends BaseApiController
             return $this->error('Loan is not active.', 422);
         }
 
-        $paymentRef = 'PAY-EXT-' . strtoupper(Str::random(8));
+        $paymentRef = 'PAY-EXT-'.strtoupper(Str::random(8));
 
         return $this->success([
             'payment_reference' => $paymentRef,
-            'loan_reference'    => $data['loan_reference'],
-            'amount'            => (float) $data['amount'],
-            'status'            => 'pending',
-            'message'           => 'Payment initiated. Use the reference to confirm.',
+            'loan_reference' => $data['loan_reference'],
+            'amount' => (float) $data['amount'],
+            'status' => 'pending',
+            'message' => 'Payment initiated. Use the reference to confirm.',
         ], 'Payment initiated.', 201);
     }
 }

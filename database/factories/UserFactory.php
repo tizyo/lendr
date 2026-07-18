@@ -20,16 +20,16 @@ class UserFactory extends Factory
     public function definition(): array
     {
         return [
-            'name'              => fake()->name(),
-            'email'             => fake()->unique()->safeEmail(),
-            'username'          => fake()->unique()->userName(),
-            'phone'             => '097'.fake()->numerify('#######'),
+            'name' => fake()->name(),
+            'email' => fake()->unique()->safeEmail(),
+            'username' => fake()->unique()->userName(),
+            'phone' => '097'.fake()->numerify('#######'),
             'email_verified_at' => now(),
-            'password'          => static::$password ??= Hash::make('password'),
-            'role'              => UserRole::LoanOfficer,
-            'is_active'         => true,
+            'password' => static::$password ??= Hash::make('password'),
+            'role' => UserRole::LoanOfficer,
+            'is_active' => true,
             'force_password_reset' => false,
-            'remember_token'    => Str::random(10),
+            'remember_token' => Str::random(10),
         ];
     }
 

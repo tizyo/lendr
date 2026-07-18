@@ -28,10 +28,10 @@ class MarketplaceListing extends Model
     protected function casts(): array
     {
         return [
-            'amount_requested'      => 'decimal:2',
+            'amount_requested' => 'decimal:2',
             'interest_rate_offered' => 'decimal:2',
-            'published_at'          => 'datetime',
-            'expires_at'            => 'datetime',
+            'published_at' => 'datetime',
+            'expires_at' => 'datetime',
         ];
     }
 

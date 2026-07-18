@@ -22,18 +22,18 @@ class RequiresPlanFeature
 {
     /** Human-readable labels for known feature keys. */
     private const LABELS = [
-        'pwa'                       => 'Borrower Self-Service PWA',
-        'custom_domain'             => 'Custom Domain',
-        'bulk_operations'           => 'Bulk Operations',
-        'advanced_reports'          => 'Advanced Reports',
-        'collection_management'     => 'Collection Management',
-        'marketplace'               => 'Marketplace',
+        'pwa' => 'Borrower Self-Service PWA',
+        'custom_domain' => 'Custom Domain',
+        'bulk_operations' => 'Bulk Operations',
+        'advanced_reports' => 'Advanced Reports',
+        'collection_management' => 'Collection Management',
+        'marketplace' => 'Marketplace',
         'disbursement_mobile_money' => 'Mobile Money Disbursement',
-        'tenant_website'            => 'Tenant Website',
-        'api_access'                => 'API Access',
-        'exchange_rates'            => 'Exchange Rates',
-        'audit_log'                 => 'Audit Log',
-        'two_factor_auth'           => 'Two-Factor Authentication',
+        'tenant_website' => 'Tenant Website',
+        'api_access' => 'API Access',
+        'exchange_rates' => 'Exchange Rates',
+        'audit_log' => 'Audit Log',
+        'two_factor_auth' => 'Two-Factor Authentication',
     ];
 
     public function handle(Request $request, Closure $next, string $feature): Response
@@ -53,9 +53,9 @@ class RequiresPlanFeature
         $featureLabel = self::LABELS[$feature] ?? ucwords(str_replace('_', ' ', $feature));
 
         return Inertia::render('upgrade/PremiumRequired', [
-            'feature'     => $featureLabel,
+            'feature' => $featureLabel,
             'currentPlan' => ucfirst($tenant->plan),
-            'tenantName'  => $tenant->name,
+            'tenantName' => $tenant->name,
         ])->toResponse($request)->setStatusCode(402);
     }
 }

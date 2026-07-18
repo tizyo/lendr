@@ -2,7 +2,6 @@
 
 namespace App\Services;
 
-use App\Models\Tenant\Loan;
 use App\Models\Tenant\LoanPenalty;
 use App\Models\Tenant\LoanSchedule;
 use App\Models\Tenant\User;
@@ -20,13 +19,14 @@ class PenaltyService
             ->with('loan')
             ->get();
 
-        $totalPenalty  = 0.0;
-        $applied       = 0;
-        $skipped       = 0;
+        $totalPenalty = 0.0;
+        $applied = 0;
+        $skipped = 0;
 
         foreach ($schedules as $schedule) {
             if (! $schedule->loan || ! in_array($schedule->loan->status->value, ['active', 'disbursed'])) {
                 $skipped++;
+
                 continue;
             }
 
@@ -37,6 +37,7 @@ class PenaltyService
 
             if ($exists) {
                 $skipped++;
+
                 continue;
             }
 
@@ -51,11 +52,11 @@ class PenaltyService
         }
 
         return [
-            'penalty_date'  => $date->toDateString(),
-            'applied'       => $applied,
-            'skipped'       => $skipped,
+            'penalty_date' => $date->toDateString(),
+            'applied' => $applied,
+            'skipped' => $skipped,
             'total_penalty' => round($totalPenalty, 2),
-            'dry_run'       => $dryRun,
+            'dry_run' => $dryRun,
         ];
     }
 
@@ -64,30 +65,30 @@ class PenaltyService
      */
     public function applyPenaltyForSchedule(LoanSchedule $schedule, Carbon $date, bool $dryRun = false): array
     {
-        $loan         = $schedule->loan;
-        $penaltyRate  = (float) ($loan->penalty_rate ?? 0);          // % per day
-        $overdueAmt   = (float) $schedule->outstanding;
-        $daysOverdue  = (int) \Carbon\Carbon::parse($schedule->due_date)->startOfDay()
-                            ->diffInDays($date->startOfDay());
-        $penaltyAmt   = round($overdueAmt * ($penaltyRate / 100), 2);
+        $loan = $schedule->loan;
+        $penaltyRate = (float) ($loan->penalty_rate ?? 0);          // % per day
+        $overdueAmt = (float) $schedule->outstanding;
+        $daysOverdue = (int) \Carbon\Carbon::parse($schedule->due_date)->startOfDay()
+            ->diffInDays($date->startOfDay());
+        $penaltyAmt = round($overdueAmt * ($penaltyRate / 100), 2);
 
         if (! $dryRun && $penaltyAmt > 0) {
             LoanPenalty::create([
-                'loan_id'       => $loan->id,
-                'schedule_id'   => $schedule->id,
-                'penalty_date'  => $date->toDateString(),
-                'days_overdue'  => $daysOverdue,
-                'penalty_rate'  => $penaltyRate,
+                'loan_id' => $loan->id,
+                'schedule_id' => $schedule->id,
+                'penalty_date' => $date->toDateString(),
+                'days_overdue' => $daysOverdue,
+                'penalty_rate' => $penaltyRate,
                 'overdue_amount' => $overdueAmt,
                 'penalty_amount' => $penaltyAmt,
-                'status'        => 'applied',
+                'status' => 'applied',
             ]);
         }
 
         return [
-            'loan_id'       => $loan->id,
-            'schedule_id'   => $schedule->id,
-            'days_overdue'  => $daysOverdue,
+            'loan_id' => $loan->id,
+            'schedule_id' => $schedule->id,
+            'days_overdue' => $daysOverdue,
             'penalty_amount' => $penaltyAmt,
         ];
     }
@@ -100,11 +101,11 @@ class PenaltyService
         $waived = min($amount, (float) $penalty->penalty_amount);
 
         $penalty->update([
-            'waived_amount'  => $waived,
-            'waived_by'      => $user->id,
-            'waived_at'      => now(),
-            'waiver_reason'  => $reason,
-            'status'         => $waived >= (float) $penalty->penalty_amount ? 'waived' : 'applied',
+            'waived_amount' => $waived,
+            'waived_by' => $user->id,
+            'waived_at' => now(),
+            'waiver_reason' => $reason,
+            'status' => $waived >= (float) $penalty->penalty_amount ? 'waived' : 'applied',
         ]);
 
         return $penalty->fresh();

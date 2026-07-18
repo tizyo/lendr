@@ -115,16 +115,16 @@ return [
 
         // ── VOZARA legacy database (read-only during migration) ────────────────
         'vozara' => [
-            'driver'    => 'mysql',
-            'host'      => env('VOZARA_DB_HOST', '127.0.0.1'),
-            'port'      => env('VOZARA_DB_PORT', '3306'),
-            'database'  => env('VOZARA_DB_DATABASE', 'vozara'),
-            'username'  => env('VOZARA_DB_USERNAME', 'root'),
-            'password'  => env('VOZARA_DB_PASSWORD', ''),
-            'charset'   => 'utf8mb4',
+            'driver' => 'mysql',
+            'host' => env('VOZARA_DB_HOST', '127.0.0.1'),
+            'port' => env('VOZARA_DB_PORT', '3306'),
+            'database' => env('VOZARA_DB_DATABASE', 'vozara'),
+            'username' => env('VOZARA_DB_USERNAME', 'root'),
+            'password' => env('VOZARA_DB_PASSWORD', ''),
+            'charset' => 'utf8mb4',
             'collation' => 'utf8mb4_unicode_ci',
-            'prefix'    => '',
-            'strict'    => false, // VOZARA may have legacy data that violates strict mode
+            'prefix' => '',
+            'strict' => false, // VOZARA may have legacy data that violates strict mode
         ],
 
     ],

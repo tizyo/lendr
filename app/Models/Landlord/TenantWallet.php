@@ -30,10 +30,10 @@ class TenantWallet extends Model
     protected function casts(): array
     {
         return [
-            'metadata'         => 'array',
+            'metadata' => 'array',
             'disburse_enabled' => 'boolean',
-            'debit_enabled'    => 'boolean',
-            'is_active'        => 'boolean',
+            'debit_enabled' => 'boolean',
+            'is_active' => 'boolean',
         ];
     }
 
@@ -41,8 +41,14 @@ class TenantWallet extends Model
 
     public function getApiKeyAttribute(?string $value): ?string
     {
-        if (! $value) return null;
-        try { return decrypt($value); } catch (\Throwable) { return $value; }
+        if (! $value) {
+            return null;
+        }
+        try {
+            return decrypt($value);
+        } catch (\Throwable) {
+            return $value;
+        }
     }
 
     public function setApiKeyAttribute(?string $value): void
@@ -52,8 +58,14 @@ class TenantWallet extends Model
 
     public function getApiSecretAttribute(?string $value): ?string
     {
-        if (! $value) return null;
-        try { return decrypt($value); } catch (\Throwable) { return $value; }
+        if (! $value) {
+            return null;
+        }
+        try {
+            return decrypt($value);
+        } catch (\Throwable) {
+            return $value;
+        }
     }
 
     public function setApiSecretAttribute(?string $value): void
@@ -63,8 +75,14 @@ class TenantWallet extends Model
 
     public function getWebhookSecretAttribute(?string $value): ?string
     {
-        if (! $value) return null;
-        try { return decrypt($value); } catch (\Throwable) { return $value; }
+        if (! $value) {
+            return null;
+        }
+        try {
+            return decrypt($value);
+        } catch (\Throwable) {
+            return $value;
+        }
     }
 
     public function setWebhookSecretAttribute(?string $value): void

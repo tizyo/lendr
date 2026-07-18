@@ -20,14 +20,14 @@ function pdfAdmin(): User
 function pdfLoan(array $attrs = []): Loan
 {
     $borrower = Borrower::factory()->create();
-    $type     = LoanType::first() ?? LoanType::factory()->create();
-    $plan     = LoanPlan::first() ?? LoanPlan::factory()->create(['loan_type_id' => $type->id]);
+    $type = LoanType::first() ?? LoanType::factory()->create();
+    $plan = LoanPlan::first() ?? LoanPlan::factory()->create(['loan_type_id' => $type->id]);
 
     return Loan::factory()->create(array_merge([
-        'borrower_id'      => $borrower->id,
-        'loan_type_id'     => $type->id,
-        'loan_plan_id'     => $plan->id,
-        'status'           => LoanStatus::Active,
+        'borrower_id' => $borrower->id,
+        'loan_type_id' => $type->id,
+        'loan_plan_id' => $plan->id,
+        'status' => LoanStatus::Active,
         'disbursement_date' => now()->subDays(30)->toDateString(),
     ], $attrs));
 }
@@ -35,9 +35,9 @@ function pdfLoan(array $attrs = []): Loan
 function pdfPayment(Loan $loan, User $admin): Payment
 {
     return Payment::factory()->create([
-        'loan_id'     => $loan->id,
+        'loan_id' => $loan->id,
         'recorded_by' => $admin->id,
-        'amount'      => 1000,
+        'amount' => 1000,
         'payment_date' => now()->toDateString(),
         'payment_method' => PaymentMethod::Cash,
     ]);
@@ -47,7 +47,7 @@ function pdfPayment(Loan $loan, User $admin): Payment
 
 test('loan agreement PDF returns PDF content-type', function () {
     $admin = pdfAdmin();
-    $loan  = pdfLoan();
+    $loan = pdfLoan();
 
     $resp = $this->actingAs($admin, 'web')
         ->get(route('loans.pdf.agreement', $loan));
@@ -57,7 +57,7 @@ test('loan agreement PDF returns PDF content-type', function () {
 
 test('repayment schedule PDF can be generated', function () {
     $admin = pdfAdmin();
-    $loan  = pdfLoan();
+    $loan = pdfLoan();
 
     $resp = $this->actingAs($admin, 'web')
         ->get(route('loans.pdf.schedule', $loan));
@@ -66,8 +66,8 @@ test('repayment schedule PDF can be generated', function () {
 })->group('pdf');
 
 test('payment receipt PDF can be generated', function () {
-    $admin   = pdfAdmin();
-    $loan    = pdfLoan();
+    $admin = pdfAdmin();
+    $loan = pdfLoan();
     $payment = pdfPayment($loan, $admin);
 
     $resp = $this->actingAs($admin, 'web')
@@ -77,7 +77,7 @@ test('payment receipt PDF can be generated', function () {
 })->group('pdf');
 
 test('account statement PDF can be generated', function () {
-    $admin    = pdfAdmin();
+    $admin = pdfAdmin();
     $borrower = Borrower::factory()->create();
 
     $resp = $this->actingAs($admin, 'web')
@@ -88,7 +88,7 @@ test('account statement PDF can be generated', function () {
 
 test('disbursement letter PDF can be generated', function () {
     $admin = pdfAdmin();
-    $loan  = pdfLoan(['status' => LoanStatus::Disbursed]);
+    $loan = pdfLoan(['status' => LoanStatus::Disbursed]);
 
     $resp = $this->actingAs($admin, 'web')
         ->get(route('loans.pdf.disbursement', $loan));

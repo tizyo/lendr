@@ -18,26 +18,26 @@ function guarantorAdmin(): User
 
 function guarantorLoan(): Loan
 {
-    $type     = LoanType::first() ?? LoanType::factory()->create();
-    $plan     = LoanPlan::first() ?? LoanPlan::factory()->create(['loan_type_id' => $type->id]);
+    $type = LoanType::first() ?? LoanType::factory()->create();
+    $plan = LoanPlan::first() ?? LoanPlan::factory()->create(['loan_type_id' => $type->id]);
     $borrower = Borrower::factory()->create();
 
     return Loan::factory()->create([
-        'borrower_id'  => $borrower->id,
+        'borrower_id' => $borrower->id,
         'loan_type_id' => $type->id,
         'loan_plan_id' => $plan->id,
-        'status'       => LoanStatus::Active,
+        'status' => LoanStatus::Active,
     ]);
 }
 
 function makeGuarantor(Loan $loan, array $attrs = []): Guarantor
 {
     return $loan->guarantors()->create(array_merge([
-        'name'           => 'John Guarantor',
-        'phone'          => '0977'.rand(100000, 999999),
-        'relationship'   => 'spouse',
+        'name' => 'John Guarantor',
+        'phone' => '0977'.rand(100000, 999999),
+        'relationship' => 'spouse',
         'monthly_income' => 3000.00,
-        'status'         => 'pending',
+        'status' => 'pending',
     ], $attrs));
 }
 
@@ -45,7 +45,7 @@ function makeGuarantor(Loan $loan, array $attrs = []): Guarantor
 
 test('can list guarantors for a loan', function () {
     $admin = guarantorAdmin();
-    $loan  = guarantorLoan();
+    $loan = guarantorLoan();
 
     makeGuarantor($loan);
     makeGuarantor($loan, ['name' => 'Jane Guarantor']);
@@ -59,13 +59,13 @@ test('can list guarantors for a loan', function () {
 
 test('can add a guarantor to a loan', function () {
     $admin = guarantorAdmin();
-    $loan  = guarantorLoan();
+    $loan = guarantorLoan();
 
     $resp = $this->actingAs($admin)
         ->postJson(route('api.v1.loans.guarantors.store', $loan), [
-            'name'           => 'Mary Guarantor',
-            'phone'          => '0977100001',
-            'relationship'   => 'parent',
+            'name' => 'Mary Guarantor',
+            'phone' => '0977100001',
+            'relationship' => 'parent',
             'monthly_income' => 5000,
         ])
         ->assertCreated();
@@ -77,8 +77,8 @@ test('can add a guarantor to a loan', function () {
 });
 
 test('can show a single guarantor', function () {
-    $admin     = guarantorAdmin();
-    $loan      = guarantorLoan();
+    $admin = guarantorAdmin();
+    $loan = guarantorLoan();
     $guarantor = makeGuarantor($loan);
 
     $resp = $this->actingAs($admin)
@@ -90,14 +90,14 @@ test('can show a single guarantor', function () {
 });
 
 test('can update a guarantor', function () {
-    $admin     = guarantorAdmin();
-    $loan      = guarantorLoan();
+    $admin = guarantorAdmin();
+    $loan = guarantorLoan();
     $guarantor = makeGuarantor($loan);
 
     $resp = $this->actingAs($admin)
         ->putJson(route('api.v1.guarantors.update', $guarantor), [
             'status' => 'approved',
-            'notes'  => 'Verified in person.',
+            'notes' => 'Verified in person.',
         ])
         ->assertOk();
 
@@ -106,8 +106,8 @@ test('can update a guarantor', function () {
 });
 
 test('can delete a guarantor', function () {
-    $admin     = guarantorAdmin();
-    $loan      = guarantorLoan();
+    $admin = guarantorAdmin();
+    $loan = guarantorLoan();
     $guarantor = makeGuarantor($loan);
 
     $this->actingAs($admin)
@@ -119,7 +119,7 @@ test('can delete a guarantor', function () {
 
 test('store validates required name', function () {
     $admin = guarantorAdmin();
-    $loan  = guarantorLoan();
+    $loan = guarantorLoan();
 
     $this->actingAs($admin)
         ->postJson(route('api.v1.loans.guarantors.store', $loan), [])
@@ -128,8 +128,8 @@ test('store validates required name', function () {
 });
 
 test('update validates status enum', function () {
-    $admin     = guarantorAdmin();
-    $loan      = guarantorLoan();
+    $admin = guarantorAdmin();
+    $loan = guarantorLoan();
     $guarantor = makeGuarantor($loan);
 
     $this->actingAs($admin)

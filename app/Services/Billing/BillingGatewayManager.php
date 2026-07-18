@@ -41,10 +41,10 @@ class BillingGatewayManager
     {
         return match ($config->gateway) {
             'flutterwave' => new FlutterwaveGateway($config),
-            'pawapay'     => new PawapayGateway($config),
-            'lipila'      => new LipilaGateway($config),
-            'stripe'      => new StripeGateway($config),
-            default       => throw new RuntimeException("Unknown billing gateway: {$config->gateway}"),
+            'pawapay' => new PawapayGateway($config),
+            'lipila' => new LipilaGateway($config),
+            'stripe' => new StripeGateway($config),
+            default => throw new RuntimeException("Unknown billing gateway: {$config->gateway}"),
         };
     }
 }

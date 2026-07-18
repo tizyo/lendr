@@ -23,9 +23,9 @@ class BorrowerInteraction extends Model
     protected function casts(): array
     {
         return [
-            'follow_up_date'  => 'date',
-            'amount_discussed'=> 'decimal:2',
-            'interaction_at'  => 'datetime',
+            'follow_up_date' => 'date',
+            'amount_discussed' => 'decimal:2',
+            'interaction_at' => 'datetime',
         ];
     }
 

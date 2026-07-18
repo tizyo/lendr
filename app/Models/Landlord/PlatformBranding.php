@@ -28,7 +28,7 @@ class PlatformBranding extends Model
     ];
 
     protected $attributes = [
-        'company_name'  => 'LENDR',
+        'company_name' => 'LENDR',
         'primary_color' => '#059669',
     ];
 
@@ -56,17 +56,17 @@ class PlatformBranding extends Model
         $b = static::current();
 
         return [
-            'company_name'   => $b?->company_name  ?? config('app.name', 'LENDR'),
-            'tagline'        => $b?->tagline        ?? null,
-            'address'        => $b?->address        ?? null,
-            'phone'          => $b?->phone          ?? null,
-            'email'          => $b?->email          ?? null,
-            'website'        => $b?->website        ?? null,
-            'logo_url'       => $b?->logoUrl(),
-            'favicon_url'    => $b?->faviconUrl(),
-            'primary_color'  => $b?->primary_color  ?? '#059669',
+            'company_name' => $b?->company_name ?? config('app.name', 'LENDR'),
+            'tagline' => $b?->tagline ?? null,
+            'address' => $b?->address ?? null,
+            'phone' => $b?->phone ?? null,
+            'email' => $b?->email ?? null,
+            'website' => $b?->website ?? null,
+            'logo_url' => $b?->logoUrl(),
+            'favicon_url' => $b?->faviconUrl(),
+            'primary_color' => $b?->primary_color ?? '#059669',
             'invoice_footer' => $b?->invoice_footer ?? null,
-            'email_footer'   => $b?->email_footer   ?? null,
+            'email_footer' => $b?->email_footer ?? null,
         ];
     }
 

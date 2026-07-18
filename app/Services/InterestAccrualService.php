@@ -18,10 +18,10 @@ class InterestAccrualService
             ->where('outstanding_balance', '>', 0)
             ->get();
 
-        $totalAccrued   = 0.0;
+        $totalAccrued = 0.0;
         $loansProcessed = 0;
         $loansSuspended = 0;
-        $skipped        = 0;
+        $skipped = 0;
 
         foreach ($loans as $loan) {
             // Skip if already accrued for this date
@@ -31,6 +31,7 @@ class InterestAccrualService
 
             if ($exists) {
                 $skipped++;
+
                 continue;
             }
 
@@ -45,12 +46,12 @@ class InterestAccrualService
         }
 
         return [
-            'accrual_date'   => $date->toDateString(),
+            'accrual_date' => $date->toDateString(),
             'loans_processed' => $loansProcessed,
             'loans_suspended' => $loansSuspended,
-            'skipped'        => $skipped,
-            'total_accrued'  => round($totalAccrued, 2),
-            'dry_run'        => $dryRun,
+            'skipped' => $skipped,
+            'total_accrued' => round($totalAccrued, 2),
+            'dry_run' => $dryRun,
         ];
     }
 
@@ -59,31 +60,31 @@ class InterestAccrualService
      */
     public function accrueForLoan(Loan $loan, Carbon $date, bool $dryRun = false): array
     {
-        $outstanding  = (float) $loan->outstanding_balance;
-        $annualRate   = (float) $loan->interest_rate;      // stored as % e.g. 24.00
-        $dailyRate    = round($annualRate / 365 / 100, 6); // decimal fraction
-        $accrued      = round($outstanding * $dailyRate, 2);
+        $outstanding = (float) $loan->outstanding_balance;
+        $annualRate = (float) $loan->interest_rate;      // stored as % e.g. 24.00
+        $dailyRate = round($annualRate / 365 / 100, 6); // decimal fraction
+        $accrued = round($outstanding * $dailyRate, 2);
 
         // Stage 3 (non-performing) → suspend accrual
         $isSuspended = $this->isNonPerforming($loan);
 
         if (! $dryRun) {
             LoanInterestAccrual::create([
-                'loan_id'              => $loan->id,
-                'accrual_date'         => $date->toDateString(),
+                'loan_id' => $loan->id,
+                'accrual_date' => $date->toDateString(),
                 'principal_outstanding' => $outstanding,
-                'daily_rate'           => $dailyRate,
-                'accrued_amount'       => $isSuspended ? 0.00 : $accrued,
-                'status'               => 'posted',
-                'is_suspended'         => $isSuspended,
+                'daily_rate' => $dailyRate,
+                'accrued_amount' => $isSuspended ? 0.00 : $accrued,
+                'status' => 'posted',
+                'is_suspended' => $isSuspended,
             ]);
         }
 
         return [
-            'loan_id'       => $loan->id,
+            'loan_id' => $loan->id,
             'accrued_amount' => $isSuspended ? 0.00 : $accrued,
-            'is_suspended'  => $isSuspended,
-            'daily_rate'    => $dailyRate,
+            'is_suspended' => $isSuspended,
+            'daily_rate' => $dailyRate,
         ];
     }
 
@@ -98,9 +99,9 @@ class InterestAccrualService
             ->get()
             ->groupBy(fn ($r) => \Carbon\Carbon::parse($r->accrual_date)->format('Y-m'))
             ->map(fn ($g) => [
-                'month'        => $g->first()->accrual_date->format('Y-m'),
+                'month' => $g->first()->accrual_date->format('Y-m'),
                 'total_accrued' => round((float) $g->sum('accrued_amount'), 2),
-                'loans'        => $g->pluck('loan_id')->unique()->count(),
+                'loans' => $g->pluck('loan_id')->unique()->count(),
             ])
             ->values();
 

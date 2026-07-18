@@ -22,21 +22,21 @@ function decisionLoan(array $attrs = []): Loan
     unset($attrs['credit_score']);
 
     return Loan::factory()->create(array_merge([
-        'borrower_id'      => $borrower->id,
+        'borrower_id' => $borrower->id,
         'principal_amount' => 5000,
-        'tenure'           => 12,
-        'status'           => LoanStatus::Submitted,
+        'tenure' => 12,
+        'status' => LoanStatus::Submitted,
     ], $attrs));
 }
 
 function makeRule(array $attrs = []): AutoDecisionRule
 {
     return AutoDecisionRule::create(array_merge([
-        'name'             => 'Test Rule ' . rand(100, 999),
+        'name' => 'Test Rule '.rand(100, 999),
         'min_credit_score' => 600,
-        'action'           => 'approve',
-        'priority'         => 100,
-        'is_active'        => true,
+        'action' => 'approve',
+        'priority' => 100,
+        'is_active' => true,
     ], $attrs));
 }
 
@@ -58,11 +58,11 @@ test('can create a decision rule', function () {
 
     $resp = $this->actingAs($admin)
         ->postJson(route('api.v1.auto-decision.rules.store'), [
-            'name'             => 'High Score Auto Approve',
+            'name' => 'High Score Auto Approve',
             'min_credit_score' => 700,
-            'max_loan_amount'  => 50000,
-            'action'           => 'approve',
-            'priority'         => 10,
+            'max_loan_amount' => 50000,
+            'action' => 'approve',
+            'priority' => 10,
         ])
         ->assertCreated();
 
@@ -72,11 +72,11 @@ test('can create a decision rule', function () {
 
 test('can update a decision rule', function () {
     $admin = decisionAdmin();
-    $rule  = makeRule(['action' => 'manual']);
+    $rule = makeRule(['action' => 'manual']);
 
     $resp = $this->actingAs($admin)
         ->putJson(route('api.v1.auto-decision.rules.update', $rule), [
-            'action'   => 'decline',
+            'action' => 'decline',
             'priority' => 50,
         ])
         ->assertOk();
@@ -86,7 +86,7 @@ test('can update a decision rule', function () {
 
 test('can delete a decision rule', function () {
     $admin = decisionAdmin();
-    $rule  = makeRule();
+    $rule = makeRule();
 
     $this->actingAs($admin)
         ->deleteJson(route('api.v1.auto-decision.rules.destroy', $rule))
@@ -159,7 +159,7 @@ test('can retrieve latest decision for a loan', function () {
     makeRule(['min_credit_score' => 0, 'action' => 'approve', 'priority' => 10]);
 
     $loan = decisionLoan();
-    (new AutoDecisionService())->evaluate($loan);
+    (new AutoDecisionService)->evaluate($loan);
 
     $resp = $this->actingAs($admin)
         ->getJson(route('api.v1.auto-decision.show', $loan))
@@ -170,7 +170,7 @@ test('can retrieve latest decision for a loan', function () {
 
 test('returns 404 when no decision exists for loan', function () {
     $admin = decisionAdmin();
-    $loan  = decisionLoan();
+    $loan = decisionLoan();
 
     $this->actingAs($admin)
         ->getJson(route('api.v1.auto-decision.show', $loan))
@@ -181,15 +181,15 @@ test('can override an auto decision', function () {
     $admin = decisionAdmin();
     makeRule(['min_credit_score' => 0, 'action' => 'decline', 'priority' => 10]);
 
-    $loan     = decisionLoan();
-    $decision = (new AutoDecisionService())->evaluate($loan);
+    $loan = decisionLoan();
+    $decision = (new AutoDecisionService)->evaluate($loan);
 
     expect($decision->action)->toBe('decline');
 
     $resp = $this->actingAs($admin)
         ->postJson(route('api.v1.auto-decision.override', $decision), [
             'action' => 'approve',
-            'notes'  => 'Manual review passed',
+            'notes' => 'Manual review passed',
         ])
         ->assertOk();
 

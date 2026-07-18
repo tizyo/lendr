@@ -18,10 +18,10 @@ class WebhookDispatchService
         foreach ($endpoints as $endpoint) {
             $delivery = WebhookDelivery::create([
                 'webhook_endpoint_id' => $endpoint->id,
-                'event'               => $event,
-                'payload'             => $payload,
-                'status'              => 'pending',
-                'attempts'            => 0,
+                'event' => $event,
+                'payload' => $payload,
+                'status' => 'pending',
+                'attempts' => 0,
             ]);
 
             dispatch(new DeliverWebhookJob($delivery->id));

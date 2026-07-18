@@ -24,12 +24,12 @@ class MigratePaymentsCommand extends BaseMigrationCommand
 
     public function handle(): int
     {
-        $svc      = $this->makeService();
-        $dryRun   = $this->isDryRun();
-        $batch    = $this->batchSize();
-        $errors   = [];
+        $svc = $this->makeService();
+        $dryRun = $this->isDryRun();
+        $batch = $this->batchSize();
+        $errors = [];
         $migrated = 0;
-        $skipped  = 0;
+        $skipped = 0;
 
         $this->info('→ Migrating payment → payments…');
 
@@ -39,6 +39,7 @@ class MigratePaymentsCommand extends BaseMigrationCommand
             foreach ($rows as $row) {
                 if ($svc->alreadyMigrated('payments', $row->id)) {
                     $skipped++;
+
                     continue;
                 }
 
@@ -48,21 +49,22 @@ class MigratePaymentsCommand extends BaseMigrationCommand
                 if (! $loanNewId) {
                     $errors[] = "payment id={$row->id}: no mapped loan_id={$row->loan_id}";
                     $svc->logFailed('payments', $row->id, 'no mapped loan');
+
                     continue;
                 }
 
                 try {
                     if (! $dryRun) {
                         $newId = DB::table('payments')->insertGetId([
-                            'loan_id'        => $loanNewId,
-                            'amount'         => $row->pay_amount ?? $row->amount,
+                            'loan_id' => $loanNewId,
+                            'amount' => $row->pay_amount ?? $row->amount,
                             'payment_method' => $this->mapPaymentMethod($row->payment_method ?? 'cash'),
-                            'payment_date'   => $row->pay_date ?? $row->payment_date ?? $row->created_at,
-                            'reference'      => $row->reference ?? $row->receipt_no ?? null,
-                            'note'           => $row->note ?? $row->remark ?? null,
-                            'recorded_by'    => null, // no user mapping attempted for payments
-                            'created_at'     => $row->created_at ?? now(),
-                            'updated_at'     => $row->updated_at ?? now(),
+                            'payment_date' => $row->pay_date ?? $row->payment_date ?? $row->created_at,
+                            'reference' => $row->reference ?? $row->receipt_no ?? null,
+                            'note' => $row->note ?? $row->remark ?? null,
+                            'recorded_by' => null, // no user mapping attempted for payments
+                            'created_at' => $row->created_at ?? now(),
+                            'updated_at' => $row->updated_at ?? now(),
                         ]);
                         $svc->logSuccess('payments', $row->id, $newId);
                     }
@@ -81,12 +83,12 @@ class MigratePaymentsCommand extends BaseMigrationCommand
         }
 
         $result = new MigrationResult(
-            step:     'payments',
+            step: 'payments',
             migrated: $migrated,
-            skipped:  $skipped,
-            failed:   count($errors),
-            dryRun:   $dryRun,
-            errors:   $errors,
+            skipped: $skipped,
+            failed: count($errors),
+            dryRun: $dryRun,
+            errors: $errors,
         );
 
         $this->printResult($result);
@@ -113,12 +115,12 @@ class MigratePaymentsCommand extends BaseMigrationCommand
             if ($diff > 0.02) {
                 // Flag discrepancy in migration_log
                 DB::table('migration_log')->insert([
-                    'tenant_id'   => $svc->tenantId(),
-                    'table_name'  => 'balance_reconciliation',
-                    'legacy_id'   => null,
-                    'new_id'      => $loan->id,
-                    'status'      => 'skipped',
-                    'notes'       => "Balance discrepancy: stored={$loan->outstanding_balance} recalculated={$expectedBalance} diff={$diff}",
+                    'tenant_id' => $svc->tenantId(),
+                    'table_name' => 'balance_reconciliation',
+                    'legacy_id' => null,
+                    'new_id' => $loan->id,
+                    'status' => 'skipped',
+                    'notes' => "Balance discrepancy: stored={$loan->outstanding_balance} recalculated={$expectedBalance} diff={$diff}",
                     'migrated_at' => now(),
                 ]);
                 $discrepancies++;

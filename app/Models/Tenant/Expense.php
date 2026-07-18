@@ -41,11 +41,11 @@ class Expense extends Model
     protected function casts(): array
     {
         return [
-            'status'       => ExpenseStatus::class,
-            'amount'       => 'decimal:2',
+            'status' => ExpenseStatus::class,
+            'amount' => 'decimal:2',
             'expense_date' => 'date',
             'submitted_at' => 'datetime',
-            'approved_at'  => 'datetime',
+            'approved_at' => 'datetime',
         ];
     }
 

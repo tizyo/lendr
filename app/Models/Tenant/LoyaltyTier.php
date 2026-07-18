@@ -16,9 +16,9 @@ class LoyaltyTier extends Model
     protected function casts(): array
     {
         return [
-            'min_points'       => 'integer',
+            'min_points' => 'integer',
             'fee_discount_pct' => 'float',
-            'is_active'        => 'boolean',
+            'is_active' => 'boolean',
         ];
     }
 
@@ -41,6 +41,7 @@ class LoyaltyTier extends Model
     public static function discountFor(string $tierName): float
     {
         $tier = static::where('name', $tierName)->where('is_active', true)->first();
+
         return $tier ? (float) $tier->fee_discount_pct : 0.0;
     }
 }

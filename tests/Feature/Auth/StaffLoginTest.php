@@ -13,14 +13,14 @@ test('login page is accessible', function () {
 
 test('staff can login with correct credentials', function () {
     $user = User::factory()->create([
-        'email'    => 'staff@test.com',
+        'email' => 'staff@test.com',
         'password' => Hash::make('password'),
-        'role'     => UserRole::LoanOfficer,
+        'role' => UserRole::LoanOfficer,
         'is_active' => true,
     ]);
 
     $response = $this->post(route('login.post'), [
-        'email'    => 'staff@test.com',
+        'email' => 'staff@test.com',
         'password' => 'password',
     ]);
 
@@ -30,12 +30,12 @@ test('staff can login with correct credentials', function () {
 
 test('login fails with wrong password', function () {
     User::factory()->create([
-        'email'    => 'staff@test.com',
+        'email' => 'staff@test.com',
         'password' => Hash::make('correct-password'),
     ]);
 
     $this->post(route('login.post'), [
-        'email'    => 'staff@test.com',
+        'email' => 'staff@test.com',
         'password' => 'wrong-password',
     ])->assertSessionHasErrors('email');
 
@@ -44,13 +44,13 @@ test('login fails with wrong password', function () {
 
 test('inactive staff cannot login', function () {
     User::factory()->create([
-        'email'     => 'inactive@test.com',
-        'password'  => Hash::make('password'),
+        'email' => 'inactive@test.com',
+        'password' => Hash::make('password'),
         'is_active' => false,
     ]);
 
     $this->post(route('login.post'), [
-        'email'    => 'inactive@test.com',
+        'email' => 'inactive@test.com',
         'password' => 'password',
     ])->assertSessionHasErrors('email');
 

@@ -14,11 +14,10 @@ class SavingsAdminController extends Controller
     {
         $query = SavingsAccount::with('borrower:id,first_name,last_name,borrower_number,phone')
             ->when($request->status, fn ($q, $v) => $q->where('status', $v))
-            ->when($request->type,   fn ($q, $v) => $q->where('type', $v))
-            ->when($request->search, fn ($q, $s) => $q->whereHas('borrower', fn ($bq) =>
-                $bq->where('first_name', 'like', "%{$s}%")
-                   ->orWhere('last_name', 'like', "%{$s}%")
-                   ->orWhere('borrower_number', 'like', "%{$s}%")
+            ->when($request->type, fn ($q, $v) => $q->where('type', $v))
+            ->when($request->search, fn ($q, $s) => $q->whereHas('borrower', fn ($bq) => $bq->where('first_name', 'like', "%{$s}%")
+                ->orWhere('last_name', 'like', "%{$s}%")
+                ->orWhere('borrower_number', 'like', "%{$s}%"),
             ))
             ->orderByDesc('id');
 

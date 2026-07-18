@@ -12,7 +12,10 @@ use Illuminate\Support\Facades\Log;
  */
 class AirtelWebhookController extends BaseWebhookController
 {
-    protected function providerName(): string { return 'airtel_money'; }
+    protected function providerName(): string
+    {
+        return 'airtel_money';
+    }
 
     protected function verifySignature(Request $request): bool
     {
@@ -26,31 +29,31 @@ class AirtelWebhookController extends BaseWebhookController
 
         return hash_equals(
             hash_hmac('sha256', $request->getContent(), $secret),
-            $request->header('X-Airtel-Signature', '')
+            $request->header('X-Airtel-Signature', ''),
         );
     }
 
     protected function parsePayload(Request $request): array
     {
         $body = $request->json()->all();
-        $tx   = $body['transaction'] ?? [];
+        $tx = $body['transaction'] ?? [];
 
         $rawStatus = strtolower($tx['status'] ?? $body['status'] ?? '');
         $status = match ($rawStatus) {
             'ts', 'success', 'successful' => 'success',
-            'tf', 'fail', 'failed'        => 'failed',
-            default                       => 'pending',
+            'tf', 'fail', 'failed' => 'failed',
+            default => 'pending',
         };
 
         return [
-            'event_id'       => $tx['id']        ?? $body['id']        ?? null,
-            'event_type'     => 'payment.' . $status,
-            'internal_ref'   => $tx['reference'] ?? $body['reference'] ?? null,
-            'transaction_id' => $tx['id']        ?? '',
-            'amount'         => (float) ($tx['amount'] ?? $body['amount'] ?? 0),
-            'phone'          => $tx['msisdn']    ?? $body['msisdn']    ?? '',
-            'status'         => $status,
-            'raw'            => $body,
+            'event_id' => $tx['id'] ?? $body['id'] ?? null,
+            'event_type' => 'payment.'.$status,
+            'internal_ref' => $tx['reference'] ?? $body['reference'] ?? null,
+            'transaction_id' => $tx['id'] ?? '',
+            'amount' => (float) ($tx['amount'] ?? $body['amount'] ?? 0),
+            'phone' => $tx['msisdn'] ?? $body['msisdn'] ?? '',
+            'status' => $status,
+            'raw' => $body,
         ];
     }
 }

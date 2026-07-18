@@ -23,7 +23,7 @@ class LoanTopup extends Model
     {
         return [
             'topup_amount' => 'decimal:2',
-            'approved_at'  => 'datetime',
+            'approved_at' => 'datetime',
         ];
     }
 

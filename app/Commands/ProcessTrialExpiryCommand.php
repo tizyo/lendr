@@ -20,7 +20,8 @@ use Illuminate\Support\Facades\Mail;
  */
 class ProcessTrialExpiryCommand extends Command
 {
-    protected $signature   = 'lendr:process-trial-expiry';
+    protected $signature = 'lendr:process-trial-expiry';
+
     protected $description = 'Send trial expiry warnings and mark expired trial accounts.';
 
     public function handle(): int
@@ -44,7 +45,9 @@ class ProcessTrialExpiryCommand extends Command
             ->get();
 
         foreach ($tenants as $tenant) {
-            if (! $tenant->admin_email) continue;
+            if (! $tenant->admin_email) {
+                continue;
+            }
 
             Mail::to($tenant->admin_email)
                 ->queue(new TrialExpiryWarningMail($tenant, $daysAhead));

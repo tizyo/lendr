@@ -80,6 +80,7 @@ class AuthController extends Controller
         if ($user->hasRole2faEnabled()) {
             $request->session()->put('2fa_user_id', $user->id);
             Auth::logout();
+
             return redirect()->route('2fa.challenge');
         }
 
@@ -138,8 +139,8 @@ class AuthController extends Controller
     {
         $request->validate([
             'workspace' => ['required', 'string'],
-            'email'     => ['required', 'string', 'email'],
-            'password'  => ['required', 'string'],
+            'email' => ['required', 'string', 'email'],
+            'password' => ['required', 'string'],
         ]);
 
         $this->ensurePortalLoginIsNotRateLimited($request);
@@ -239,7 +240,7 @@ class AuthController extends Controller
     private function portalThrottleKey(Request $request): string
     {
         return Str::transliterate(
-            Str::lower($request->string('workspace').'|'.$request->string('email')).'|'.$request->ip()
+            Str::lower($request->string('workspace').'|'.$request->string('email')).'|'.$request->ip(),
         );
     }
 
@@ -272,8 +273,8 @@ class AuthController extends Controller
     public function showResetPassword(Request $request): Response
     {
         return Inertia::render('auth/ResetPassword', [
-            'token'    => $request->route('token') ?? $request->query('token'),
-            'email'    => $request->query('email', ''),
+            'token' => $request->route('token') ?? $request->query('token'),
+            'email' => $request->query('email', ''),
             'isPortal' => false,
         ]);
     }
@@ -281,8 +282,8 @@ class AuthController extends Controller
     public function resetPassword(Request $request): RedirectResponse
     {
         $request->validate([
-            'token'    => ['required'],
-            'email'    => ['required', 'email'],
+            'token' => ['required'],
+            'email' => ['required', 'email'],
             'password' => ['required', 'confirmed', PasswordRules::min(8)->mixedCase()->numbers()],
         ]);
 
@@ -290,10 +291,10 @@ class AuthController extends Controller
             $request->only('email', 'password', 'password_confirmation', 'token'),
             function (User $user, string $password) {
                 $user->forceFill([
-                    'password'             => $password,
+                    'password' => $password,
                     'force_password_reset' => false,
                 ])->save();
-            }
+            },
         );
 
         if ($status === Password::PASSWORD_RESET) {
@@ -314,7 +315,7 @@ class AuthController extends Controller
     {
         $request->validate([
             'workspace' => ['required', 'string'],
-            'email'     => ['required', 'email'],
+            'email' => ['required', 'email'],
         ]);
 
         $tenant = Tenant::where('slug', $request->workspace)->first();
@@ -327,8 +328,8 @@ class AuthController extends Controller
             // Override the reset URL to include workspace for portal re-init.
             ResetPassword::createUrlUsing(function ($notifiable, string $token) use ($workspace) {
                 return route('portal.password.reset', [
-                    'token'     => $token,
-                    'email'     => $notifiable->getEmailForPasswordReset(),
+                    'token' => $token,
+                    'email' => $notifiable->getEmailForPasswordReset(),
                     'workspace' => $workspace,
                 ]);
             });
@@ -346,20 +347,20 @@ class AuthController extends Controller
     public function showPortalResetPassword(Request $request): Response
     {
         return Inertia::render('auth/ResetPassword', [
-            'token'     => $request->query('token', ''),
-            'email'     => $request->query('email', ''),
+            'token' => $request->query('token', ''),
+            'email' => $request->query('email', ''),
             'workspace' => $request->query('workspace', ''),
-            'isPortal'  => true,
+            'isPortal' => true,
         ]);
     }
 
     public function resetPortalPassword(Request $request): RedirectResponse
     {
         $request->validate([
-            'token'     => ['required'],
-            'email'     => ['required', 'email'],
+            'token' => ['required'],
+            'email' => ['required', 'email'],
             'workspace' => ['required', 'string'],
-            'password'  => ['required', 'confirmed', PasswordRules::min(8)->mixedCase()->numbers()],
+            'password' => ['required', 'confirmed', PasswordRules::min(8)->mixedCase()->numbers()],
         ]);
 
         $tenant = Tenant::where('slug', $request->workspace)->firstOrFail();
@@ -371,10 +372,10 @@ class AuthController extends Controller
                 $request->only('email', 'password', 'password_confirmation', 'token'),
                 function (User $user, string $password) {
                     $user->forceFill([
-                        'password'             => $password,
+                        'password' => $password,
                         'force_password_reset' => false,
                     ])->save();
-                }
+                },
             );
         } finally {
             tenancy()->end();

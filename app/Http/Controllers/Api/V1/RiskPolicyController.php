@@ -23,14 +23,14 @@ class RiskPolicyController extends BaseApiController
     public function store(Request $request): JsonResponse
     {
         $data = $request->validate([
-            'name'        => 'required|string|max:150',
-            'rule_type'   => 'required|in:'.implode(',', RiskPolicy::ruleTypes()),
-            'operator'    => 'nullable|string|max:20',
-            'value'       => 'required|string',
-            'action'      => 'required|in:warn,block',
-            'is_active'   => 'boolean',
+            'name' => 'required|string|max:150',
+            'rule_type' => 'required|in:'.implode(',', RiskPolicy::ruleTypes()),
+            'operator' => 'nullable|string|max:20',
+            'value' => 'required|string',
+            'action' => 'required|in:warn,block',
+            'is_active' => 'boolean',
             'description' => 'nullable|string',
-            'sort_order'  => 'nullable|integer|min:0',
+            'sort_order' => 'nullable|integer|min:0',
         ]);
 
         $policy = RiskPolicy::create($data);
@@ -48,14 +48,14 @@ class RiskPolicyController extends BaseApiController
     public function update(Request $request, RiskPolicy $riskPolicy): JsonResponse
     {
         $data = $request->validate([
-            'name'        => 'sometimes|string|max:150',
-            'rule_type'   => 'sometimes|in:'.implode(',', RiskPolicy::ruleTypes()),
-            'operator'    => 'nullable|string|max:20',
-            'value'       => 'sometimes|string',
-            'action'      => 'sometimes|in:warn,block',
-            'is_active'   => 'boolean',
+            'name' => 'sometimes|string|max:150',
+            'rule_type' => 'sometimes|in:'.implode(',', RiskPolicy::ruleTypes()),
+            'operator' => 'nullable|string|max:20',
+            'value' => 'sometimes|string',
+            'action' => 'sometimes|in:warn,block',
+            'is_active' => 'boolean',
             'description' => 'nullable|string',
-            'sort_order'  => 'nullable|integer|min:0',
+            'sort_order' => 'nullable|integer|min:0',
         ]);
 
         $riskPolicy->update($data);
@@ -101,10 +101,10 @@ class RiskPolicyController extends BaseApiController
         ]);
 
         $riskFlag->update([
-            'overridden'      => true,
-            'overridden_by'   => auth()->id(),
+            'overridden' => true,
+            'overridden_by' => auth()->id(),
             'override_reason' => $data['override_reason'],
-            'overridden_at'   => now(),
+            'overridden_at' => now(),
         ]);
 
         return $this->success(['flag' => $riskFlag->fresh(['overriddenBy:id,name'])]);

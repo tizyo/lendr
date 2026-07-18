@@ -30,14 +30,14 @@ class CheckTenantStatus
 
         if (in_array($tenant->status, self::BLOCKED)) {
             return Inertia::render('account/Suspended', [
-                'status'     => $tenant->status,
+                'status' => $tenant->status,
                 'tenantName' => $tenant->name,
             ])->toResponse($request)->setStatusCode(403);
         }
 
         if ($tenant->isTrialExpired()) {
             return Inertia::render('account/TrialExpired', [
-                'tenantName'   => $tenant->name,
+                'tenantName' => $tenant->name,
                 'trialEndedAt' => $tenant->trial_ends_at?->format('d M Y'),
             ])->toResponse($request)->setStatusCode(402);
         }

@@ -23,12 +23,12 @@ class LoanProvision extends Model
     protected function casts(): array
     {
         return [
-            'stage'               => 'integer',
-            'days_past_due'       => 'integer',
+            'stage' => 'integer',
+            'days_past_due' => 'integer',
             'outstanding_balance' => 'decimal:2',
-            'provision_rate'      => 'decimal:4',
-            'provision_amount'    => 'decimal:2',
-            'calculation_date'    => 'date',
+            'provision_rate' => 'decimal:4',
+            'provision_amount' => 'decimal:2',
+            'calculation_date' => 'date',
         ];
     }
 

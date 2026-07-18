@@ -21,7 +21,7 @@ class StaffWelcome extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Welcome to ' . config('app.name') . ' — Your account is ready',
+            subject: 'Welcome to '.config('app.name').' — Your account is ready',
         );
     }
 

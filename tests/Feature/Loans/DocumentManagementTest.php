@@ -16,22 +16,22 @@ use Illuminate\Support\Facades\Storage;
 function docUser(): User
 {
     return User::factory()->create([
-        'role'      => UserRole::SuperAdmin,
+        'role' => UserRole::SuperAdmin,
         'is_active' => true,
     ]);
 }
 
 function docLoan(): Loan
 {
-    $type     = LoanType::factory()->create();
-    $plan     = LoanPlan::factory()->create(['loan_type_id' => $type->id]);
+    $type = LoanType::factory()->create();
+    $plan = LoanPlan::factory()->create(['loan_type_id' => $type->id]);
     $borrower = Borrower::factory()->create();
 
     return Loan::factory()->create([
-        'borrower_id'  => $borrower->id,
+        'borrower_id' => $borrower->id,
         'loan_type_id' => $type->id,
         'loan_plan_id' => $plan->id,
-        'status'       => LoanStatus::Draft,
+        'status' => LoanStatus::Draft,
     ]);
 }
 
@@ -43,14 +43,14 @@ test('can list documents for a loan', function () {
     $loan = docLoan();
 
     LoanDocument::create([
-        'loan_id'       => $loan->id,
+        'loan_id' => $loan->id,
         'document_type' => 'application_form',
-        'title'         => 'Loan Application',
-        'file_path'     => '/storage/loans/1/documents/form.pdf',
-        'file_name'     => 'form.pdf',
-        'mime_type'     => 'application/pdf',
-        'file_size'     => 1024,
-        'uploaded_by'   => $user->id,
+        'title' => 'Loan Application',
+        'file_path' => '/storage/loans/1/documents/form.pdf',
+        'file_name' => 'form.pdf',
+        'mime_type' => 'application/pdf',
+        'file_size' => 1024,
+        'uploaded_by' => $user->id,
     ]);
 
     $this->actingAs($user)
@@ -81,9 +81,9 @@ test('can upload a document to a loan', function () {
 
     $this->actingAs($user)
         ->postJson(route('api.v1.loans.documents.store', $loan), [
-            'file'          => $file,
+            'file' => $file,
             'document_type' => 'loan_agreement',
-            'title'         => 'Signed Agreement',
+            'title' => 'Signed Agreement',
         ])
         ->assertCreated()
         ->assertJsonPath('data.document_type', 'loan_agreement')
@@ -91,10 +91,10 @@ test('can upload a document to a loan', function () {
         ->assertJsonPath('data.file_name', 'agreement.pdf');
 
     $this->assertDatabaseHas('loan_documents', [
-        'loan_id'       => $loan->id,
+        'loan_id' => $loan->id,
         'document_type' => 'loan_agreement',
-        'title'         => 'Signed Agreement',
-        'uploaded_by'   => $user->id,
+        'title' => 'Signed Agreement',
+        'uploaded_by' => $user->id,
     ]);
 })->group('documents');
 
@@ -107,7 +107,7 @@ test('upload uses original filename as title when title not provided', function 
 
     $this->actingAs($user)
         ->postJson(route('api.v1.loans.documents.store', $loan), [
-            'file'          => $file,
+            'file' => $file,
             'document_type' => 'national_id',
         ])
         ->assertCreated()
@@ -123,13 +123,13 @@ test('upload records uploader id', function () {
 
     $response = $this->actingAs($user)
         ->postJson(route('api.v1.loans.documents.store', $loan), [
-            'file'          => $file,
+            'file' => $file,
             'document_type' => 'collateral',
         ])
         ->assertCreated();
 
     $this->assertDatabaseHas('loan_documents', [
-        'loan_id'     => $loan->id,
+        'loan_id' => $loan->id,
         'uploaded_by' => $user->id,
     ]);
 })->group('documents');
@@ -143,7 +143,7 @@ test('upload stores file on public disk', function () {
 
     $this->actingAs($user)
         ->postJson(route('api.v1.loans.documents.store', $loan), [
-            'file'          => $file,
+            'file' => $file,
             'document_type' => 'collateral_evidence',
         ])
         ->assertCreated();
@@ -191,7 +191,7 @@ test('upload fails for disallowed mime type', function () {
 
     $this->actingAs($user)
         ->postJson(route('api.v1.loans.documents.store', $loan), [
-            'file'          => $file,
+            'file' => $file,
             'document_type' => 'other',
         ])
         ->assertUnprocessable()
@@ -208,7 +208,7 @@ test('upload fails for file exceeding 10 MB', function () {
 
     $this->actingAs($user)
         ->postJson(route('api.v1.loans.documents.store', $loan), [
-            'file'          => $file,
+            'file' => $file,
             'document_type' => 'application_form',
         ])
         ->assertUnprocessable()
@@ -223,12 +223,12 @@ test('can delete a document from a loan', function () {
     $loan = docLoan();
 
     $document = LoanDocument::create([
-        'loan_id'       => $loan->id,
+        'loan_id' => $loan->id,
         'document_type' => 'other',
-        'title'         => 'Temp Doc',
-        'file_path'     => '/storage/loans/1/documents/temp.pdf',
-        'file_name'     => 'temp.pdf',
-        'uploaded_by'   => $user->id,
+        'title' => 'Temp Doc',
+        'file_path' => '/storage/loans/1/documents/temp.pdf',
+        'file_name' => 'temp.pdf',
+        'uploaded_by' => $user->id,
     ]);
 
     $this->actingAs($user)
@@ -241,15 +241,15 @@ test('can delete a document from a loan', function () {
 
 test('cannot delete a document that belongs to a different loan', function () {
     Storage::fake('public');
-    $user  = docUser();
+    $user = docUser();
     $loan1 = docLoan();
     $loan2 = docLoan();
 
     $document = LoanDocument::create([
-        'loan_id'       => $loan1->id,
+        'loan_id' => $loan1->id,
         'document_type' => 'other',
-        'file_path'     => '/storage/x.pdf',
-        'uploaded_by'   => $user->id,
+        'file_path' => '/storage/x.pdf',
+        'uploaded_by' => $user->id,
     ]);
 
     $this->actingAs($user)
@@ -275,7 +275,7 @@ test('multiple documents can be uploaded to same loan', function () {
         $file = UploadedFile::fake()->create("{$type}.pdf", 100, 'application/pdf');
         $this->actingAs($user)
             ->postJson(route('api.v1.loans.documents.store', $loan), [
-                'file'          => $file,
+                'file' => $file,
                 'document_type' => $type,
             ])
             ->assertCreated();

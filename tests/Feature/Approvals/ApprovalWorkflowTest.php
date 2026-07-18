@@ -16,13 +16,13 @@ function approvalAdmin(): User
 function makeWorkflow(array $overrides = []): ApprovalWorkflow
 {
     return ApprovalWorkflow::create(array_merge([
-        'name'               => 'Loan Disbursement Approval',
-        'entity_type'        => 'loan_disbursement',
-        'min_amount'         => 0,
-        'max_amount'         => null,
-        'required_roles'     => ['BranchManager', 'SuperAdmin'],
+        'name' => 'Loan Disbursement Approval',
+        'entity_type' => 'loan_disbursement',
+        'min_amount' => 0,
+        'max_amount' => null,
+        'required_roles' => ['BranchManager', 'SuperAdmin'],
         'required_approvals' => 1,
-        'is_active'          => true,
+        'is_active' => true,
     ], $overrides));
 }
 
@@ -33,10 +33,10 @@ test('can create an approval workflow', function () {
 
     $resp = $this->actingAs($admin)
         ->postJson(route('api.v1.approvals.workflows.store'), [
-            'name'               => 'High-Value Disbursement',
-            'entity_type'        => 'loan_disbursement',
-            'min_amount'         => 50000,
-            'required_roles'     => ['SuperAdmin'],
+            'name' => 'High-Value Disbursement',
+            'entity_type' => 'loan_disbursement',
+            'min_amount' => 50000,
+            'required_roles' => ['SuperAdmin'],
             'required_approvals' => 2,
         ])
         ->assertStatus(201);
@@ -58,13 +58,13 @@ test('can list approval workflows', function () {
 });
 
 test('can update a workflow', function () {
-    $admin    = approvalAdmin();
+    $admin = approvalAdmin();
     $workflow = makeWorkflow();
 
     $resp = $this->actingAs($admin)
         ->putJson(route('api.v1.approvals.workflows.update', $workflow), [
             'required_approvals' => 2,
-            'is_active'          => false,
+            'is_active' => false,
         ])
         ->assertOk();
 
@@ -75,14 +75,14 @@ test('can update a workflow', function () {
 // ─── Submit Request ───────────────────────────────────────────────────────────
 
 test('can submit an approval request', function () {
-    $admin    = approvalAdmin();
+    $admin = approvalAdmin();
     $workflow = makeWorkflow();
 
     $resp = $this->actingAs($admin)
         ->postJson(route('api.v1.approvals.submit'), [
             'entity_type' => 'loan_disbursement',
-            'entity_id'   => 1,
-            'amount'      => 10000,
+            'entity_id' => 1,
+            'amount' => 10000,
         ])
         ->assertStatus(201);
 
@@ -98,7 +98,7 @@ test('submit returns null data when no workflow matches', function () {
     $resp = $this->actingAs($admin)
         ->postJson(route('api.v1.approvals.submit'), [
             'entity_type' => 'nonexistent_type',
-            'entity_id'   => 99,
+            'entity_id' => 99,
         ])
         ->assertOk();
 
@@ -109,15 +109,15 @@ test('submit returns null data when no workflow matches', function () {
 // ─── Pending List ─────────────────────────────────────────────────────────────
 
 test('can list pending approval requests', function () {
-    $admin    = approvalAdmin();
+    $admin = approvalAdmin();
     $workflow = makeWorkflow();
 
     ApprovalRequest::create([
-        'workflow_id'  => $workflow->id,
-        'entity_type'  => 'loan_disbursement',
-        'entity_id'    => 1,
+        'workflow_id' => $workflow->id,
+        'entity_type' => 'loan_disbursement',
+        'entity_id' => 1,
         'submitted_by' => $admin->id,
-        'status'       => 'pending',
+        'status' => 'pending',
     ]);
 
     $resp = $this->actingAs($admin)
@@ -128,16 +128,16 @@ test('can list pending approval requests', function () {
 });
 
 test('approved requests do not appear in pending list', function () {
-    $admin    = approvalAdmin();
+    $admin = approvalAdmin();
     $workflow = makeWorkflow();
 
     ApprovalRequest::create([
-        'workflow_id'  => $workflow->id,
-        'entity_type'  => 'loan_disbursement',
-        'entity_id'    => 1,
+        'workflow_id' => $workflow->id,
+        'entity_type' => 'loan_disbursement',
+        'entity_id' => 1,
         'submitted_by' => $admin->id,
-        'status'       => 'approved',
-        'decided_at'   => now(),
+        'status' => 'approved',
+        'decided_at' => now(),
     ]);
 
     $resp = $this->actingAs($admin)
@@ -150,15 +150,15 @@ test('approved requests do not appear in pending list', function () {
 // ─── Show ─────────────────────────────────────────────────────────────────────
 
 test('can show an approval request', function () {
-    $admin    = approvalAdmin();
+    $admin = approvalAdmin();
     $workflow = makeWorkflow();
 
     $request = ApprovalRequest::create([
-        'workflow_id'  => $workflow->id,
-        'entity_type'  => 'loan_disbursement',
-        'entity_id'    => 5,
+        'workflow_id' => $workflow->id,
+        'entity_type' => 'loan_disbursement',
+        'entity_id' => 5,
         'submitted_by' => $admin->id,
-        'status'       => 'pending',
+        'status' => 'pending',
     ]);
 
     $resp = $this->actingAs($admin)
@@ -171,15 +171,15 @@ test('can show an approval request', function () {
 // ─── Approve ──────────────────────────────────────────────────────────────────
 
 test('can approve a request and it becomes approved when threshold reached', function () {
-    $admin    = approvalAdmin();
+    $admin = approvalAdmin();
     $workflow = makeWorkflow(['required_approvals' => 1]);
 
     $request = ApprovalRequest::create([
-        'workflow_id'  => $workflow->id,
-        'entity_type'  => 'loan_disbursement',
-        'entity_id'    => 1,
+        'workflow_id' => $workflow->id,
+        'entity_type' => 'loan_disbursement',
+        'entity_id' => 1,
         'submitted_by' => $admin->id,
-        'status'       => 'pending',
+        'status' => 'pending',
     ]);
 
     $resp = $this->actingAs($admin)
@@ -191,16 +191,16 @@ test('can approve a request and it becomes approved when threshold reached', fun
 });
 
 test('request stays pending until required_approvals threshold is met', function () {
-    $admin    = approvalAdmin();
+    $admin = approvalAdmin();
     $approver = User::factory()->create(['role' => UserRole::SuperAdmin, 'is_active' => true]);
     $workflow = makeWorkflow(['required_approvals' => 2]);
 
     $request = ApprovalRequest::create([
-        'workflow_id'  => $workflow->id,
-        'entity_type'  => 'loan_disbursement',
-        'entity_id'    => 1,
+        'workflow_id' => $workflow->id,
+        'entity_type' => 'loan_disbursement',
+        'entity_id' => 1,
         'submitted_by' => $admin->id,
-        'status'       => 'pending',
+        'status' => 'pending',
     ]);
 
     // First approval — still pending
@@ -221,15 +221,15 @@ test('request stays pending until required_approvals threshold is met', function
 // ─── Reject ───────────────────────────────────────────────────────────────────
 
 test('can reject a request', function () {
-    $admin    = approvalAdmin();
+    $admin = approvalAdmin();
     $workflow = makeWorkflow();
 
     $request = ApprovalRequest::create([
-        'workflow_id'  => $workflow->id,
-        'entity_type'  => 'loan_disbursement',
-        'entity_id'    => 1,
+        'workflow_id' => $workflow->id,
+        'entity_type' => 'loan_disbursement',
+        'entity_id' => 1,
         'submitted_by' => $admin->id,
-        'status'       => 'pending',
+        'status' => 'pending',
     ]);
 
     $resp = $this->actingAs($admin)
@@ -240,16 +240,16 @@ test('can reject a request', function () {
 });
 
 test('already-decided request ignores further actions', function () {
-    $admin    = approvalAdmin();
+    $admin = approvalAdmin();
     $workflow = makeWorkflow();
 
     $request = ApprovalRequest::create([
-        'workflow_id'  => $workflow->id,
-        'entity_type'  => 'loan_disbursement',
-        'entity_id'    => 1,
+        'workflow_id' => $workflow->id,
+        'entity_type' => 'loan_disbursement',
+        'entity_id' => 1,
         'submitted_by' => $admin->id,
-        'status'       => 'rejected',
-        'decided_at'   => now(),
+        'status' => 'rejected',
+        'decided_at' => now(),
     ]);
 
     $this->actingAs($admin)

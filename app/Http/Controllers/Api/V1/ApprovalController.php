@@ -24,14 +24,14 @@ class ApprovalController extends BaseApiController
     public function storeWorkflow(Request $request): JsonResponse
     {
         $data = $request->validate([
-            'name'               => ['required', 'string', 'max:200'],
-            'entity_type'        => ['required', 'string', 'max:100'],
-            'min_amount'         => ['nullable', 'numeric', 'min:0'],
-            'max_amount'         => ['nullable', 'numeric', 'min:0'],
-            'required_roles'     => ['required', 'array', 'min:1'],
-            'required_roles.*'   => ['string'],
+            'name' => ['required', 'string', 'max:200'],
+            'entity_type' => ['required', 'string', 'max:100'],
+            'min_amount' => ['nullable', 'numeric', 'min:0'],
+            'max_amount' => ['nullable', 'numeric', 'min:0'],
+            'required_roles' => ['required', 'array', 'min:1'],
+            'required_roles.*' => ['string'],
             'required_approvals' => ['nullable', 'integer', 'min:1'],
-            'description'        => ['nullable', 'string', 'max:500'],
+            'description' => ['nullable', 'string', 'max:500'],
         ]);
 
         $workflow = ApprovalWorkflow::create($data + ['required_approvals' => $data['required_approvals'] ?? 1]);
@@ -42,14 +42,14 @@ class ApprovalController extends BaseApiController
     public function updateWorkflow(Request $request, ApprovalWorkflow $workflow): JsonResponse
     {
         $data = $request->validate([
-            'name'               => ['sometimes', 'string', 'max:200'],
-            'min_amount'         => ['nullable', 'numeric', 'min:0'],
-            'max_amount'         => ['nullable', 'numeric', 'min:0'],
-            'required_roles'     => ['sometimes', 'array', 'min:1'],
-            'required_roles.*'   => ['string'],
+            'name' => ['sometimes', 'string', 'max:200'],
+            'min_amount' => ['nullable', 'numeric', 'min:0'],
+            'max_amount' => ['nullable', 'numeric', 'min:0'],
+            'required_roles' => ['sometimes', 'array', 'min:1'],
+            'required_roles.*' => ['string'],
             'required_approvals' => ['sometimes', 'integer', 'min:1'],
-            'is_active'          => ['sometimes', 'boolean'],
-            'description'        => ['nullable', 'string', 'max:500'],
+            'is_active' => ['sometimes', 'boolean'],
+            'description' => ['nullable', 'string', 'max:500'],
         ]);
 
         $workflow->update($data);
@@ -70,9 +70,9 @@ class ApprovalController extends BaseApiController
     {
         $data = $request->validate([
             'entity_type' => ['required', 'string'],
-            'entity_id'   => ['required', 'integer'],
-            'amount'      => ['nullable', 'numeric', 'min:0'],
-            'notes'       => ['nullable', 'string', 'max:500'],
+            'entity_id' => ['required', 'integer'],
+            'amount' => ['nullable', 'numeric', 'min:0'],
+            'notes' => ['nullable', 'string', 'max:500'],
         ]);
 
         $approvalRequest = $this->service->submit(
@@ -80,7 +80,7 @@ class ApprovalController extends BaseApiController
             $data['entity_id'],
             $request->user(),
             (float) ($data['amount'] ?? 0),
-            $data['notes'] ?? null
+            $data['notes'] ?? null,
         );
 
         if (! $approvalRequest) {
@@ -90,7 +90,7 @@ class ApprovalController extends BaseApiController
         return $this->success(
             ['request' => $this->formatRequest($approvalRequest->load('workflow', 'submittedBy'))],
             'Approval request submitted.',
-            201
+            201,
         );
     }
 
@@ -122,36 +122,36 @@ class ApprovalController extends BaseApiController
     private function formatWorkflow(ApprovalWorkflow $w): array
     {
         return [
-            'id'                 => $w->id,
-            'name'               => $w->name,
-            'entity_type'        => $w->entity_type,
-            'min_amount'         => (float) $w->min_amount,
-            'max_amount'         => $w->max_amount ? (float) $w->max_amount : null,
-            'required_roles'     => $w->required_roles,
+            'id' => $w->id,
+            'name' => $w->name,
+            'entity_type' => $w->entity_type,
+            'min_amount' => (float) $w->min_amount,
+            'max_amount' => $w->max_amount ? (float) $w->max_amount : null,
+            'required_roles' => $w->required_roles,
             'required_approvals' => $w->required_approvals,
-            'is_active'          => $w->is_active,
-            'description'        => $w->description,
+            'is_active' => $w->is_active,
+            'description' => $w->description,
         ];
     }
 
     private function formatRequest(ApprovalRequest $r): array
     {
         return [
-            'id'           => $r->id,
-            'workflow_id'  => $r->workflow_id,
-            'entity_type'  => $r->entity_type,
-            'entity_id'    => $r->entity_id,
+            'id' => $r->id,
+            'workflow_id' => $r->workflow_id,
+            'entity_type' => $r->entity_type,
+            'entity_id' => $r->entity_id,
             'submitted_by' => $r->submitted_by,
-            'status'       => $r->status,
-            'notes'        => $r->notes,
-            'decided_at'   => $r->decided_at?->toDateTimeString(),
-            'created_at'   => $r->created_at?->toDateTimeString(),
-            'actions'      => $r->relationLoaded('actions')
+            'status' => $r->status,
+            'notes' => $r->notes,
+            'decided_at' => $r->decided_at?->toDateTimeString(),
+            'created_at' => $r->created_at?->toDateTimeString(),
+            'actions' => $r->relationLoaded('actions')
                 ? $r->actions->map(fn ($a) => [
-                    'id'       => $a->id,
+                    'id' => $a->id,
                     'actor_id' => $a->actor_id,
-                    'action'   => $a->action,
-                    'notes'    => $a->notes,
+                    'action' => $a->action,
+                    'notes' => $a->notes,
                     'acted_at' => $a->acted_at?->toDateTimeString(),
                 ])->toArray()
                 : [],

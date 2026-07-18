@@ -21,7 +21,7 @@ class InvestorReturnsController extends BaseApiController
 
         return $this->success([
             'dividends' => $dividends->map(fn ($d) => $this->formatDividend($d)),
-            'summary'   => $this->service->summary($investor),
+            'summary' => $this->service->summary($investor),
         ]);
     }
 
@@ -31,16 +31,16 @@ class InvestorReturnsController extends BaseApiController
     public function calculate(Request $request, Investor $investor): JsonResponse
     {
         $data = $request->validate([
-            'period'          => ['required', 'string', 'regex:/^\d{4}-\d{2}$/'],
+            'period' => ['required', 'string', 'regex:/^\d{4}-\d{2}$/'],
             'annual_rate_pct' => ['nullable', 'numeric', 'min:0', 'max:100'],
-            'allocation_id'   => ['nullable', 'exists:investor_allocations,id'],
+            'allocation_id' => ['nullable', 'exists:investor_allocations,id'],
         ]);
 
         $dividend = $this->service->calculateDividend(
             $investor,
             $data['period'],
             (float) ($data['annual_rate_pct'] ?? 12.0),
-            $data['allocation_id'] ?? null
+            $data['allocation_id'] ?? null,
         );
 
         return $this->success(['dividend' => $this->formatDividend($dividend)], 'Dividend calculated.', 201);
@@ -80,18 +80,18 @@ class InvestorReturnsController extends BaseApiController
     private function formatDividend(InvestorDividend $d): array
     {
         return [
-            'id'             => $d->id,
-            'investor_id'    => $d->investor_id,
-            'allocation_id'  => $d->allocation_id,
-            'period'         => $d->period,
-            'principal'      => (float) $d->principal,
-            'return_rate'    => (float) $d->return_rate,
+            'id' => $d->id,
+            'investor_id' => $d->investor_id,
+            'allocation_id' => $d->allocation_id,
+            'period' => $d->period,
+            'principal' => (float) $d->principal,
+            'return_rate' => (float) $d->return_rate,
             'gross_dividend' => (float) $d->gross_dividend,
-            'tax_withheld'   => (float) $d->tax_withheld,
-            'net_dividend'   => (float) $d->net_dividend,
-            'status'         => $d->status,
-            'paid_date'      => $d->paid_date?->toDateString(),
-            'processed_by'   => $d->processed_by,
+            'tax_withheld' => (float) $d->tax_withheld,
+            'net_dividend' => (float) $d->net_dividend,
+            'status' => $d->status,
+            'paid_date' => $d->paid_date?->toDateString(),
+            'processed_by' => $d->processed_by,
         ];
     }
 }

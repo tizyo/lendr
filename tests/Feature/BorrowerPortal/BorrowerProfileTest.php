@@ -5,7 +5,6 @@ use App\Models\Tenant\Borrower;
 use App\Models\Tenant\Loan;
 use App\Models\Tenant\LoanPlan;
 use App\Models\Tenant\LoanType;
-use App\Models\Tenant\Payment;
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -20,10 +19,10 @@ function portalLoan(Borrower $borrower, array $attrs = []): Loan
     $plan = LoanPlan::factory()->create(['loan_type_id' => $type->id]);
 
     return Loan::factory()->create(array_merge([
-        'borrower_id'  => $borrower->id,
+        'borrower_id' => $borrower->id,
         'loan_type_id' => $type->id,
         'loan_plan_id' => $plan->id,
-        'status'       => LoanStatus::Active,
+        'status' => LoanStatus::Active,
     ], $attrs));
 }
 
@@ -50,8 +49,8 @@ test('borrower can update their profile details', function () {
     $this->actingAs($borrower, 'sanctum')
         ->putJson(route('api.v1.borrower.profile.update'), [
             'first_name' => 'Alice',
-            'last_name'  => 'Smith',
-            'city'       => 'Ndola',
+            'last_name' => 'Smith',
+            'city' => 'Ndola',
         ])
         ->assertOk();
 
@@ -138,30 +137,30 @@ test('inactive loan types are excluded from products', function () {
 // ─── Loan Application ─────────────────────────────────────────────────────────
 
 test('borrower can apply for a loan', function () {
-    $type    = LoanType::factory()->create(['is_active' => true]);
-    $plan    = LoanPlan::factory()->create([
+    $type = LoanType::factory()->create(['is_active' => true]);
+    $plan = LoanPlan::factory()->create([
         'loan_type_id' => $type->id,
-        'min_amount'   => 500,
-        'max_amount'   => 50000,
-        'min_tenure'   => 1,
-        'max_tenure'   => 24,
-        'is_active'    => true,
+        'min_amount' => 500,
+        'max_amount' => 50000,
+        'min_tenure' => 1,
+        'max_tenure' => 24,
+        'is_active' => true,
     ]);
     $borrower = portalBorrower();
 
     $this->actingAs($borrower, 'sanctum')
         ->postJson(route('api.v1.borrower.loans.apply'), [
-            'loan_type_id'     => $type->id,
-            'loan_plan_id'     => $plan->id,
+            'loan_type_id' => $type->id,
+            'loan_plan_id' => $plan->id,
             'principal_amount' => 5000,
-            'tenure'           => 6,
-            'loan_purpose'     => 'Business expansion',
+            'tenure' => 6,
+            'loan_purpose' => 'Business expansion',
         ])
         ->assertCreated()
         ->assertJsonStructure(['data' => ['loan_number', 'status']]);
 
     $this->assertDatabaseHas('loans', [
-        'borrower_id'  => $borrower->id,
+        'borrower_id' => $borrower->id,
         'loan_type_id' => $type->id,
     ]);
 })->group('borrower-portal');
@@ -170,18 +169,18 @@ test('loan application fails when amount is below plan minimum', function () {
     $type = LoanType::factory()->create(['is_active' => true]);
     $plan = LoanPlan::factory()->create([
         'loan_type_id' => $type->id,
-        'min_amount'   => 1000,
-        'max_amount'   => 50000,
-        'is_active'    => true,
+        'min_amount' => 1000,
+        'max_amount' => 50000,
+        'is_active' => true,
     ]);
     $borrower = portalBorrower();
 
     $this->actingAs($borrower, 'sanctum')
         ->postJson(route('api.v1.borrower.loans.apply'), [
-            'loan_type_id'     => $type->id,
-            'loan_plan_id'     => $plan->id,
+            'loan_type_id' => $type->id,
+            'loan_plan_id' => $plan->id,
             'principal_amount' => 100, // below minimum
-            'tenure'           => 6,
+            'tenure' => 6,
         ])
         ->assertUnprocessable();
 })->group('borrower-portal');
@@ -190,31 +189,31 @@ test('loan application fails when inactive plan is selected', function () {
     $type = LoanType::factory()->create(['is_active' => true]);
     $plan = LoanPlan::factory()->create([
         'loan_type_id' => $type->id,
-        'is_active'    => false,
+        'is_active' => false,
     ]);
     $borrower = portalBorrower();
 
     $this->actingAs($borrower, 'sanctum')
         ->postJson(route('api.v1.borrower.loans.apply'), [
-            'loan_type_id'     => $type->id,
-            'loan_plan_id'     => $plan->id,
+            'loan_type_id' => $type->id,
+            'loan_plan_id' => $plan->id,
             'principal_amount' => 5000,
-            'tenure'           => 6,
+            'tenure' => 6,
         ])
         ->assertUnprocessable();
 })->group('borrower-portal');
 
 test('inactive borrower cannot apply for a loan', function () {
-    $type    = LoanType::factory()->create(['is_active' => true]);
-    $plan    = LoanPlan::factory()->create(['loan_type_id' => $type->id, 'is_active' => true]);
+    $type = LoanType::factory()->create(['is_active' => true]);
+    $plan = LoanPlan::factory()->create(['loan_type_id' => $type->id, 'is_active' => true]);
     $borrower = portalBorrower(['is_active' => false]);
 
     $this->actingAs($borrower, 'sanctum')
         ->postJson(route('api.v1.borrower.loans.apply'), [
-            'loan_type_id'     => $type->id,
-            'loan_plan_id'     => $plan->id,
+            'loan_type_id' => $type->id,
+            'loan_plan_id' => $plan->id,
             'principal_amount' => 5000,
-            'tenure'           => 6,
+            'tenure' => 6,
         ])
         ->assertForbidden();
 })->group('borrower-portal');

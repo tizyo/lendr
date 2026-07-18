@@ -24,34 +24,36 @@ class ClickatellDriver
         try {
             $response = Http::withHeaders([
                 'Authorization' => $this->apiKey,
-                'Content-Type'  => 'application/json',
+                'Content-Type' => 'application/json',
             ])->post(self::API_URL, [
                 'messages' => [
                     [
-                        'channel'  => 'sms',
-                        'to'       => $phone,
-                        'content'  => $message,
-                        'from'     => $this->senderId,
+                        'channel' => 'sms',
+                        'to' => $phone,
+                        'content' => $message,
+                        'from' => $this->senderId,
                     ],
                 ],
             ]);
 
             if (! $response->successful()) {
                 Log::warning('[SMS:Clickatell] Send failed', [
-                    'phone'  => $phone,
+                    'phone' => $phone,
                     'status' => $response->status(),
-                    'body'   => $response->body(),
+                    'body' => $response->body(),
                 ]);
+
                 return false;
             }
 
-            $data     = $response->json();
+            $data = $response->json();
             $messages = data_get($data, 'messages', []);
 
             foreach ($messages as $msg) {
                 $accepted = data_get($msg, 'accepted', false);
                 if (! $accepted) {
                     Log::warning('[SMS:Clickatell] Message rejected', ['phone' => $phone, 'msg' => $msg]);
+
                     return false;
                 }
             }

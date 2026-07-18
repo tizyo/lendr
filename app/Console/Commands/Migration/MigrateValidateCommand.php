@@ -39,10 +39,11 @@ class MigrateValidateCommand extends Command
 
         if (! $tenantId) {
             $this->error('No tenants found.');
+
             return self::FAILURE;
         }
 
-        $svc    = new MigrationService((string) $tenantId);
+        $svc = new MigrationService((string) $tenantId);
         $report = new ValidationReport;
         $legacy = $svc->legacy();
 
@@ -51,15 +52,15 @@ class MigrateValidateCommand extends Command
 
         // ── 1. borrower_count ─────────────────────────────────────────────────
         try {
-            $legacyTable  = $legacy->getSchemaBuilder()->hasTable('borrowers') ? 'borrowers' : 'customers';
-            $legacyCount  = $legacy->table($legacyTable)->count();
-            $lendrCount   = DB::table('borrowers')->count();
-            $diff         = abs($legacyCount - $lendrCount);
-            $detail       = "legacy={$legacyCount} lendr={$lendrCount} diff={$diff}";
+            $legacyTable = $legacy->getSchemaBuilder()->hasTable('borrowers') ? 'borrowers' : 'customers';
+            $legacyCount = $legacy->table($legacyTable)->count();
+            $lendrCount = DB::table('borrowers')->count();
+            $diff = abs($legacyCount - $lendrCount);
+            $detail = "legacy={$legacyCount} lendr={$lendrCount} diff={$diff}";
 
             $report = $diff === 0
                 ? $report->passed('borrower_count', $detail)
-                : ($diff <= 5 ? $report->warning('borrower_count', $detail . ' (possible deduplication)')
+                : ($diff <= 5 ? $report->warning('borrower_count', $detail.' (possible deduplication)')
                               : $report->failed('borrower_count', $detail));
         } catch (\Throwable $e) {
             $report = $report->failed('borrower_count', $e->getMessage());
@@ -68,11 +69,11 @@ class MigrateValidateCommand extends Command
         // ── 2. loan_count_by_status ───────────────────────────────────────────
         try {
             $legacyLoans = $legacy->table('loan')->selectRaw('status, COUNT(*) as cnt')->groupBy('status')->get();
-            $lendrLoans  = DB::table('loans')->selectRaw('status, COUNT(*) as cnt')->groupBy('status')->get();
+            $lendrLoans = DB::table('loans')->selectRaw('status, COUNT(*) as cnt')->groupBy('status')->get();
             $totalLegacy = $legacyLoans->sum('cnt');
-            $totalLendr  = $lendrLoans->sum('cnt');
-            $diff        = abs($totalLegacy - $totalLendr);
-            $detail      = "legacy_total={$totalLegacy} lendr_total={$totalLendr} diff={$diff}";
+            $totalLendr = $lendrLoans->sum('cnt');
+            $diff = abs($totalLegacy - $totalLendr);
+            $detail = "legacy_total={$totalLegacy} lendr_total={$totalLendr} diff={$diff}";
 
             $report = $diff === 0
                 ? $report->passed('loan_count_by_status', $detail)
@@ -84,9 +85,9 @@ class MigrateValidateCommand extends Command
         // ── 3. total_payments_value ───────────────────────────────────────────
         try {
             $legacySum = (string) $legacy->table('payment')->sum('pay_amount');
-            $lendrSum  = (string) DB::table('payments')->sum('amount');
-            $diff      = abs((float) bcsub($legacySum, $lendrSum, 2));
-            $detail    = "legacy={$legacySum} lendr={$lendrSum} diff={$diff}";
+            $lendrSum = (string) DB::table('payments')->sum('amount');
+            $diff = abs((float) bcsub($legacySum, $lendrSum, 2));
+            $detail = "legacy={$legacySum} lendr={$lendrSum} diff={$diff}";
 
             $report = $diff < 0.02
                 ? $report->passed('total_payments_value', $detail)
@@ -97,13 +98,13 @@ class MigrateValidateCommand extends Command
 
         // ── 4. fund_balance_check ─────────────────────────────────────────────
         try {
-            $stored      = (string) (DB::table('fund_balances')->value('available_balance') ?? 0);
-            $deposits    = (string) DB::table('fund_transactions')->where('type', 'deposit')->sum('amount');
+            $stored = (string) (DB::table('fund_balances')->value('available_balance') ?? 0);
+            $deposits = (string) DB::table('fund_transactions')->where('type', 'deposit')->sum('amount');
             $collections = (string) DB::table('payments')->sum('amount');
-            $disbursed   = (string) DB::table('fund_transactions')->where('type', 'disbursement')->sum('amount');
-            $recalc      = bcsub(bcadd($deposits, $collections, 2), $disbursed, 2);
-            $diff        = abs((float) bcsub($stored, $recalc, 2));
-            $detail      = "stored={$stored} recalculated={$recalc} diff={$diff}";
+            $disbursed = (string) DB::table('fund_transactions')->where('type', 'disbursement')->sum('amount');
+            $recalc = bcsub(bcadd($deposits, $collections, 2), $disbursed, 2);
+            $diff = abs((float) bcsub($stored, $recalc, 2));
+            $detail = "stored={$stored} recalculated={$recalc} diff={$diff}";
 
             $report = $diff <= 0.01
                 ? $report->passed('fund_balance_check', $detail)
@@ -119,7 +120,7 @@ class MigrateValidateCommand extends Command
             DB::table('loans')->orderBy('id')->chunk(200, function ($loans) use (&$mismatchCount) {
                 foreach ($loans as $loan) {
                     $sumPaid = (string) DB::table('payments')->where('loan_id', $loan->id)->sum('amount');
-                    $diff    = abs((float) bcsub($sumPaid, (string) $loan->total_paid, 2));
+                    $diff = abs((float) bcsub($sumPaid, (string) $loan->total_paid, 2));
                     if ($diff > 0.02) {
                         $mismatchCount++;
                     }
@@ -141,8 +142,8 @@ class MigrateValidateCommand extends Command
             $orphanCount = DB::table('loans')
                 ->whereNotExists(function ($q) {
                     $q->select(DB::raw(1))
-                      ->from('borrowers')
-                      ->whereColumn('borrowers.id', 'loans.borrower_id');
+                        ->from('borrowers')
+                        ->whereColumn('borrowers.id', 'loans.borrower_id');
                 })
                 ->count();
 
@@ -192,7 +193,7 @@ class MigrateValidateCommand extends Command
                 foreach ($paths as $path) {
                     try {
                         // Extract S3 key from URL or use path directly
-                        $key    = parse_url($path, PHP_URL_PATH);
+                        $key = parse_url($path, PHP_URL_PATH);
                         $exists = Storage::disk('s3')->exists(ltrim($key, '/'));
                         if (! $exists) {
                             $failedFiles++;
@@ -202,7 +203,7 @@ class MigrateValidateCommand extends Command
                     }
                 }
 
-                $total  = $paths->count();
+                $total = $paths->count();
                 $detail = "sampled={$total} failed={$failedFiles}";
                 $report = $failedFiles === 0
                     ? $report->passed('file_check', $total === 0 ? 'no files to check' : $detail)
@@ -222,10 +223,10 @@ class MigrateValidateCommand extends Command
         $this->newLine();
 
         foreach ($report->checks() as $check => $result) {
-            $colour = match($result['status']) {
-                ValidationReport::STATUS_PASSED  => 'green',
+            $colour = match ($result['status']) {
+                ValidationReport::STATUS_PASSED => 'green',
                 ValidationReport::STATUS_WARNING => 'yellow',
-                ValidationReport::STATUS_FAILED  => 'red',
+                ValidationReport::STATUS_FAILED => 'red',
             };
 
             $this->line(sprintf(
@@ -238,9 +239,9 @@ class MigrateValidateCommand extends Command
         }
 
         $this->newLine();
-        $passed   = $report->countByStatus(ValidationReport::STATUS_PASSED);
+        $passed = $report->countByStatus(ValidationReport::STATUS_PASSED);
         $warnings = $report->countByStatus(ValidationReport::STATUS_WARNING);
-        $failed   = $report->countByStatus(ValidationReport::STATUS_FAILED);
+        $failed = $report->countByStatus(ValidationReport::STATUS_FAILED);
 
         $this->line("  Passed: <fg=green>{$passed}</>  Warnings: <fg=yellow>{$warnings}</>  Failed: <fg=red>{$failed}</>");
         $this->newLine();

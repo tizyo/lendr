@@ -36,10 +36,10 @@ class WriteoffController extends BaseApiController
     public function recovery(Request $request, Loan $loan): JsonResponse
     {
         $request->validate([
-            'amount'        => ['required', 'numeric', 'min:0.01'],
-            'method'        => ['required', 'in:cash,bank_transfer,mobile_money'],
-            'reference'     => ['nullable', 'string', 'max:100'],
-            'notes'         => ['nullable', 'string', 'max:500'],
+            'amount' => ['required', 'numeric', 'min:0.01'],
+            'method' => ['required', 'in:cash,bank_transfer,mobile_money'],
+            'reference' => ['nullable', 'string', 'max:100'],
+            'notes' => ['nullable', 'string', 'max:500'],
             'recovery_date' => ['nullable', 'date'],
         ]);
 
@@ -50,11 +50,11 @@ class WriteoffController extends BaseApiController
         }
 
         $recovery = $writeoff->recoveries()->create([
-            'recorded_by'   => auth()->id(),
-            'amount'        => $request->amount,
-            'method'        => $request->method,
-            'reference'     => $request->reference,
-            'notes'         => $request->notes,
+            'recorded_by' => auth()->id(),
+            'amount' => $request->amount,
+            'method' => $request->method,
+            'reference' => $request->reference,
+            'notes' => $request->notes,
             'recovery_date' => $request->recovery_date ?? now()->toDateString(),
         ]);
 
@@ -71,14 +71,14 @@ class WriteoffController extends BaseApiController
                 ],
                 $loan,
                 $recovery->recovery_date->toDateString(),
-                auth()->id()
+                auth()->id(),
             );
         } catch (\Throwable) {
             // GL accounts may not be seeded; do not block recovery
         }
 
         return $this->success([
-            'recovery'        => $this->formatRecovery($recovery),
+            'recovery' => $this->formatRecovery($recovery),
             'total_recovered' => (float) $writeoff->fresh()->total_recovered,
         ], 'Recovery recorded.', 201);
     }
@@ -91,7 +91,7 @@ class WriteoffController extends BaseApiController
     {
         $query = LoanWriteoff::with(['loan.borrower', 'writtenOffBy'])
             ->when($request->date_from, fn ($q, $d) => $q->whereDate('created_at', '>=', $d))
-            ->when($request->date_to,   fn ($q, $d) => $q->whereDate('created_at', '<=', $d))
+            ->when($request->date_to, fn ($q, $d) => $q->whereDate('created_at', '<=', $d))
             ->orderByDesc('created_at');
 
         $paginator = $query->paginate($request->integer('per_page', 20));
@@ -104,21 +104,21 @@ class WriteoffController extends BaseApiController
     private function formatWriteoff(LoanWriteoff $w): array
     {
         return [
-            'id'                  => $w->id,
-            'loan_id'             => $w->loan_id,
-            'loan_number'         => $w->loan?->loan_number,
-            'borrower'            => $w->loan?->borrower ? [
-                'id'   => $w->loan->borrower->id,
+            'id' => $w->id,
+            'loan_id' => $w->loan_id,
+            'loan_number' => $w->loan?->loan_number,
+            'borrower' => $w->loan?->borrower ? [
+                'id' => $w->loan->borrower->id,
                 'name' => $w->loan->borrower->full_name,
             ] : null,
-            'written_off_by'      => $w->writtenOffBy?->name,
-            'written_off_amount'  => (float) $w->written_off_amount,
-            'total_recovered'     => (float) $w->total_recovered,
-            'net_loss'            => $w->netLoss(),
-            'recovery_rate'       => $w->recoveryRate(),
-            'reason'              => $w->reason,
-            'written_off_at'      => $w->created_at->toDateString(),
-            'recoveries'          => $w->relationLoaded('recoveries')
+            'written_off_by' => $w->writtenOffBy?->name,
+            'written_off_amount' => (float) $w->written_off_amount,
+            'total_recovered' => (float) $w->total_recovered,
+            'net_loss' => $w->netLoss(),
+            'recovery_rate' => $w->recoveryRate(),
+            'reason' => $w->reason,
+            'written_off_at' => $w->created_at->toDateString(),
+            'recoveries' => $w->relationLoaded('recoveries')
                 ? $w->recoveries->map(fn ($r) => $this->formatRecovery($r))->values()
                 : [],
         ];
@@ -127,13 +127,13 @@ class WriteoffController extends BaseApiController
     private function formatRecovery(\App\Models\Tenant\LoanWriteoffRecovery $r): array
     {
         return [
-            'id'            => $r->id,
-            'amount'        => (float) $r->amount,
-            'method'        => $r->method,
-            'reference'     => $r->reference,
-            'notes'         => $r->notes,
+            'id' => $r->id,
+            'amount' => (float) $r->amount,
+            'method' => $r->method,
+            'reference' => $r->reference,
+            'notes' => $r->notes,
             'recovery_date' => $r->recovery_date->toDateString(),
-            'recorded_by'   => $r->recordedBy?->name,
+            'recorded_by' => $r->recordedBy?->name,
         ];
     }
 }

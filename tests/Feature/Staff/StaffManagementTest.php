@@ -62,27 +62,27 @@ test('a new staff member can be created', function () {
     $response = $this->actingAs($admin)
         ->withHeaders(['Accept' => 'application/json'])
         ->postJson(route('api.v1.staff.store'), [
-            'name'     => 'Jane Mwale',
-            'email'    => 'jane.mwale@lendr.test',
-            'role'     => UserRole::LoanOfficer->value,
+            'name' => 'Jane Mwale',
+            'email' => 'jane.mwale@lendr.test',
+            'role' => UserRole::LoanOfficer->value,
             'password' => 'Password1!',
         ]);
 
     $response->assertStatus(201)
-             ->assertJsonPath('data.name', 'Jane Mwale')
-             ->assertJsonPath('data.role', 'loan_officer');
+        ->assertJsonPath('data.name', 'Jane Mwale')
+        ->assertJsonPath('data.role', 'loan_officer');
 });
 
 test('duplicate email is rejected on create', function () {
-    $admin   = adminUser();
+    $admin = adminUser();
     $existing = makeStaff(['email' => 'duplicate@lendr.test']);
 
     $this->actingAs($admin)
         ->withHeaders(['Accept' => 'application/json'])
         ->postJson(route('api.v1.staff.store'), [
-            'name'     => 'Another',
-            'email'    => 'duplicate@lendr.test',
-            'role'     => UserRole::Cashier->value,
+            'name' => 'Another',
+            'email' => 'duplicate@lendr.test',
+            'role' => UserRole::Cashier->value,
             'password' => 'Password1!',
         ])
         ->assertStatus(422)

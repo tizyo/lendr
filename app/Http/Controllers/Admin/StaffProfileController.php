@@ -18,14 +18,14 @@ class StaffProfileController extends Controller
 
         return Inertia::render('staff/Profile', [
             'staff' => [
-                'id'                 => $user->id,
-                'name'               => $user->name,
-                'email'              => $user->email,
-                'username'           => $user->username,
-                'phone'              => $user->phone,
-                'role'               => $user->role,
-                'department'         => $user->department,
-                'branch'             => $user->branch,
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'username' => $user->username,
+                'phone' => $user->phone,
+                'role' => $user->role,
+                'department' => $user->department,
+                'branch' => $user->branch,
                 'two_factor_enabled' => (bool) $user->two_factor_confirmed_at,
             ],
         ]);
@@ -36,7 +36,7 @@ class StaffProfileController extends Controller
         $user = $request->user();
 
         $data = $request->validate([
-            'name'  => ['required', 'string', 'max:150'],
+            'name' => ['required', 'string', 'max:150'],
             'phone' => ['nullable', 'string', 'max:20'],
         ]);
 
@@ -51,7 +51,7 @@ class StaffProfileController extends Controller
 
         $request->validate([
             'current_password' => ['required', 'current_password'],
-            'password'         => ['required', 'confirmed', Password::min(8)],
+            'password' => ['required', 'confirmed', Password::min(8)],
         ]);
 
         $user->update(['password' => Hash::make($request->password)]);

@@ -34,9 +34,9 @@ class KycPullService
         }
 
         return [
-            'found'         => true,
+            'found' => true,
             'ghost_user_id' => $ghostUser->id,
-            'fields'        => $this->buildFields($ghostUser),
+            'fields' => $this->buildFields($ghostUser),
         ];
     }
 
@@ -52,15 +52,15 @@ class KycPullService
         $ghostUser = GhostUser::findOrFail($ghostUserId);
 
         $map = [
-            'name'               => fn () => ['first_name' => $ghostUser->name],
-            'phone'              => fn () => ['phone'      => $ghostUser->phone],
-            'email'              => fn () => ['email'      => $ghostUser->email],
-            'address'            => fn () => ['address'    => $ghostUser->address],
-            'city'               => fn () => ['city'       => $ghostUser->city],
-            'date_of_birth'      => fn () => ['date_of_birth' => $ghostUser->date_of_birth?->toDateString()],
-            'gender'             => fn () => ['gender'     => $ghostUser->gender],
-            'national_id'        => fn () => ['national_id' => $ghostUser->national_id],
-            'tpin_number'        => fn () => ['tpin_number' => $ghostUser->tpin_number],
+            'name' => fn () => ['first_name' => $ghostUser->name],
+            'phone' => fn () => ['phone' => $ghostUser->phone],
+            'email' => fn () => ['email' => $ghostUser->email],
+            'address' => fn () => ['address' => $ghostUser->address],
+            'city' => fn () => ['city' => $ghostUser->city],
+            'date_of_birth' => fn () => ['date_of_birth' => $ghostUser->date_of_birth?->toDateString()],
+            'gender' => fn () => ['gender' => $ghostUser->gender],
+            'national_id' => fn () => ['national_id' => $ghostUser->national_id],
+            'tpin_number' => fn () => ['tpin_number' => $ghostUser->tpin_number],
             'company_reg_number' => fn () => ['company_reg_number' => $ghostUser->company_reg_number],
         ];
 
@@ -81,16 +81,36 @@ class KycPullService
     {
         $fields = [];
 
-        if ($user->name)               $fields['name']               = $user->name;
-        if ($user->phone)              $fields['phone']              = $user->phone;
-        if ($user->email)              $fields['email']              = $user->email;
-        if ($user->address)            $fields['address']            = $user->address;
-        if ($user->city)               $fields['city']               = $user->city;
-        if ($user->date_of_birth)      $fields['date_of_birth']      = $user->date_of_birth->toDateString();
-        if ($user->gender)             $fields['gender']             = $user->gender;
-        if ($user->national_id)        $fields['national_id']        = $user->national_id;
-        if ($user->tpin_number)        $fields['tpin_number']        = $user->tpin_number;
-        if ($user->company_reg_number) $fields['company_reg_number'] = $user->company_reg_number;
+        if ($user->name) {
+            $fields['name'] = $user->name;
+        }
+        if ($user->phone) {
+            $fields['phone'] = $user->phone;
+        }
+        if ($user->email) {
+            $fields['email'] = $user->email;
+        }
+        if ($user->address) {
+            $fields['address'] = $user->address;
+        }
+        if ($user->city) {
+            $fields['city'] = $user->city;
+        }
+        if ($user->date_of_birth) {
+            $fields['date_of_birth'] = $user->date_of_birth->toDateString();
+        }
+        if ($user->gender) {
+            $fields['gender'] = $user->gender;
+        }
+        if ($user->national_id) {
+            $fields['national_id'] = $user->national_id;
+        }
+        if ($user->tpin_number) {
+            $fields['tpin_number'] = $user->tpin_number;
+        }
+        if ($user->company_reg_number) {
+            $fields['company_reg_number'] = $user->company_reg_number;
+        }
 
         return $fields;
     }

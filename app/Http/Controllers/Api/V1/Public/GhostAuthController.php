@@ -26,14 +26,14 @@ class GhostAuthController extends BaseApiController
     {
         $data = $request->validate([
             'phone' => ['required', 'string', 'max:20'],
-            'name'  => ['required', 'string', 'max:100'],
+            'name' => ['required', 'string', 'max:100'],
             'email' => ['nullable', 'email', 'max:100'],
         ]);
 
         $user = $this->svc->register($data['phone'], $data['name'], $data['email'] ?? null);
 
         return $this->success([
-            'ghost_user_id'     => $user->id,
+            'ghost_user_id' => $user->id,
             'is_phone_verified' => $user->is_phone_verified,
         ], 'Account ready. Request an OTP to sign in.', 201);
     }
@@ -75,7 +75,7 @@ class GhostAuthController extends BaseApiController
     {
         $data = $request->validate([
             'phone' => ['required', 'string'],
-            'otp'   => ['required', 'string', 'size:6'],
+            'otp' => ['required', 'string', 'size:6'],
         ]);
 
         $user = $this->svc->findByPhone($data['phone']);
@@ -91,12 +91,12 @@ class GhostAuthController extends BaseApiController
         $token = $user->createToken('marketplace')->plainTextToken;
 
         return $this->success([
-            'token'      => $token,
+            'token' => $token,
             'ghost_user' => [
-                'id'                => $user->id,
-                'name'              => $user->name,
-                'phone'             => $user->phone,
-                'email'             => $user->email,
+                'id' => $user->id,
+                'name' => $user->name,
+                'phone' => $user->phone,
+                'email' => $user->email,
                 'is_phone_verified' => $user->is_phone_verified,
             ],
         ], 'Signed in successfully.');
@@ -112,14 +112,14 @@ class GhostAuthController extends BaseApiController
         $user = $request->user();
 
         return $this->success([
-            'id'                => $user->id,
-            'name'              => $user->name,
-            'phone'             => $user->phone,
-            'email'             => $user->email,
-            'address'           => $user->address,
-            'city'              => $user->city,
-            'date_of_birth'     => $user->date_of_birth?->toDateString(),
-            'gender'            => $user->gender,
+            'id' => $user->id,
+            'name' => $user->name,
+            'phone' => $user->phone,
+            'email' => $user->email,
+            'address' => $user->address,
+            'city' => $user->city,
+            'date_of_birth' => $user->date_of_birth?->toDateString(),
+            'gender' => $user->gender,
             'is_phone_verified' => $user->is_phone_verified,
         ]);
     }
@@ -134,14 +134,14 @@ class GhostAuthController extends BaseApiController
         $user = $request->user();
 
         $data = $request->validate([
-            'name'               => ['sometimes', 'string', 'max:100'],
-            'email'              => ['sometimes', 'nullable', 'email', 'max:100'],
-            'address'            => ['sometimes', 'nullable', 'string', 'max:255'],
-            'city'               => ['sometimes', 'nullable', 'string', 'max:100'],
-            'date_of_birth'      => ['sometimes', 'nullable', 'date'],
-            'gender'             => ['sometimes', 'nullable', 'in:male,female,other'],
-            'national_id'        => ['sometimes', 'nullable', 'string', 'max:30'],
-            'tpin_number'        => ['sometimes', 'nullable', 'string', 'max:20'],
+            'name' => ['sometimes', 'string', 'max:100'],
+            'email' => ['sometimes', 'nullable', 'email', 'max:100'],
+            'address' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'city' => ['sometimes', 'nullable', 'string', 'max:100'],
+            'date_of_birth' => ['sometimes', 'nullable', 'date'],
+            'gender' => ['sometimes', 'nullable', 'in:male,female,other'],
+            'national_id' => ['sometimes', 'nullable', 'string', 'max:30'],
+            'tpin_number' => ['sometimes', 'nullable', 'string', 'max:20'],
             'company_reg_number' => ['sometimes', 'nullable', 'string', 'max:30'],
         ]);
 

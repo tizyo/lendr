@@ -18,8 +18,8 @@ class NotificationPreferenceController extends BaseApiController
 
         return $this->success([
             'channels' => NotificationPreference::channels(),
-            'events'   => NotificationPreference::events(),
-            'matrix'   => $matrix,
+            'events' => NotificationPreference::events(),
+            'matrix' => $matrix,
         ]);
     }
 
@@ -31,10 +31,10 @@ class NotificationPreferenceController extends BaseApiController
     public function update(Request $request): JsonResponse
     {
         $data = $request->validate([
-            'preferences'                 => ['required', 'array', 'min:1'],
-            'preferences.*.channel'       => ['required', 'in:'.implode(',', NotificationPreference::channels())],
-            'preferences.*.event'         => ['required', 'in:'.implode(',', NotificationPreference::events())],
-            'preferences.*.is_enabled'    => ['required', 'boolean'],
+            'preferences' => ['required', 'array', 'min:1'],
+            'preferences.*.channel' => ['required', 'in:'.implode(',', NotificationPreference::channels())],
+            'preferences.*.event' => ['required', 'in:'.implode(',', NotificationPreference::events())],
+            'preferences.*.is_enabled' => ['required', 'boolean'],
         ]);
 
         foreach ($data['preferences'] as $pref) {
@@ -42,15 +42,15 @@ class NotificationPreferenceController extends BaseApiController
                 [
                     'user_id' => auth()->id(),
                     'channel' => $pref['channel'],
-                    'event'   => $pref['event'],
+                    'event' => $pref['event'],
                 ],
-                ['is_enabled' => $pref['is_enabled']]
+                ['is_enabled' => $pref['is_enabled']],
             );
         }
 
         return $this->success(
             ['matrix' => NotificationPreference::matrixForUser(auth()->id())],
-            'Preferences updated.'
+            'Preferences updated.',
         );
     }
 }

@@ -30,7 +30,7 @@ test('matrix includes all channels and events', function () {
         ->assertOk();
 
     $channels = $response->json('data.channels');
-    $events   = $response->json('data.events');
+    $events = $response->json('data.events');
 
     expect($channels)->toContain('in_app', 'email', 'sms');
     expect($events)->toContain('loan_status_change', 'payment_recorded', 'overdue_reminder');
@@ -55,9 +55,9 @@ test('matrix defaults all preferences to enabled when none are stored', function
 test('stored preferences override defaults in matrix', function () {
     $user = prefUser();
     NotificationPreference::create([
-        'user_id'    => $user->id,
-        'channel'    => 'email',
-        'event'      => 'overdue_reminder',
+        'user_id' => $user->id,
+        'channel' => 'email',
+        'event' => 'overdue_reminder',
         'is_enabled' => false,
     ]);
 
@@ -89,9 +89,9 @@ test('user can update a single notification preference', function () {
         ->assertJsonPath('message', 'Preferences updated.');
 
     $this->assertDatabaseHas('notification_preferences', [
-        'user_id'    => $user->id,
-        'channel'    => 'email',
-        'event'      => 'overdue_reminder',
+        'user_id' => $user->id,
+        'channel' => 'email',
+        'event' => 'overdue_reminder',
         'is_enabled' => 0,
     ]);
 })->group('notification-preferences');
@@ -128,13 +128,13 @@ test('updating a preference twice keeps only one DB row', function () {
     $this->assertSame(1, NotificationPreference::where([
         'user_id' => $user->id,
         'channel' => 'email',
-        'event'   => 'broadcast',
+        'event' => 'broadcast',
     ])->count());
 
     $this->assertDatabaseHas('notification_preferences', [
-        'user_id'    => $user->id,
-        'channel'    => 'email',
-        'event'      => 'broadcast',
+        'user_id' => $user->id,
+        'channel' => 'email',
+        'event' => 'broadcast',
         'is_enabled' => 1,
     ]);
 })->group('notification-preferences');

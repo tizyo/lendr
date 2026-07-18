@@ -12,9 +12,9 @@ class LandlordUserFactory extends Factory
     public function definition(): array
     {
         return [
-            'name'      => $this->faker->name(),
-            'email'     => $this->faker->unique()->safeEmail(),
-            'password'  => bcrypt('password'),
+            'name' => $this->faker->name(),
+            'email' => $this->faker->unique()->safeEmail(),
+            'password' => bcrypt('password'),
             'is_active' => true,
         ];
     }

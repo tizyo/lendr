@@ -19,30 +19,30 @@ function collectionOfficer(): User
 
 function overdueLoan(User $officer): Loan
 {
-    $type     = LoanType::factory()->create();
-    $plan     = LoanPlan::factory()->create(['loan_type_id' => $type->id]);
+    $type = LoanType::factory()->create();
+    $plan = LoanPlan::factory()->create(['loan_type_id' => $type->id]);
     $borrower = Borrower::factory()->create();
 
     $loan = Loan::factory()->create([
-        'borrower_id'        => $borrower->id,
-        'loan_type_id'       => $type->id,
-        'loan_plan_id'       => $plan->id,
-        'created_by'         => $officer->id,
-        'status'             => LoanStatus::Active,
+        'borrower_id' => $borrower->id,
+        'loan_type_id' => $type->id,
+        'loan_plan_id' => $plan->id,
+        'created_by' => $officer->id,
+        'status' => LoanStatus::Active,
         'outstanding_balance' => 5000.00,
     ]);
 
     // Overdue instalment — due 30 days ago, unpaid
     LoanSchedule::create([
-        'loan_id'           => $loan->id,
+        'loan_id' => $loan->id,
         'instalment_number' => 1,
-        'due_date'          => now()->subDays(30),
-        'principal_due'     => 800,
-        'interest_due'      => 250,
-        'fee_due'           => 0,
-        'total_due'         => 1050,
-        'outstanding'       => 5000,
-        'is_paid'           => false,
+        'due_date' => now()->subDays(30),
+        'principal_due' => 800,
+        'interest_due' => 250,
+        'fee_due' => 0,
+        'total_due' => 1050,
+        'outstanding' => 5000,
+        'is_paid' => false,
     ]);
 
     return $loan;
@@ -88,13 +88,13 @@ test('collections stats endpoint returns expected keys', function () {
 
 test('officer can log a collection call', function () {
     $officer = collectionOfficer();
-    $loan    = overdueLoan($officer);
+    $loan = overdueLoan($officer);
 
     $this->actingAs($officer)
         ->postJson(route('collections.logs.store', $loan), [
             'contact_method' => 'call',
-            'outcome'        => 'reached',
-            'notes'          => 'Borrower promised to pay by Friday.',
+            'outcome' => 'reached',
+            'notes' => 'Borrower promised to pay by Friday.',
         ])
         ->assertOk()
         ->assertJsonPath('message', 'Collection activity recorded.')
@@ -102,61 +102,61 @@ test('officer can log a collection call', function () {
         ->assertJsonPath('log.outcome', 'reached');
 
     $this->assertDatabaseHas('collection_logs', [
-        'loan_id'        => $loan->id,
+        'loan_id' => $loan->id,
         'contact_method' => 'call',
-        'outcome'        => 'reached',
-        'officer_id'     => $officer->id,
+        'outcome' => 'reached',
+        'officer_id' => $officer->id,
     ]);
 })->group('collections');
 
 test('officer can log a field visit with promised amount', function () {
     $officer = collectionOfficer();
-    $loan    = overdueLoan($officer);
+    $loan = overdueLoan($officer);
 
     $this->actingAs($officer)
         ->postJson(route('collections.logs.store', $loan), [
-            'contact_method'  => 'visit',
-            'outcome'         => 'promised_payment',
+            'contact_method' => 'visit',
+            'outcome' => 'promised_payment',
             'amount_promised' => 2000.00,
-            'follow_up_date'  => now()->addDays(5)->toDateString(),
-            'notes'           => 'Will pay in 5 days.',
+            'follow_up_date' => now()->addDays(5)->toDateString(),
+            'notes' => 'Will pay in 5 days.',
         ])
         ->assertOk()
         ->assertJsonPath('log.contact_method', 'visit')
         ->assertJsonPath('log.outcome', 'promised_payment');
 
     $this->assertDatabaseHas('collection_logs', [
-        'loan_id'         => $loan->id,
+        'loan_id' => $loan->id,
         'amount_promised' => 2000.00,
     ]);
 })->group('collections');
 
 test('log records the authenticated officer as officer_id', function () {
     $officer = collectionOfficer();
-    $loan    = overdueLoan($officer);
+    $loan = overdueLoan($officer);
 
     $this->actingAs($officer)
         ->postJson(route('collections.logs.store', $loan), [
             'contact_method' => 'sms',
-            'outcome'        => 'no_answer',
+            'outcome' => 'no_answer',
         ])
         ->assertOk();
 
     $this->assertDatabaseHas('collection_logs', [
-        'loan_id'    => $loan->id,
+        'loan_id' => $loan->id,
         'officer_id' => $officer->id,
     ]);
 })->group('collections');
 
 test('multiple logs can be recorded for the same loan', function () {
     $officer = collectionOfficer();
-    $loan    = overdueLoan($officer);
+    $loan = overdueLoan($officer);
 
     foreach (['call', 'sms', 'whatsapp'] as $method) {
         $this->actingAs($officer)
             ->postJson(route('collections.logs.store', $loan), [
                 'contact_method' => $method,
-                'outcome'        => 'no_answer',
+                'outcome' => 'no_answer',
             ])
             ->assertOk();
     }
@@ -168,7 +168,7 @@ test('multiple logs can be recorded for the same loan', function () {
 
 test('log fails without contact_method', function () {
     $officer = collectionOfficer();
-    $loan    = overdueLoan($officer);
+    $loan = overdueLoan($officer);
 
     $this->actingAs($officer)
         ->postJson(route('collections.logs.store', $loan), [
@@ -180,7 +180,7 @@ test('log fails without contact_method', function () {
 
 test('log fails without outcome', function () {
     $officer = collectionOfficer();
-    $loan    = overdueLoan($officer);
+    $loan = overdueLoan($officer);
 
     $this->actingAs($officer)
         ->postJson(route('collections.logs.store', $loan), [
@@ -192,12 +192,12 @@ test('log fails without outcome', function () {
 
 test('log rejects invalid contact_method', function () {
     $officer = collectionOfficer();
-    $loan    = overdueLoan($officer);
+    $loan = overdueLoan($officer);
 
     $this->actingAs($officer)
         ->postJson(route('collections.logs.store', $loan), [
             'contact_method' => 'telegram',
-            'outcome'        => 'reached',
+            'outcome' => 'reached',
         ])
         ->assertUnprocessable()
         ->assertJsonValidationErrors(['contact_method']);
@@ -205,12 +205,12 @@ test('log rejects invalid contact_method', function () {
 
 test('log rejects invalid outcome', function () {
     $officer = collectionOfficer();
-    $loan    = overdueLoan($officer);
+    $loan = overdueLoan($officer);
 
     $this->actingAs($officer)
         ->postJson(route('collections.logs.store', $loan), [
             'contact_method' => 'call',
-            'outcome'        => 'bribed',
+            'outcome' => 'bribed',
         ])
         ->assertUnprocessable()
         ->assertJsonValidationErrors(['outcome']);
@@ -218,12 +218,12 @@ test('log rejects invalid outcome', function () {
 
 test('follow_up_date must be in the future', function () {
     $officer = collectionOfficer();
-    $loan    = overdueLoan($officer);
+    $loan = overdueLoan($officer);
 
     $this->actingAs($officer)
         ->postJson(route('collections.logs.store', $loan), [
             'contact_method' => 'call',
-            'outcome'        => 'promised_payment',
+            'outcome' => 'promised_payment',
             'follow_up_date' => now()->subDay()->toDateString(),
         ])
         ->assertUnprocessable()
@@ -234,7 +234,7 @@ test('follow_up_date must be in the future', function () {
 
 test('collections show returns loan detail', function () {
     $officer = collectionOfficer();
-    $loan    = overdueLoan($officer);
+    $loan = overdueLoan($officer);
 
     $this->actingAs($officer)
         ->getJson(route('collections.show', $loan))
@@ -245,7 +245,7 @@ test('collections show returns loan detail', function () {
 
 test('unauthenticated user cannot access collections', function () {
     $officer = collectionOfficer();
-    $loan    = overdueLoan($officer);
+    $loan = overdueLoan($officer);
 
     // Web route: JSON requests get 401, browser requests get redirect
     $response = $this->getJson(route('collections.index'));

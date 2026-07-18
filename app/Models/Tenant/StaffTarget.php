@@ -22,9 +22,9 @@ class StaffTarget extends Model
     {
         return [
             'disbursement_target' => 'decimal:2',
-            'collection_target'   => 'decimal:2',
+            'collection_target' => 'decimal:2',
             'new_borrowers_target' => 'integer',
-            'new_loans_target'    => 'integer',
+            'new_loans_target' => 'integer',
         ];
     }
 
@@ -39,9 +39,9 @@ class StaffTarget extends Model
 
     public function actuals(): array
     {
-        $user  = $this->user_id;
+        $user = $this->user_id;
         $month = $this->period_month;
-        $year  = $this->period_year;
+        $year = $this->period_year;
 
         $disbursed = Loan::where('created_by', $user)
             ->whereYear('disbursement_date', $year)
@@ -65,10 +65,10 @@ class StaffTarget extends Model
             ->count();
 
         return [
-            'disbursement_actual'  => (float) $disbursed,
-            'collection_actual'    => (float) $collected,
+            'disbursement_actual' => (float) $disbursed,
+            'collection_actual' => (float) $collected,
             'new_borrowers_actual' => (int) $newBorrowers,
-            'new_loans_actual'     => (int) $newLoans,
+            'new_loans_actual' => (int) $newLoans,
         ];
     }
 
@@ -96,11 +96,11 @@ class StaffTarget extends Model
         $overallPct = count($valid) > 0 ? round(array_sum($valid) / count($valid), 1) : null;
 
         return [
-            'disbursement_pct'   => $disbPct,
-            'collection_pct'     => $collPct,
-            'new_borrowers_pct'  => $borPct,
-            'new_loans_pct'      => $loanPct,
-            'overall_pct'        => $overallPct,
+            'disbursement_pct' => $disbPct,
+            'collection_pct' => $collPct,
+            'new_borrowers_pct' => $borPct,
+            'new_loans_pct' => $loanPct,
+            'overall_pct' => $overallPct,
         ];
     }
 }

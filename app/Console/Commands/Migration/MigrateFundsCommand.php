@@ -27,12 +27,12 @@ class MigrateFundsCommand extends BaseMigrationCommand
 
     public function handle(): int
     {
-        $svc      = $this->makeService();
-        $dryRun   = $this->isDryRun();
-        $batch    = $this->batchSize();
-        $errors   = [];
+        $svc = $this->makeService();
+        $dryRun = $this->isDryRun();
+        $batch = $this->batchSize();
+        $errors = [];
         $migrated = 0;
-        $skipped  = 0;
+        $skipped = 0;
 
         // ── Fund balance snapshot ──────────────────────────────────────────────
         $this->info('→ Migrating fund_balance → fund_balances…');
@@ -45,10 +45,10 @@ class MigrateFundsCommand extends BaseMigrationCommand
                 if (! $exists) {
                     DB::table('fund_balances')->insert([
                         'available_balance' => $balanceRow->available_balance ?? $balanceRow->balance ?? 0,
-                        'total_disbursed'   => $balanceRow->total_disbursed ?? 0,
-                        'total_collected'   => $balanceRow->total_collected ?? 0,
-                        'created_at'        => $balanceRow->created_at ?? now(),
-                        'updated_at'        => $balanceRow->updated_at ?? now(),
+                        'total_disbursed' => $balanceRow->total_disbursed ?? 0,
+                        'total_collected' => $balanceRow->total_collected ?? 0,
+                        'created_at' => $balanceRow->created_at ?? now(),
+                        'updated_at' => $balanceRow->updated_at ?? now(),
                     ]);
                     $migrated++;
                 } else {
@@ -56,7 +56,7 @@ class MigrateFundsCommand extends BaseMigrationCommand
                 }
             }
         } catch (\Throwable $e) {
-            $errors[] = 'fund_balance: ' . $e->getMessage();
+            $errors[] = 'fund_balance: '.$e->getMessage();
         }
 
         // ── Fund deposits ──────────────────────────────────────────────────────
@@ -69,18 +69,19 @@ class MigrateFundsCommand extends BaseMigrationCommand
                 foreach ($rows as $row) {
                     if ($svc->alreadyMigrated('fund_deposits', $row->id)) {
                         $skipped++;
+
                         continue;
                     }
 
                     try {
                         if (! $dryRun) {
                             $newId = DB::table('fund_transactions')->insertGetId([
-                                'type'        => 'deposit',
-                                'amount'      => $row->amount,
+                                'type' => 'deposit',
+                                'amount' => $row->amount,
                                 'description' => $row->description ?? $row->note ?? 'VOZARA migrated deposit',
-                                'reference'   => $row->reference ?? null,
-                                'created_at'  => $row->created_at ?? now(),
-                                'updated_at'  => $row->updated_at ?? now(),
+                                'reference' => $row->reference ?? null,
+                                'created_at' => $row->created_at ?? now(),
+                                'updated_at' => $row->updated_at ?? now(),
                             ]);
                             $svc->logSuccess('fund_deposits', $row->id, $newId);
                         }
@@ -91,7 +92,7 @@ class MigrateFundsCommand extends BaseMigrationCommand
                 }
             });
         } catch (\Throwable $e) {
-            $errors[] = 'fund_deposits table: ' . $e->getMessage();
+            $errors[] = 'fund_deposits table: '.$e->getMessage();
         }
 
         // ── Fund transactions ──────────────────────────────────────────────────
@@ -104,18 +105,19 @@ class MigrateFundsCommand extends BaseMigrationCommand
                 foreach ($rows as $row) {
                     if ($svc->alreadyMigrated('fund_transactions_legacy', $row->id)) {
                         $skipped++;
+
                         continue;
                     }
 
                     try {
                         if (! $dryRun) {
                             $newId = DB::table('fund_transactions')->insertGetId([
-                                'type'        => $row->transaction_type ?? $row->type ?? 'credit',
-                                'amount'      => $row->amount,
+                                'type' => $row->transaction_type ?? $row->type ?? 'credit',
+                                'amount' => $row->amount,
                                 'description' => $row->description ?? $row->note ?? null,
-                                'reference'   => $row->reference ?? null,
-                                'created_at'  => $row->created_at ?? now(),
-                                'updated_at'  => $row->updated_at ?? now(),
+                                'reference' => $row->reference ?? null,
+                                'created_at' => $row->created_at ?? now(),
+                                'updated_at' => $row->updated_at ?? now(),
                             ]);
                             $svc->logSuccess('fund_transactions_legacy', $row->id, $newId);
                         }
@@ -126,7 +128,7 @@ class MigrateFundsCommand extends BaseMigrationCommand
                 }
             });
         } catch (\Throwable $e) {
-            $errors[] = 'fund_transactions table: ' . $e->getMessage();
+            $errors[] = 'fund_transactions table: '.$e->getMessage();
         }
 
         // ── Balance reconciliation ─────────────────────────────────────────────
@@ -135,12 +137,12 @@ class MigrateFundsCommand extends BaseMigrationCommand
         }
 
         $result = new MigrationResult(
-            step:     'funds',
+            step: 'funds',
             migrated: $migrated,
-            skipped:  $skipped,
-            failed:   count($errors),
-            dryRun:   $dryRun,
-            errors:   $errors,
+            skipped: $skipped,
+            failed: count($errors),
+            dryRun: $dryRun,
+            errors: $errors,
         );
 
         $this->printResult($result);
@@ -155,9 +157,9 @@ class MigrateFundsCommand extends BaseMigrationCommand
             return;
         }
 
-        $deposits     = DB::table('fund_transactions')->where('type', 'deposit')->sum('amount');
+        $deposits = DB::table('fund_transactions')->where('type', 'deposit')->sum('amount');
         $disbursements = DB::table('fund_transactions')->where('type', 'disbursement')->sum('amount');
-        $collections   = DB::table('payments')->sum('amount');
+        $collections = DB::table('payments')->sum('amount');
 
         $recalculated = bcadd(bcadd((string) $deposits, (string) $collections, 2), '0', 2);
         $recalculated = bcsub($recalculated, (string) $disbursements, 2);
@@ -168,7 +170,7 @@ class MigrateFundsCommand extends BaseMigrationCommand
             $errors[] = "Fund balance discrepancy: stored={$balance->available_balance} recalculated={$recalculated} diff={$diff}";
             $this->warn("  ! Fund balance discrepancy of {$diff} detected — review migration_log");
         } else {
-            $this->line('  <fg=green>Fund balance reconciled OK (diff=' . number_format($diff, 4) . ').</>');
+            $this->line('  <fg=green>Fund balance reconciled OK (diff='.number_format($diff, 4).').</>');
         }
     }
 }

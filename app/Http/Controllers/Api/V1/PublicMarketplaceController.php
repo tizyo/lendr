@@ -6,7 +6,6 @@ use App\Models\Landlord\PublicLoanProduct;
 use App\Models\Tenant\LoanType;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
 
 /**
  * Cross-tenant public loan product marketplace.
@@ -25,10 +24,9 @@ class PublicMarketplaceController extends BaseApiController
     public function browse(Request $request): JsonResponse
     {
         $query = PublicLoanProduct::active()
-            ->when($request->q, fn ($q) => $q->where(fn ($q) =>
-                $q->where('product_name', 'like', "%{$request->q}%")
-                  ->orWhere('description', 'like', "%{$request->q}%")
-                  ->orWhere('tenant_name', 'like', "%{$request->q}%")
+            ->when($request->q, fn ($q) => $q->where(fn ($q) => $q->where('product_name', 'like', "%{$request->q}%")
+                ->orWhere('description', 'like', "%{$request->q}%")
+                ->orWhere('tenant_name', 'like', "%{$request->q}%"),
             ))
             ->when($request->max_amount, fn ($q) => $q->where('min_amount', '<=', $request->max_amount))
             ->when($request->min_amount, fn ($q) => $q->where('max_amount', '>=', $request->min_amount))
@@ -60,15 +58,15 @@ class PublicMarketplaceController extends BaseApiController
     public function publish(Request $request): JsonResponse
     {
         $data = $request->validate([
-            'loan_type_id'        => ['required', 'integer', 'exists:loan_types,id'],
-            'product_name'        => ['required', 'string', 'max:100'],
-            'description'         => ['nullable', 'string', 'max:500'],
-            'tenant_city'         => ['nullable', 'string', 'max:100'],
+            'loan_type_id' => ['required', 'integer', 'exists:loan_types,id'],
+            'product_name' => ['required', 'string', 'max:100'],
+            'description' => ['nullable', 'string', 'max:500'],
+            'tenant_city' => ['nullable', 'string', 'max:100'],
         ]);
 
-        $loanType  = LoanType::with('plans')->findOrFail($data['loan_type_id']);
-        $plan      = $loanType->plans()->active()->first();
-        $tenantId  = (string) (tenant('id') ?? 'local');
+        $loanType = LoanType::with('plans')->findOrFail($data['loan_type_id']);
+        $plan = $loanType->plans()->active()->first();
+        $tenantId = (string) (tenant('id') ?? 'local');
 
         if (! $plan) {
             return $this->error('Loan type has no active plan to publish.', 422);
@@ -78,24 +76,24 @@ class PublicMarketplaceController extends BaseApiController
         $product = PublicLoanProduct::updateOrCreate(
             ['tenant_id' => $tenantId, 'product_code' => (string) $loanType->id],
             [
-                'tenant_name'         => $data['product_name'],   // display name for the MFI's product
-                'tenant_city'         => $data['tenant_city'] ?? null,
-                'product_name'        => $data['product_name'],
-                'description'         => $data['description'] ?? null,
-                'min_amount'          => $plan->min_amount,
-                'max_amount'          => $plan->max_amount,
-                'interest_rate'       => $plan->interest_rate,
-                'interest_type'       => $plan->interest_type,
-                'interest_period'     => $plan->interest_period,
-                'min_tenure'          => $plan->min_tenure,
-                'max_tenure'          => $plan->max_tenure,
-                'tenure_type'         => $plan->tenure_type,
-                'repayment_schedule'  => $plan->getRawOriginal('repayment_schedule'),
-                'processing_fee'      => $plan->processing_fee,
+                'tenant_name' => $data['product_name'],   // display name for the MFI's product
+                'tenant_city' => $data['tenant_city'] ?? null,
+                'product_name' => $data['product_name'],
+                'description' => $data['description'] ?? null,
+                'min_amount' => $plan->min_amount,
+                'max_amount' => $plan->max_amount,
+                'interest_rate' => $plan->interest_rate,
+                'interest_type' => $plan->interest_type,
+                'interest_period' => $plan->interest_period,
+                'min_tenure' => $plan->min_tenure,
+                'max_tenure' => $plan->max_tenure,
+                'tenure_type' => $plan->tenure_type,
+                'repayment_schedule' => $plan->getRawOriginal('repayment_schedule'),
+                'processing_fee' => $plan->processing_fee,
                 'requires_collateral' => $loanType->requires_collateral,
-                'requires_guarantor'  => $loanType->requires_guarantor,
-                'is_active'           => true,
-            ]
+                'requires_guarantor' => $loanType->requires_guarantor,
+                'is_active' => true,
+            ],
         );
 
         return $this->success($this->formatProduct($product), 'Product published to marketplace.', 201);
@@ -133,24 +131,24 @@ class PublicMarketplaceController extends BaseApiController
     private function formatProduct(PublicLoanProduct $p): array
     {
         return [
-            'id'                  => $p->id,
-            'tenant_name'         => $p->tenant_name,
-            'tenant_city'         => $p->tenant_city,
-            'product_name'        => $p->product_name,
-            'description'         => $p->description,
-            'min_amount'          => (float) $p->min_amount,
-            'max_amount'          => (float) $p->max_amount,
-            'interest_rate'       => (float) $p->interest_rate,
-            'interest_type'       => $p->interest_type,
-            'interest_period'     => $p->interest_period,
-            'min_tenure'          => $p->min_tenure,
-            'max_tenure'          => $p->max_tenure,
-            'tenure_type'         => $p->tenure_type,
-            'repayment_schedule'  => $p->repayment_schedule,
-            'processing_fee'      => (float) $p->processing_fee,
+            'id' => $p->id,
+            'tenant_name' => $p->tenant_name,
+            'tenant_city' => $p->tenant_city,
+            'product_name' => $p->product_name,
+            'description' => $p->description,
+            'min_amount' => (float) $p->min_amount,
+            'max_amount' => (float) $p->max_amount,
+            'interest_rate' => (float) $p->interest_rate,
+            'interest_type' => $p->interest_type,
+            'interest_period' => $p->interest_period,
+            'min_tenure' => $p->min_tenure,
+            'max_tenure' => $p->max_tenure,
+            'tenure_type' => $p->tenure_type,
+            'repayment_schedule' => $p->repayment_schedule,
+            'processing_fee' => (float) $p->processing_fee,
             'requires_collateral' => $p->requires_collateral,
-            'requires_guarantor'  => $p->requires_guarantor,
-            'applications_count'  => $p->applications_count,
+            'requires_guarantor' => $p->requires_guarantor,
+            'applications_count' => $p->applications_count,
         ];
     }
 }

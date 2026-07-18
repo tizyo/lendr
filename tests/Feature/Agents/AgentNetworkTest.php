@@ -20,38 +20,38 @@ function agentAdmin(): User
 function makeAgent(array $attrs = []): Agent
 {
     return Agent::create(array_merge([
-        'agent_number'    => Agent::generateAgentNumber(),
-        'first_name'      => 'Test',
-        'last_name'       => 'Agent',
-        'phone'           => '0977'.rand(100000, 999999),
+        'agent_number' => Agent::generateAgentNumber(),
+        'first_name' => 'Test',
+        'last_name' => 'Agent',
+        'phone' => '0977'.rand(100000, 999999),
         'commission_rate' => 5.00,
         'commission_type' => 'percentage',
-        'status'          => 'active',
+        'status' => 'active',
     ], $attrs));
 }
 
 function makeAgentCommission(Agent $agent, Loan $loan, array $attrs = []): AgentCommission
 {
     return AgentCommission::create(array_merge([
-        'agent_id'         => $agent->id,
-        'loan_id'          => $loan->id,
+        'agent_id' => $agent->id,
+        'loan_id' => $loan->id,
         'disbursed_amount' => 5000,
         'commission_amount' => 250,
-        'status'           => 'pending',
+        'status' => 'pending',
     ], $attrs));
 }
 
 function agentLoan(): Loan
 {
-    $type     = LoanType::first() ?? LoanType::factory()->create();
-    $plan     = LoanPlan::first() ?? LoanPlan::factory()->create(['loan_type_id' => $type->id]);
+    $type = LoanType::first() ?? LoanType::factory()->create();
+    $plan = LoanPlan::first() ?? LoanPlan::factory()->create(['loan_type_id' => $type->id]);
     $borrower = Borrower::factory()->create();
 
     return Loan::factory()->create([
-        'borrower_id'  => $borrower->id,
+        'borrower_id' => $borrower->id,
         'loan_type_id' => $type->id,
         'loan_plan_id' => $plan->id,
-        'status'       => LoanStatus::Active,
+        'status' => LoanStatus::Active,
     ]);
 }
 
@@ -62,9 +62,9 @@ test('can create an agent', function () {
 
     $resp = $this->actingAs($admin)
         ->postJson(route('api.v1.agents.store'), [
-            'first_name'      => 'David',
-            'last_name'       => 'Banda',
-            'phone'           => '0977010101',
+            'first_name' => 'David',
+            'last_name' => 'Banda',
+            'phone' => '0977010101',
             'commission_type' => 'percentage',
             'commission_rate' => 6.5,
         ])
@@ -140,7 +140,7 @@ test('can calculate fixed commission correctly', function () {
 test('can list all commissions', function () {
     $admin = agentAdmin();
     $agent = makeAgent();
-    $loan  = agentLoan();
+    $loan = agentLoan();
     makeAgentCommission($agent, $loan);
 
     $this->actingAs($admin)
@@ -150,9 +150,9 @@ test('can list all commissions', function () {
 })->group('agents');
 
 test('can approve a pending commission', function () {
-    $admin      = agentAdmin();
-    $agent      = makeAgent();
-    $loan       = agentLoan();
+    $admin = agentAdmin();
+    $agent = makeAgent();
+    $loan = agentLoan();
     $commission = makeAgentCommission($agent, $loan);
 
     $this->actingAs($admin)
@@ -162,9 +162,9 @@ test('can approve a pending commission', function () {
 })->group('agents');
 
 test('cannot approve a non-pending commission', function () {
-    $admin      = agentAdmin();
-    $agent      = makeAgent();
-    $loan       = agentLoan();
+    $admin = agentAdmin();
+    $agent = makeAgent();
+    $loan = agentLoan();
     $commission = makeAgentCommission($agent, $loan, ['status' => 'paid']);
 
     $this->actingAs($admin)
@@ -173,14 +173,14 @@ test('cannot approve a non-pending commission', function () {
 })->group('agents');
 
 test('can pay an approved commission', function () {
-    $admin      = agentAdmin();
-    $agent      = makeAgent();
-    $loan       = agentLoan();
+    $admin = agentAdmin();
+    $agent = makeAgent();
+    $loan = agentLoan();
     $commission = makeAgentCommission($agent, $loan, ['status' => 'approved']);
 
     $resp = $this->actingAs($admin)
         ->postJson(route('api.v1.agent-commissions.pay', $commission), [
-            'paid_date'         => now()->toDateString(),
+            'paid_date' => now()->toDateString(),
             'payment_reference' => 'PAY-REF-001',
         ])
         ->assertOk()
@@ -190,9 +190,9 @@ test('can pay an approved commission', function () {
 })->group('agents');
 
 test('cannot pay a non-approved commission', function () {
-    $admin      = agentAdmin();
-    $agent      = makeAgent();
-    $loan       = agentLoan();
+    $admin = agentAdmin();
+    $agent = makeAgent();
+    $loan = agentLoan();
     $commission = makeAgentCommission($agent, $loan, ['status' => 'pending']);
 
     $this->actingAs($admin)
@@ -201,9 +201,9 @@ test('cannot pay a non-approved commission', function () {
 })->group('agents');
 
 test('can view commissions for a specific agent', function () {
-    $admin      = agentAdmin();
-    $agent      = makeAgent();
-    $loan       = agentLoan();
+    $admin = agentAdmin();
+    $agent = makeAgent();
+    $loan = agentLoan();
     makeAgentCommission($agent, $loan);
 
     $this->actingAs($admin)

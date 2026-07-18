@@ -25,8 +25,8 @@ class InsuranceProduct extends Model
     protected function casts(): array
     {
         return [
-            'premium_rate'    => 'decimal:4',
-            'is_active'       => 'boolean',
+            'premium_rate' => 'decimal:4',
+            'is_active' => 'boolean',
             'max_term_months' => 'integer',
         ];
     }

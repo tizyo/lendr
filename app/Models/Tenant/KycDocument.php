@@ -36,9 +36,9 @@ class KycDocument extends Model
     protected function casts(): array
     {
         return [
-            'status'             => KycStatus::class,
-            'reviewed_at'        => 'datetime',
-            'expires_at'         => 'datetime',
+            'status' => KycStatus::class,
+            'reviewed_at' => 'datetime',
+            'expires_at' => 'datetime',
             'expiry_notified_at' => 'datetime',
         ];
     }
@@ -72,6 +72,7 @@ class KycDocument extends Model
             return false;
         }
         $this->update(array_merge(['status' => $next], $attributes));
+
         return true;
     }
 }

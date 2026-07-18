@@ -33,19 +33,19 @@ class CartController extends BaseApiController
             ->latest()
             ->get()
             ->map(fn ($c) => [
-                'cart_id'    => $c->id,
-                'notes'      => $c->notes,
-                'added_at'   => $c->created_at->toIso8601String(),
-                'item'       => $c->item ? [
-                    'id'          => $c->item->id,
-                    'title'       => $c->item->title,
-                    'price'       => (float) $c->item->price,
-                    'category'    => $c->item->category,
-                    'condition'   => $c->item->condition,
-                    'location'    => $c->item->location,
+                'cart_id' => $c->id,
+                'notes' => $c->notes,
+                'added_at' => $c->created_at->toIso8601String(),
+                'item' => $c->item ? [
+                    'id' => $c->item->id,
+                    'title' => $c->item->title,
+                    'price' => (float) $c->item->price,
+                    'category' => $c->item->category,
+                    'condition' => $c->item->condition,
+                    'location' => $c->item->location,
                     'tenant_name' => $c->item->tenant_name,
-                    'is_sold'     => $c->item->is_sold,
-                    'image_url'   => $c->item->primaryImage?->image_url,
+                    'is_sold' => $c->item->is_sold,
+                    'image_url' => $c->item->primaryImage?->image_url,
                 ] : null,
             ]);
 
@@ -67,14 +67,14 @@ class CartController extends BaseApiController
 
         $data = $request->validate([
             'item_id' => ['required', 'integer'],
-            'notes'   => ['nullable', 'string', 'max:500'],
+            'notes' => ['nullable', 'string', 'max:500'],
         ]);
 
         $item = RepoItem::active()->findOrFail($data['item_id']);
 
         $cart = RepoCart::firstOrCreate(
             ['ghost_user_id' => $ghostUser->id, 'item_id' => $item->id],
-            ['notes'         => $data['notes'] ?? null],
+            ['notes' => $data['notes'] ?? null],
         );
 
         return $this->success([

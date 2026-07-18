@@ -15,7 +15,8 @@ use Illuminate\Support\Facades\Log;
  */
 class ProcessUpcomingPaymentRemindersCommand extends Command
 {
-    protected $signature   = 'lendr:payment-reminders {--dry-run : Preview without sending SMS}';
+    protected $signature = 'lendr:payment-reminders {--dry-run : Preview without sending SMS}';
+
     protected $description = 'Send SMS reminders for installments due in 1, 3, or 7 days';
 
     private const REMINDER_DAYS = [7, 3, 1];
@@ -23,7 +24,7 @@ class ProcessUpcomingPaymentRemindersCommand extends Command
     public function handle(): int
     {
         $dryRun = $this->option('dry-run');
-        $sent   = 0;
+        $sent = 0;
 
         foreach (self::REMINDER_DAYS as $daysAhead) {
             $targetDate = now()->addDays($daysAhead)->toDateString();
@@ -35,11 +36,13 @@ class ProcessUpcomingPaymentRemindersCommand extends Command
                 ->chunkById(100, function ($installments) use ($daysAhead, $dryRun, &$sent) {
                     foreach ($installments as $installment) {
                         $loan = $installment->loan;
-                        if (! $loan || ! $loan->borrower?->phone) continue;
+                        if (! $loan || ! $loan->borrower?->phone) {
+                            continue;
+                        }
 
                         if (! $dryRun) {
                             dispatch(new SendLoanEventNotificationJob($loan->id, 'upcoming_payment', [
-                                'due_date'   => $installment->due_date->toDateString(),
+                                'due_date' => $installment->due_date->toDateString(),
                                 'amount_due' => number_format((float) $installment->outstanding, 2),
                             ]));
                         }

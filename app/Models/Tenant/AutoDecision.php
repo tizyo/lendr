@@ -15,9 +15,9 @@ class AutoDecision extends Model
     protected function casts(): array
     {
         return [
-            'factors'     => 'array',
+            'factors' => 'array',
             'credit_score' => 'decimal:2',
-            'dti_pct'     => 'decimal:2',
+            'dti_pct' => 'decimal:2',
             'reviewed_at' => 'datetime',
         ];
     }

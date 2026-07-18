@@ -22,7 +22,7 @@ return new class extends Migration
 
         // Add custom comms flags — only Enterprise gets them
         $features['custom_email'] = true;
-        $features['custom_sms']   = true;
+        $features['custom_sms'] = true;
 
         DB::table('plan_configs')
             ->where('plan', 'enterprise')
@@ -31,21 +31,27 @@ return new class extends Migration
         // Explicitly ensure starter and growth do NOT have these
         foreach (['starter', 'growth'] as $plan) {
             $row = DB::table('plan_configs')->where('plan', $plan)->first();
-            if (! $row) continue;
+            if (! $row) {
+                continue;
+            }
             $f = json_decode($row->features, true) ?? [];
             $f['custom_email'] = false;
-            $f['custom_sms']   = false;
+            $f['custom_sms'] = false;
             DB::table('plan_configs')->where('plan', $plan)->update(['features' => json_encode($f)]);
         }
     }
 
     public function down(): void
     {
-        if (! Schema::hasTable('plan_configs')) return;
+        if (! Schema::hasTable('plan_configs')) {
+            return;
+        }
 
         foreach (['starter', 'growth', 'enterprise'] as $plan) {
             $row = DB::table('plan_configs')->where('plan', $plan)->first();
-            if (! $row) continue;
+            if (! $row) {
+                continue;
+            }
             $f = json_decode($row->features, true) ?? [];
             unset($f['custom_email'], $f['custom_sms']);
             DB::table('plan_configs')->where('plan', $plan)->update(['features' => json_encode($f)]);

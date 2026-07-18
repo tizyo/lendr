@@ -16,7 +16,7 @@ function kycUser(): User
 // ─── Pending Queue ────────────────────────────────────────────────────────────
 
 test('pending kyc queue returns pending and under_review documents', function () {
-    $user     = kycUser();
+    $user = kycUser();
     $borrower = Borrower::factory()->create();
 
     KycDocument::factory()->pending()->count(2)->create(['borrower_id' => $borrower->id]);
@@ -34,7 +34,7 @@ test('pending kyc queue returns pending and under_review documents', function ()
 });
 
 test('pending kyc documents include borrower info', function () {
-    $user     = kycUser();
+    $user = kycUser();
     $borrower = Borrower::factory()->create(['first_name' => 'Chanda', 'last_name' => 'Mutale']);
     KycDocument::factory()->pending()->create(['borrower_id' => $borrower->id]);
 
@@ -49,12 +49,12 @@ test('pending kyc documents include borrower info', function () {
 // ─── Review: Approve ─────────────────────────────────────────────────────────
 
 test('an under_review document can be approved', function () {
-    $user     = kycUser();
+    $user = kycUser();
     $borrower = Borrower::factory()->create();
     // Must be under_review before it can be approved (state machine)
-    $doc      = KycDocument::factory()->create([
+    $doc = KycDocument::factory()->create([
         'borrower_id' => $borrower->id,
-        'status'      => KycStatus::UnderReview,
+        'status' => KycStatus::UnderReview,
     ]);
 
     $response = $this->actingAs($user)
@@ -62,37 +62,37 @@ test('an under_review document can be approved', function () {
         ->putJson(route('api.v1.kyc.review', $doc), ['action' => 'approve']);
 
     $response->assertOk()
-             ->assertJsonPath('data.status', 'verified');
+        ->assertJsonPath('data.status', 'verified');
 
     expect($doc->fresh()->status)->toBe(KycStatus::Verified);
     expect($doc->fresh()->reviewed_by)->toBe($user->id);
 });
 
 test('an under_review document can be rejected with a reason', function () {
-    $user     = kycUser();
+    $user = kycUser();
     $borrower = Borrower::factory()->create();
-    $doc      = KycDocument::factory()->create([
+    $doc = KycDocument::factory()->create([
         'borrower_id' => $borrower->id,
-        'status'      => KycStatus::UnderReview,
+        'status' => KycStatus::UnderReview,
     ]);
 
     $response = $this->actingAs($user)
         ->withHeaders(['Accept' => 'application/json'])
         ->putJson(route('api.v1.kyc.review', $doc), [
-            'action'           => 'reject',
+            'action' => 'reject',
             'rejection_reason' => 'Image is blurry.',
         ]);
 
     $response->assertOk()
-             ->assertJsonPath('data.status', 'rejected');
+        ->assertJsonPath('data.status', 'rejected');
 
     expect($doc->fresh()->rejection_reason)->toBe('Image is blurry.');
 });
 
 test('rejection requires a reason', function () {
-    $user     = kycUser();
+    $user = kycUser();
     $borrower = Borrower::factory()->create();
-    $doc      = KycDocument::factory()->pending()->create(['borrower_id' => $borrower->id]);
+    $doc = KycDocument::factory()->pending()->create(['borrower_id' => $borrower->id]);
 
     $this->actingAs($user)
         ->withHeaders(['Accept' => 'application/json'])
@@ -102,9 +102,9 @@ test('rejection requires a reason', function () {
 });
 
 test('an already verified document cannot be reviewed again', function () {
-    $user     = kycUser();
+    $user = kycUser();
     $borrower = Borrower::factory()->create();
-    $doc      = KycDocument::factory()->verified()->create(['borrower_id' => $borrower->id]);
+    $doc = KycDocument::factory()->verified()->create(['borrower_id' => $borrower->id]);
 
     $this->actingAs($user)
         ->withHeaders(['Accept' => 'application/json'])
@@ -113,9 +113,9 @@ test('an already verified document cannot be reviewed again', function () {
 });
 
 test('review action must be approve or reject', function () {
-    $user     = kycUser();
+    $user = kycUser();
     $borrower = Borrower::factory()->create();
-    $doc      = KycDocument::factory()->pending()->create(['borrower_id' => $borrower->id]);
+    $doc = KycDocument::factory()->pending()->create(['borrower_id' => $borrower->id]);
 
     $this->actingAs($user)
         ->withHeaders(['Accept' => 'application/json'])
@@ -128,11 +128,11 @@ test('review action must be approve or reject', function () {
 test('a kyc document can be deleted', function () {
     Storage::fake('private');
 
-    $user     = kycUser();
+    $user = kycUser();
     $borrower = Borrower::factory()->create();
-    $doc      = KycDocument::factory()->create([
+    $doc = KycDocument::factory()->create([
         'borrower_id' => $borrower->id,
-        'file_path'   => 'kyc/test/sample.jpg',
+        'file_path' => 'kyc/test/sample.jpg',
     ]);
 
     Storage::disk('private')->put('kyc/test/sample.jpg', 'fake content');
@@ -148,11 +148,11 @@ test('a kyc document can be deleted', function () {
 // ─── KYC status sync on borrower ─────────────────────────────────────────────
 
 test('borrower kyc_verified is set after document approval', function () {
-    $user     = kycUser();
+    $user = kycUser();
     $borrower = Borrower::factory()->create(['kyc_verified' => false]);
-    $doc      = KycDocument::factory()->create([
+    $doc = KycDocument::factory()->create([
         'borrower_id' => $borrower->id,
-        'status'      => KycStatus::UnderReview,
+        'status' => KycStatus::UnderReview,
     ]);
 
     $this->actingAs($user)

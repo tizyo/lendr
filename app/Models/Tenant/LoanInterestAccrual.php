@@ -21,11 +21,11 @@ class LoanInterestAccrual extends Model
     protected function casts(): array
     {
         return [
-            'accrual_date'         => 'date',
+            'accrual_date' => 'date',
             'principal_outstanding' => 'decimal:2',
-            'daily_rate'           => 'decimal:6',
-            'accrued_amount'       => 'decimal:2',
-            'is_suspended'         => 'boolean',
+            'daily_rate' => 'decimal:6',
+            'accrued_amount' => 'decimal:2',
+            'is_suspended' => 'boolean',
         ];
     }
 

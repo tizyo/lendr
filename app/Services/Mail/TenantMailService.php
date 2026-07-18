@@ -79,7 +79,9 @@ class TenantMailService
         }
 
         try {
-            if (! Schema::hasTable('settings')) return null;
+            if (! Schema::hasTable('settings')) {
+                return null;
+            }
 
             $s = DB::table('settings')
                 ->whereIn('key', ['smtp_host', 'smtp_port', 'smtp_username', 'smtp_password', 'smtp_from_email', 'smtp_from_name', 'smtp_encryption'])
@@ -88,15 +90,17 @@ class TenantMailService
             $host = $s->get('smtp_host');
             $user = $s->get('smtp_username');
 
-            if (empty($host) || empty($user)) return null;
+            if (empty($host) || empty($user)) {
+                return null;
+            }
 
             return [
-                'transport'  => 'smtp',
-                'host'       => $host,
-                'port'       => (int) ($s->get('smtp_port', 587)),
+                'transport' => 'smtp',
+                'host' => $host,
+                'port' => (int) ($s->get('smtp_port', 587)),
                 'encryption' => $s->get('smtp_encryption', 'tls') ?: null,
-                'username'   => $user,
-                'password'   => $s->get('smtp_password', ''),
+                'username' => $user,
+                'password' => $s->get('smtp_password', ''),
             ];
         } catch (\Throwable) {
             return null;
@@ -108,7 +112,9 @@ class TenantMailService
         try {
             $config = PlatformEmailConfig::active();
 
-            if (! $config || ! $config->isConfigured()) return null;
+            if (! $config || ! $config->isConfigured()) {
+                return null;
+            }
 
             return $config->toMailerConfig();
         } catch (\Throwable) {
@@ -129,7 +135,8 @@ class TenantMailService
                 if ($s->get('smtp_from_email')) {
                     return [$s->get('smtp_from_email') => $s->get('smtp_from_name', 'LENDR')];
                 }
-            } catch (\Throwable) {}
+            } catch (\Throwable) {
+            }
         }
 
         $platform = PlatformEmailConfig::active();

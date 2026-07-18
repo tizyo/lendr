@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Api\V1\Public;
 
 use App\Http\Controllers\Api\V1\BaseApiController;
 use App\Models\Landlord\GhostUser;
-use App\Models\Landlord\RepoCart;
 use App\Models\Landlord\RepoEnquiry;
 use App\Models\Landlord\RepoItem;
 use App\Models\Landlord\Tenant;
@@ -29,10 +28,9 @@ class RepoItemController extends BaseApiController
     {
         $query = RepoItem::active()
             ->with('primaryImage')
-            ->when($request->q, fn ($q) => $q->where(fn ($q) =>
-                $q->where('title', 'like', "%{$request->q}%")
-                  ->orWhere('description', 'like', "%{$request->q}%")
-                  ->orWhere('tenant_name', 'like', "%{$request->q}%")
+            ->when($request->q, fn ($q) => $q->where(fn ($q) => $q->where('title', 'like', "%{$request->q}%")
+                ->orWhere('description', 'like', "%{$request->q}%")
+                ->orWhere('tenant_name', 'like', "%{$request->q}%"),
             ))
             ->when($request->category, fn ($q) => $q->where('category', $request->category))
             ->when($request->condition, fn ($q) => $q->where('condition', $request->condition))
@@ -78,9 +76,9 @@ class RepoItemController extends BaseApiController
         ]);
 
         $enquiry = RepoEnquiry::create([
-            'item_id'      => $item->id,
-            'ghost_user_id'=> $ghostUser->id,
-            'message'      => $data['message'],
+            'item_id' => $item->id,
+            'ghost_user_id' => $ghostUser->id,
+            'message' => $data['message'],
         ]);
 
         $item->increment('enquiries_count');
@@ -88,11 +86,12 @@ class RepoItemController extends BaseApiController
         // Notify tenant staff via SMS (best-effort)
         try {
             $this->notifyTenantOfEnquiry($item, $ghostUser, $data['message']);
-        } catch (\Throwable) {}
+        } catch (\Throwable) {
+        }
 
         return $this->success([
             'enquiry_id' => $enquiry->id,
-            'status'     => 'new',
+            'status' => 'new',
         ], 'Enquiry submitted. The seller will respond shortly.', 201);
     }
 
@@ -114,16 +113,16 @@ class RepoItemController extends BaseApiController
             ->latest()
             ->get()
             ->map(fn ($e) => [
-                'id'         => $e->id,
-                'message'    => $e->message,
-                'status'     => $e->status,
-                'reply'      => $e->reply,
+                'id' => $e->id,
+                'message' => $e->message,
+                'status' => $e->status,
+                'reply' => $e->reply,
                 'replied_at' => $e->replied_at?->toIso8601String(),
                 'created_at' => $e->created_at->toIso8601String(),
-                'item'       => $e->item ? [
-                    'id'        => $e->item->id,
-                    'title'     => $e->item->title,
-                    'price'     => (float) $e->item->price,
+                'item' => $e->item ? [
+                    'id' => $e->item->id,
+                    'title' => $e->item->title,
+                    'price' => (float) $e->item->price,
                     'image_url' => $e->item->primaryImage?->image_url,
                 ] : null,
             ]);
@@ -139,31 +138,31 @@ class RepoItemController extends BaseApiController
         $tenant = $item->tenant_id ? Tenant::find($item->tenant_id) : null;
 
         $data = [
-            'id'                  => $item->id,
-            'tenant_name'         => $item->tenant_name,
-            'tenant_badge'        => $tenant?->verificationBadge(),
-            'title'            => $item->title,
-            'price'            => (float) $item->price,
-            'original_value'   => $item->original_value ? (float) $item->original_value : null,
-            'category'         => $item->category,
-            'condition'        => $item->condition,
-            'location'         => $item->location,
-            'is_sold'          => $item->is_sold,
-            'views_count'      => $item->views_count,
-            'enquiries_count'  => $item->enquiries_count,
-            'primary_image'    => $item->relationLoaded('primaryImage')
+            'id' => $item->id,
+            'tenant_name' => $item->tenant_name,
+            'tenant_badge' => $tenant?->verificationBadge(),
+            'title' => $item->title,
+            'price' => (float) $item->price,
+            'original_value' => $item->original_value ? (float) $item->original_value : null,
+            'category' => $item->category,
+            'condition' => $item->condition,
+            'location' => $item->location,
+            'is_sold' => $item->is_sold,
+            'views_count' => $item->views_count,
+            'enquiries_count' => $item->enquiries_count,
+            'primary_image' => $item->relationLoaded('primaryImage')
                 ? $item->primaryImage?->image_url
                 : ($item->relationLoaded('images') ? $item->images->firstWhere('is_primary', true)?->image_url : null),
-            'created_at'       => $item->created_at->toDateString(),
+            'created_at' => $item->created_at->toDateString(),
         ];
 
         if ($full) {
             $data['description'] = $item->description;
-            $data['images']      = $item->relationLoaded('images')
+            $data['images'] = $item->relationLoaded('images')
                 ? $item->images->map(fn ($img) => [
-                    'id'         => $img->id,
-                    'image_url'  => $img->image_url,
-                    'caption'    => $img->caption,
+                    'id' => $img->id,
+                    'image_url' => $img->image_url,
+                    'caption' => $img->caption,
                     'is_primary' => $img->is_primary,
                 ])->values()
                 : [];
@@ -184,7 +183,7 @@ class RepoItemController extends BaseApiController
             return;
         }
 
-        $sms  = app(SmsService::class);
+        $sms = app(SmsService::class);
         $text = "New enquiry on your listing \"{$item->title}\" from {$ghostUser->name} ({$ghostUser->phone}): \"{$message}\"";
         $sms->send($staffPhone, $text);
     }

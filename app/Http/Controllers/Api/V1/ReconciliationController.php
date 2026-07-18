@@ -27,19 +27,19 @@ class ReconciliationController extends BaseApiController
     public function import(Request $request): JsonResponse
     {
         $request->validate([
-            'file'           => ['required', 'file', 'mimes:csv,txt', 'max:5120'],
-            'bank_name'      => ['nullable', 'string', 'max:100'],
+            'file' => ['required', 'file', 'mimes:csv,txt', 'max:5120'],
+            'bank_name' => ['nullable', 'string', 'max:100'],
             'statement_from' => ['nullable', 'date'],
-            'statement_to'   => ['nullable', 'date'],
+            'statement_to' => ['nullable', 'date'],
         ]);
 
-        $csv       = file_get_contents($request->file('file')->getRealPath());
-        $filename  = $request->file('file')->getClientOriginalName();
+        $csv = file_get_contents($request->file('file')->getRealPath());
+        $filename = $request->file('file')->getClientOriginalName();
 
         $statement = $this->service->importCsv($csv, $filename, $request->user()->id, [
-            'bank_name'      => $request->bank_name,
+            'bank_name' => $request->bank_name,
             'statement_from' => $request->statement_from,
-            'statement_to'   => $request->statement_to,
+            'statement_to' => $request->statement_to,
         ]);
 
         return $this->success($this->service->report($statement), 'Bank statement imported.', 201);
@@ -63,6 +63,7 @@ class ReconciliationController extends BaseApiController
     public function unmatched(BankStatement $statement): JsonResponse
     {
         $txns = $this->service->unmatchedQueue($statement)->map(fn ($t) => $this->formatTx($t));
+
         return $this->success($txns);
     }
 
@@ -71,7 +72,7 @@ class ReconciliationController extends BaseApiController
     {
         $request->validate([
             'payment_id' => ['required', 'exists:payments,id'],
-            'notes'      => ['nullable', 'string', 'max:255'],
+            'notes' => ['nullable', 'string', 'max:255'],
         ]);
 
         $payment = Payment::findOrFail($request->payment_id);
@@ -94,15 +95,15 @@ class ReconciliationController extends BaseApiController
     private function formatTx(BankTransaction $t): array
     {
         return [
-            'id'               => $t->id,
+            'id' => $t->id,
             'transaction_date' => $t->transaction_date->toDateString(),
-            'reference'        => $t->reference,
-            'description'      => $t->description,
-            'amount'           => (float) $t->amount,
-            'type'             => $t->type,
-            'match_status'     => $t->match_status,
-            'matched_payment'  => $t->matched_payment_id,
-            'match_notes'      => $t->match_notes,
+            'reference' => $t->reference,
+            'description' => $t->description,
+            'amount' => (float) $t->amount,
+            'type' => $t->type,
+            'match_status' => $t->match_status,
+            'matched_payment' => $t->matched_payment_id,
+            'match_notes' => $t->match_notes,
         ];
     }
 }

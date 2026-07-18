@@ -21,11 +21,11 @@ class ApprovalWorkflow extends Model
     protected function casts(): array
     {
         return [
-            'required_roles'     => 'array',
+            'required_roles' => 'array',
             'required_approvals' => 'integer',
-            'min_amount'         => 'decimal:2',
-            'max_amount'         => 'decimal:2',
-            'is_active'          => 'boolean',
+            'min_amount' => 'decimal:2',
+            'max_amount' => 'decimal:2',
+            'is_active' => 'boolean',
         ];
     }
 

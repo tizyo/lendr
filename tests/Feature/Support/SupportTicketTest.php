@@ -4,7 +4,6 @@ use App\Models\Landlord\LandlordUser;
 use App\Models\Landlord\SupportTicket;
 use App\Models\Landlord\SupportTicketReply;
 use App\Models\Landlord\Tenant;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 
 // ─── Cleanup ──────────────────────────────────────────────────────────────────
 afterEach(function () {
@@ -17,11 +16,11 @@ afterEach(function () {
 function makeSupportTenant(): Tenant
 {
     return Tenant::create([
-        'id'       => (string) \Illuminate\Support\Str::uuid(),
-        'name'     => 'Support MFI ' . uniqid(),
-        'slug'     => 'support-mfi-' . uniqid(),
-        'plan'     => 'starter',
-        'status'   => 'active',
+        'id' => (string) \Illuminate\Support\Str::uuid(),
+        'name' => 'Support MFI '.uniqid(),
+        'slug' => 'support-mfi-'.uniqid(),
+        'plan' => 'starter',
+        'status' => 'active',
         'currency' => 'ZMW',
         'timezone' => 'Africa/Lusaka',
     ]);
@@ -30,13 +29,13 @@ function makeSupportTenant(): Tenant
 function makeTicket(Tenant $tenant, array $overrides = []): SupportTicket
 {
     return SupportTicket::create(array_merge([
-        'tenant_id'          => $tenant->id,
-        'subject'            => 'Test issue ' . uniqid(),
-        'message'            => 'Detailed description of the issue.',
-        'type'               => 'support',
-        'status'             => 'open',
-        'priority'           => 'medium',
-        'submitted_by'       => 'Test User',
+        'tenant_id' => $tenant->id,
+        'subject' => 'Test issue '.uniqid(),
+        'message' => 'Detailed description of the issue.',
+        'type' => 'support',
+        'status' => 'open',
+        'priority' => 'medium',
+        'submitted_by' => 'Test User',
         'submitted_by_email' => 'user@test.com',
     ], $overrides));
 }
@@ -126,10 +125,10 @@ it('landlord can view a ticket with replies', function () {
     $tenant = makeSupportTenant();
     $ticket = makeTicket($tenant);
     SupportTicketReply::create([
-        'ticket_id'   => $ticket->id,
+        'ticket_id' => $ticket->id,
         'author_type' => 'tenant',
         'author_name' => 'Test User',
-        'message'     => 'Here is more context.',
+        'message' => 'Here is more context.',
     ]);
 
     $landlord = LandlordUser::factory()->create();

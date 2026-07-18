@@ -14,7 +14,7 @@ use Spatie\Permission\Models\Permission;
 function paymentUser(array $permissions = []): User
 {
     $user = User::factory()->create([
-        'role'      => UserRole::LoanOfficer,
+        'role' => UserRole::LoanOfficer,
         'is_active' => true,
     ]);
 
@@ -35,14 +35,14 @@ function activeLoan(array $overrides = []): Loan
     $plan = LoanPlan::factory()->create(['loan_type_id' => $type->id]);
 
     return Loan::factory()->active()->create(array_merge([
-        'loan_plan_id'        => $plan->id,
-        'loan_type_id'        => $type->id,
-        'principal_amount'    => 5000.00,
-        'interest_amount'     => 1500.00,
-        'total_payable'       => 6600.00,  // includes 100 processing fee
+        'loan_plan_id' => $plan->id,
+        'loan_type_id' => $type->id,
+        'principal_amount' => 5000.00,
+        'interest_amount' => 1500.00,
+        'total_payable' => 6600.00,  // includes 100 processing fee
         'outstanding_balance' => 6600.00,
-        'total_paid'          => 0.00,
-        'penalty_balance'     => 0.00,
+        'total_paid' => 0.00,
+        'penalty_balance' => 0.00,
     ], $overrides));
 }
 
@@ -55,10 +55,10 @@ test('a payment can be recorded for an active loan', function () {
     $response = $this->actingAs($user)
         ->withHeaders(['Accept' => 'application/json'])
         ->postJson(route('api.v1.payments.store'), [
-            'loan_id'        => $loan->id,
-            'amount'         => 1000.00,
+            'loan_id' => $loan->id,
+            'amount' => 1000.00,
             'payment_method' => 'cash',
-            'payment_date'   => now()->toDateString(),
+            'payment_date' => now()->toDateString(),
         ]);
 
     $response->assertStatus(201);
@@ -66,7 +66,7 @@ test('a payment can be recorded for an active loan', function () {
 
     $this->assertDatabaseHas('payments', [
         'loan_id' => $loan->id,
-        'amount'  => 1000.00,
+        'amount' => 1000.00,
     ]);
 });
 
@@ -77,10 +77,10 @@ test('receipt number follows REC-YYYYMM-XXXXX format', function () {
     $response = $this->actingAs($user)
         ->withHeaders(['Accept' => 'application/json'])
         ->postJson(route('api.v1.payments.store'), [
-            'loan_id'        => $loan->id,
-            'amount'         => 500.00,
+            'loan_id' => $loan->id,
+            'amount' => 500.00,
             'payment_method' => 'cash',
-            'payment_date'   => now()->toDateString(),
+            'payment_date' => now()->toDateString(),
         ]);
 
     $receiptNumber = $response->json('data.receipt_number');
@@ -94,10 +94,10 @@ test('payment reduces outstanding balance', function () {
     $this->actingAs($user)
         ->withHeaders(['Accept' => 'application/json'])
         ->postJson(route('api.v1.payments.store'), [
-            'loan_id'        => $loan->id,
-            'amount'         => 1100.00,
+            'loan_id' => $loan->id,
+            'amount' => 1100.00,
             'payment_method' => 'bank_transfer',
-            'payment_date'   => now()->toDateString(),
+            'payment_date' => now()->toDateString(),
         ]);
 
     $updated = $loan->fresh();
@@ -108,21 +108,21 @@ test('payment reduces outstanding balance', function () {
 test('full payment marks loan as completed', function () {
     $user = paymentUser();
     $loan = activeLoan([
-        'principal_amount'    => 1000.00,
-        'interest_amount'     => 0.00,
-        'total_payable'       => 1000.00,
+        'principal_amount' => 1000.00,
+        'interest_amount' => 0.00,
+        'total_payable' => 1000.00,
         'outstanding_balance' => 1000.00,
-        'penalty_balance'     => 0.00,
+        'penalty_balance' => 0.00,
     ]);
 
     // No schedule rows — so unpaid interest is 0; full principal covers everything
     $this->actingAs($user)
         ->withHeaders(['Accept' => 'application/json'])
         ->postJson(route('api.v1.payments.store'), [
-            'loan_id'        => $loan->id,
-            'amount'         => 1000.00,
+            'loan_id' => $loan->id,
+            'amount' => 1000.00,
             'payment_method' => 'cash',
-            'payment_date'   => now()->toDateString(),
+            'payment_date' => now()->toDateString(),
         ]);
 
     expect($loan->fresh()->status)->toBe(LoanStatus::Completed);
@@ -135,10 +135,10 @@ test('payment cannot be recorded for a denied loan', function () {
     $this->actingAs($user)
         ->withHeaders(['Accept' => 'application/json'])
         ->postJson(route('api.v1.payments.store'), [
-            'loan_id'        => $loan->id,
-            'amount'         => 500.00,
+            'loan_id' => $loan->id,
+            'amount' => 500.00,
             'payment_method' => 'cash',
-            'payment_date'   => now()->toDateString(),
+            'payment_date' => now()->toDateString(),
         ])
         ->assertStatus(422);
 });
@@ -150,10 +150,10 @@ test('payment amount must be positive', function () {
     $this->actingAs($user)
         ->withHeaders(['Accept' => 'application/json'])
         ->postJson(route('api.v1.payments.store'), [
-            'loan_id'        => $loan->id,
-            'amount'         => 0,
+            'loan_id' => $loan->id,
+            'amount' => 0,
             'payment_method' => 'cash',
-            'payment_date'   => now()->toDateString(),
+            'payment_date' => now()->toDateString(),
         ])
         ->assertStatus(422)
         ->assertJsonValidationErrors('amount');
@@ -164,18 +164,18 @@ test('receipt endpoint returns printable data', function () {
     $loan = activeLoan();
 
     $payment = Payment::create([
-        'receipt_number'      => 'REC-'.now()->format('Ym').'-00001',
-        'loan_id'             => $loan->id,
-        'recorded_by'         => $user->id,
-        'amount'              => 550.00,
+        'receipt_number' => 'REC-'.now()->format('Ym').'-00001',
+        'loan_id' => $loan->id,
+        'recorded_by' => $user->id,
+        'amount' => 550.00,
         'principal_allocated' => 550.00,
-        'interest_allocated'  => 0.00,
-        'penalty_allocated'   => 0.00,
-        'fee_allocated'       => 0.00,
-        'payment_method'      => 'cash',
-        'payment_date'        => now()->toDateString(),
-        'source'              => 'manual',
-        'is_overdue_payment'  => false,
+        'interest_allocated' => 0.00,
+        'penalty_allocated' => 0.00,
+        'fee_allocated' => 0.00,
+        'payment_method' => 'cash',
+        'payment_date' => now()->toDateString(),
+        'source' => 'manual',
+        'is_overdue_payment' => false,
     ]);
 
     $response = $this->actingAs($user)
@@ -195,18 +195,18 @@ test('a payment can be reversed by a user with payments.delete permission', func
     $loan = activeLoan(['outstanding_balance' => 5000.00, 'total_paid' => 1600.00]);
 
     $payment = Payment::create([
-        'receipt_number'      => 'REC-'.now()->format('Ym').'-00002',
-        'loan_id'             => $loan->id,
-        'recorded_by'         => $user->id,
-        'amount'              => 1000.00,
+        'receipt_number' => 'REC-'.now()->format('Ym').'-00002',
+        'loan_id' => $loan->id,
+        'recorded_by' => $user->id,
+        'amount' => 1000.00,
         'principal_allocated' => 800.00,
-        'interest_allocated'  => 200.00,
-        'penalty_allocated'   => 0.00,
-        'fee_allocated'       => 0.00,
-        'payment_method'      => 'cash',
-        'payment_date'        => now()->toDateString(),
-        'source'              => 'manual',
-        'is_overdue_payment'  => false,
+        'interest_allocated' => 200.00,
+        'penalty_allocated' => 0.00,
+        'fee_allocated' => 0.00,
+        'payment_method' => 'cash',
+        'payment_date' => now()->toDateString(),
+        'source' => 'manual',
+        'is_overdue_payment' => false,
     ]);
 
     $this->actingAs($user)
@@ -226,18 +226,18 @@ test('payment reversal requires payments.delete permission', function () {
     $loan = activeLoan();
 
     $payment = Payment::create([
-        'receipt_number'      => 'REC-'.now()->format('Ym').'-00003',
-        'loan_id'             => $loan->id,
-        'recorded_by'         => $user->id,
-        'amount'              => 500.00,
+        'receipt_number' => 'REC-'.now()->format('Ym').'-00003',
+        'loan_id' => $loan->id,
+        'recorded_by' => $user->id,
+        'amount' => 500.00,
         'principal_allocated' => 500.00,
-        'interest_allocated'  => 0.00,
-        'penalty_allocated'   => 0.00,
-        'fee_allocated'       => 0.00,
-        'payment_method'      => 'cash',
-        'payment_date'        => now()->toDateString(),
-        'source'              => 'manual',
-        'is_overdue_payment'  => false,
+        'interest_allocated' => 0.00,
+        'penalty_allocated' => 0.00,
+        'fee_allocated' => 0.00,
+        'payment_method' => 'cash',
+        'payment_date' => now()->toDateString(),
+        'source' => 'manual',
+        'is_overdue_payment' => false,
     ]);
 
     $this->actingAs($user)

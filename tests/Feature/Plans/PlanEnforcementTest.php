@@ -23,7 +23,7 @@ function setPlanLimit(string $feature, int $limit): void
 
     PlanConfig::updateOrCreate(
         ['plan' => 'starter'],
-        ['label' => 'Starter', 'features' => $features]
+        ['label' => 'Starter', 'features' => $features],
     );
 
     // Point the tenant at 'starter' plan via the settings or tenant table
@@ -39,11 +39,11 @@ test('staff creation is blocked when plan user limit is reached', function () {
 
     $this->actingAs($admin)
         ->postJson(route('api.v1.staff.store'), [
-            'name'       => 'New Staff',
-            'email'      => 'newstaff@test.com',
-            'role'       => UserRole::LoanOfficer->value,
+            'name' => 'New Staff',
+            'email' => 'newstaff@test.com',
+            'role' => UserRole::LoanOfficer->value,
             'department' => 'Operations',
-            'phone'      => '0971000001',
+            'phone' => '0971000001',
         ])
         ->assertStatus(403)
         ->assertJsonPath('message', fn ($msg) => str_contains(strtolower($msg), 'limit'));
@@ -55,11 +55,11 @@ test('staff creation succeeds when below plan user limit', function () {
 
     $this->actingAs($admin)
         ->postJson(route('api.v1.staff.store'), [
-            'name'       => 'New Staff',
-            'email'      => 'newstaff@test.com',
-            'role'       => UserRole::LoanOfficer->value,
+            'name' => 'New Staff',
+            'email' => 'newstaff@test.com',
+            'role' => UserRole::LoanOfficer->value,
             'department' => 'Operations',
-            'phone'      => '0971000001',
+            'phone' => '0971000001',
         ])
         ->assertStatus(201);
 });
@@ -73,11 +73,11 @@ test('plan limit of -1 means unlimited staff users', function () {
 
     $this->actingAs($admin)
         ->postJson(route('api.v1.staff.store'), [
-            'name'       => 'New Staff Unlimited',
-            'email'      => 'newstaff_ul@test.com',
-            'role'       => UserRole::LoanOfficer->value,
+            'name' => 'New Staff Unlimited',
+            'email' => 'newstaff_ul@test.com',
+            'role' => UserRole::LoanOfficer->value,
             'department' => 'Operations',
-            'phone'      => '0971000002',
+            'phone' => '0971000002',
         ])
         ->assertStatus(201);
 });
@@ -121,8 +121,8 @@ test('borrower creation is blocked when plan borrower limit is reached', functio
     $this->actingAs($admin)
         ->postJson(route('api.v1.borrowers.store'), [
             'first_name' => 'Test',
-            'last_name'  => 'Borrower',
-            'phone'      => '0971111111',
+            'last_name' => 'Borrower',
+            'phone' => '0971111111',
             'national_id' => 'NRC123456',
         ])
         ->assertStatus(403);
@@ -135,8 +135,8 @@ test('borrower creation succeeds when below plan borrower limit', function () {
     $this->actingAs($admin)
         ->postJson(route('api.v1.borrowers.store'), [
             'first_name' => 'Test',
-            'last_name'  => 'Borrower',
-            'phone'      => '0971111111',
+            'last_name' => 'Borrower',
+            'phone' => '0971111111',
             'national_id' => 'NRC123456',
         ])
         ->assertStatus(201);

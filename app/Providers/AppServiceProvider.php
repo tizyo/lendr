@@ -28,17 +28,17 @@ class AppServiceProvider extends ServiceProvider
                 $view->with('branding', PlatformBranding::defaults());
             } catch (\Throwable) {
                 $view->with('branding', [
-                    'company_name'   => config('app.name', 'LENDR'),
-                    'tagline'        => null,
-                    'address'        => null,
-                    'phone'          => null,
-                    'email'          => null,
-                    'website'        => null,
-                    'logo_url'       => null,
-                    'favicon_url'    => null,
-                    'primary_color'  => '#059669',
+                    'company_name' => config('app.name', 'LENDR'),
+                    'tagline' => null,
+                    'address' => null,
+                    'phone' => null,
+                    'email' => null,
+                    'website' => null,
+                    'logo_url' => null,
+                    'favicon_url' => null,
+                    'primary_color' => '#059669',
                     'invoice_footer' => null,
-                    'email_footer'   => null,
+                    'email_footer' => null,
                 ]);
             }
         });

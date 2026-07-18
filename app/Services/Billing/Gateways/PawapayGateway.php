@@ -16,7 +16,10 @@ class PawapayGateway implements BillingGatewayInterface
 {
     public function __construct(private readonly BillingGatewayConfig $config) {}
 
-    public function getName(): string { return 'pawapay'; }
+    public function getName(): string
+    {
+        return 'pawapay';
+    }
 
     public function initiatePayment(array $payload): string
     {
@@ -38,13 +41,13 @@ class PawapayGateway implements BillingGatewayInterface
     public function parseWebhookPayload(Request $request): array
     {
         return [
-            'event_id'       => uniqid('pawapay-', true),
-            'event_type'     => 'unknown',
-            'tx_ref'         => '',
+            'event_id' => uniqid('pawapay-', true),
+            'event_type' => 'unknown',
+            'tx_ref' => '',
             'transaction_id' => '',
-            'amount'         => 0,
-            'status'         => 'pending',
-            'raw'            => $request->json()->all(),
+            'amount' => 0,
+            'status' => 'pending',
+            'raw' => $request->json()->all(),
         ];
     }
 }

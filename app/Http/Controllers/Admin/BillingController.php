@@ -21,38 +21,38 @@ class BillingController extends Controller
      */
     public function index(): Response
     {
-        $tenant       = tenancy()->tenant;
+        $tenant = tenancy()->tenant;
         $subscription = $this->billing->activeSubscription($tenant);
-        $invoices     = $this->billing->recentInvoices($tenant);
-        $plans        = PlanConfig::allKeyed();
+        $invoices = $this->billing->recentInvoices($tenant);
+        $plans = PlanConfig::allKeyed();
 
         return Inertia::render('billing/Index', [
             'subscription' => $subscription ? [
-                'id'            => $subscription->id,
-                'plan'          => $subscription->plan,
-                'status'        => $subscription->status,
+                'id' => $subscription->id,
+                'plan' => $subscription->plan,
+                'status' => $subscription->status,
                 'billing_cycle' => $subscription->billing_cycle,
-                'amount'        => $subscription->amount,
-                'currency'      => $subscription->currency,
-                'starts_at'     => $subscription->starts_at?->toDateString(),
-                'ends_at'       => $subscription->ends_at?->toDateString(),
+                'amount' => $subscription->amount,
+                'currency' => $subscription->currency,
+                'starts_at' => $subscription->starts_at?->toDateString(),
+                'ends_at' => $subscription->ends_at?->toDateString(),
             ] : null,
             'invoices' => $invoices->map(fn ($inv) => [
-                'id'             => $inv->id,
-                'plan'           => $inv->plan,
-                'amount'         => $inv->amount,
-                'currency'       => $inv->currency,
-                'billing_cycle'  => $inv->billing_cycle,
-                'status'         => $inv->status,
-                'gateway'        => $inv->gateway,
+                'id' => $inv->id,
+                'plan' => $inv->plan,
+                'amount' => $inv->amount,
+                'currency' => $inv->currency,
+                'billing_cycle' => $inv->billing_cycle,
+                'status' => $inv->status,
+                'gateway' => $inv->gateway,
                 'gateway_tx_ref' => $inv->gateway_tx_ref,
-                'paid_at'        => $inv->paid_at?->toDateTimeString(),
-                'created_at'     => $inv->created_at?->toDateTimeString(),
+                'paid_at' => $inv->paid_at?->toDateTimeString(),
+                'created_at' => $inv->created_at?->toDateTimeString(),
             ]),
             'plans' => collect($plans)->map(fn ($p) => [
-                'plan'            => $p->plan,
-                'label'           => $p->label,
-                'price_zmw'       => $p->price_zmw,
+                'plan' => $p->plan,
+                'label' => $p->label,
+                'price_zmw' => $p->price_zmw,
                 'is_custom_price' => $p->is_custom_price,
             ])->values(),
         ]);
@@ -65,11 +65,11 @@ class BillingController extends Controller
     public function checkout(Request $request): RedirectResponse
     {
         $data = $request->validate([
-            'plan'          => ['required', Rule::in(['starter', 'growth', 'enterprise'])],
+            'plan' => ['required', Rule::in(['starter', 'growth', 'enterprise'])],
             'billing_cycle' => ['sometimes', Rule::in(['monthly', 'annual'])],
         ]);
 
-        $tenant       = tenancy()->tenant;
+        $tenant = tenancy()->tenant;
         $billingCycle = $data['billing_cycle'] ?? 'monthly';
 
         try {
@@ -88,18 +88,19 @@ class BillingController extends Controller
     public function callback(Request $request): RedirectResponse
     {
         $transactionId = $request->query('transaction_id', '');
-        $txRef         = $request->query('tx_ref', '');
-        $status        = $request->query('status', 'failed');
+        $txRef = $request->query('tx_ref', '');
+        $status = $request->query('status', 'failed');
 
         $result = $this->billing->handleCallback($transactionId, $txRef, $status);
 
         if ($result['success']) {
             $plan = ucfirst($result['plan'] ?? '');
+
             return redirect()->route('billing.index')
                 ->with('success', "Payment successful! Your workspace has been upgraded to the {$plan} plan.");
         }
 
         return redirect()->route('billing.index')
-            ->with('error', 'Payment could not be verified. ' . ($result['reason'] ?? '') . ' Please contact support if funds were deducted.');
+            ->with('error', 'Payment could not be verified. '.($result['reason'] ?? '').' Please contact support if funds were deducted.');
     }
 }

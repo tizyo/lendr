@@ -11,7 +11,10 @@ use Illuminate\Support\Facades\Log;
  */
 class PawaPayWebhookController extends BaseWebhookController
 {
-    protected function providerName(): string { return 'pawapay'; }
+    protected function providerName(): string
+    {
+        return 'pawapay';
+    }
 
     protected function verifySignature(Request $request): bool
     {
@@ -25,7 +28,7 @@ class PawaPayWebhookController extends BaseWebhookController
 
         return hash_equals(
             hash_hmac('sha256', $request->getContent(), $secret),
-            $request->header('X-PawaPay-Signature', '')
+            $request->header('X-PawaPay-Signature', ''),
         );
     }
 
@@ -34,20 +37,20 @@ class PawaPayWebhookController extends BaseWebhookController
         $body = $request->json()->all();
 
         $status = match (strtolower($body['status'] ?? '')) {
-            'completed'                                => 'success',
+            'completed' => 'success',
             'failed', 'rejected', 'duplicate_ignored' => 'failed',
-            default                                    => 'pending',
+            default => 'pending',
         };
 
         return [
-            'event_id'       => $body['paymentId']                ?? null,
-            'event_type'     => 'payment.' . $status,
-            'internal_ref'   => $body['statementDescription']     ?? null,
-            'transaction_id' => $body['paymentId']                ?? '',
-            'amount'         => (float) ($body['amount']          ?? 0),
-            'phone'          => $body['payer']['address']['value'] ?? '',
-            'status'         => $status,
-            'raw'            => $body,
+            'event_id' => $body['paymentId'] ?? null,
+            'event_type' => 'payment.'.$status,
+            'internal_ref' => $body['statementDescription'] ?? null,
+            'transaction_id' => $body['paymentId'] ?? '',
+            'amount' => (float) ($body['amount'] ?? 0),
+            'phone' => $body['payer']['address']['value'] ?? '',
+            'status' => $status,
+            'raw' => $body,
         ];
     }
 }

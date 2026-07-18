@@ -24,15 +24,15 @@ class StoreLoanTypeRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name'                => ['required', 'string', 'max:100'],
-            'code'                => ['required', 'string', 'max:20', 'alpha_dash', 'unique:loan_types,code'],
-            'description'         => ['nullable', 'string', 'max:500'],
+            'name' => ['required', 'string', 'max:100'],
+            'code' => ['required', 'string', 'max:20', 'alpha_dash', 'unique:loan_types,code'],
+            'description' => ['nullable', 'string', 'max:500'],
             'requires_collateral' => ['boolean'],
-            'requires_guarantor'  => ['boolean'],
-            'required_documents'  => ['nullable', 'array'],
-            'required_documents.*'=> ['string'],
-            'is_active'           => ['boolean'],
-            'sort_order'          => ['integer', 'min:0'],
+            'requires_guarantor' => ['boolean'],
+            'required_documents' => ['nullable', 'array'],
+            'required_documents.*' => ['string'],
+            'is_active' => ['boolean'],
+            'sort_order' => ['integer', 'min:0'],
         ];
     }
 }

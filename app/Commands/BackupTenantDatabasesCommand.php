@@ -18,15 +18,16 @@ use Spatie\DbDumper\Databases\MySql;
  */
 class BackupTenantDatabasesCommand extends Command
 {
-    protected $signature   = 'lendr:backup-tenant-databases';
+    protected $signature = 'lendr:backup-tenant-databases';
+
     protected $description = 'Dump every tenant database and upload it to the backup disk';
 
     public function handle(): int
     {
-        $disk       = config('backup.backup.destination.disks')[0] ?? 'local';
+        $disk = config('backup.backup.destination.disks')[0] ?? 'local';
         $connection = config('database.connections.mysql');
-        $date       = now()->format('Y-m-d_His');
-        $failures   = 0;
+        $date = now()->format('Y-m-d_His');
+        $failures = 0;
 
         $tenants = Tenant::all();
         $this->info("Backing up {$tenants->count()} tenant database(s) to disk [{$disk}]…");
@@ -47,7 +48,7 @@ class BackupTenantDatabasesCommand extends Command
                     ->setDbName($dbName)
                     ->setUserName($connection['username'])
                     ->setPassword($connection['password'])
-                    ->useCompressor(new \Spatie\DbDumper\Compressors\GzipCompressor())
+                    ->useCompressor(new \Spatie\DbDumper\Compressors\GzipCompressor)
                     ->dumpToFile($tempPath);
 
                 $remotePath = "LENDR/tenants/{$tenant->id}/{$dbName}-{$date}.sql.gz";

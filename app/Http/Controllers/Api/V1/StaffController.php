@@ -25,19 +25,19 @@ class StaffController extends BaseApiController
         $staff = User::query()
             ->when($request->search, fn ($q, $s) => $q->where(function ($q) use ($s) {
                 $q->where('name', 'like', "%{$s}%")
-                  ->orWhere('email', 'like', "%{$s}%")
-                  ->orWhere('username', 'like', "%{$s}%");
+                    ->orWhere('email', 'like', "%{$s}%")
+                    ->orWhere('username', 'like', "%{$s}%");
             }))
             ->when($request->role, fn ($q, $r) => $q->where('role', $r))
             ->when($request->department, fn ($q, $d) => $q->where('department', $d))
             ->when($request->status, fn ($q, $s) => match ($s) {
-                'active'   => $q->where('is_active', true),
+                'active' => $q->where('is_active', true),
                 'inactive' => $q->where('is_active', false),
-                default    => $q,
+                default => $q,
             })
             ->when($request->sort,
                 fn ($q) => $q->orderBy($request->sort, $request->direction ?? 'asc'),
-                fn ($q) => $q->latest()
+                fn ($q) => $q->latest(),
             )
             ->paginate($request->per_page ?? 20);
 
@@ -50,7 +50,7 @@ class StaffController extends BaseApiController
         if (! $svc->canAddUser(User::count())) {
             return $this->error(
                 'Your plan\'s staff user limit has been reached. Upgrade your plan to add more users.',
-                403
+                403,
             );
         }
 
@@ -60,13 +60,13 @@ class StaffController extends BaseApiController
 
         $staff = User::create([
             ...$request->validated(),
-            'password'         => null,
-            'is_active'        => false,
+            'password' => null,
+            'is_active' => false,
             'invitation_token' => $token,
-            'invited_at'       => now(),
+            'invited_at' => now(),
         ]);
 
-        $tenant  = tenancy()->tenant;
+        $tenant = tenancy()->tenant;
         $orgName = $tenant?->name ?? config('app.name');
 
         if ($tenant) {
@@ -74,7 +74,7 @@ class StaffController extends BaseApiController
             (new TenantMailService)->send($staff->email, new StaffInvitationMail($staff, $invitationUrl, $orgName));
         }
 
-        return $this->success($this->formatStaff($staff), 'Invitation sent to ' . $staff->email . '.', 201);
+        return $this->success($this->formatStaff($staff), 'Invitation sent to '.$staff->email.'.', 201);
     }
 
     public function show(User $staff): JsonResponse
@@ -83,7 +83,7 @@ class StaffController extends BaseApiController
 
         return $this->success([
             ...$this->formatStaff($staff, true),
-            'roles'       => $staff->getRoleNames(),
+            'roles' => $staff->getRoleNames(),
             'permissions' => $staff->getAllPermissions()->pluck('name'),
         ]);
     }
@@ -150,12 +150,12 @@ class StaffController extends BaseApiController
             ->limit(50)
             ->get()
             ->map(fn ($log) => [
-                'id'           => $log->id,
-                'action'       => $log->description,
+                'id' => $log->id,
+                'action' => $log->description,
                 'subject_type' => class_basename($log->subject_type ?? ''),
-                'subject_id'   => $log->subject_id,
-                'properties'   => $log->properties,
-                'created_at'   => $log->created_at->format('d M Y H:i'),
+                'subject_id' => $log->subject_id,
+                'properties' => $log->properties,
+                'created_at' => $log->created_at->format('d M Y H:i'),
             ]);
 
         return $this->success($logs);
@@ -164,15 +164,15 @@ class StaffController extends BaseApiController
     private function formatStaff(User $user, bool $full = false): array
     {
         $data = [
-            'id'         => $user->id,
-            'name'       => $user->name,
-            'email'      => $user->email,
-            'username'   => $user->username,
-            'phone'      => $user->phone,
-            'role'       => $user->role?->value,
+            'id' => $user->id,
+            'name' => $user->name,
+            'email' => $user->email,
+            'username' => $user->username,
+            'phone' => $user->phone,
+            'role' => $user->role?->value,
             'department' => $user->department,
             'avatar_url' => $user->avatar_url,
-            'is_active'  => $user->is_active,
+            'is_active' => $user->is_active,
             'two_factor' => $user->hasRole2faEnabled(),
             'created_at' => $user->created_at?->format('d M Y'),
         ];

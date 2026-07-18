@@ -23,9 +23,9 @@ class DisbursementLog extends Model
     protected function casts(): array
     {
         return [
-            'amount'            => 'decimal:2',
+            'amount' => 'decimal:2',
             'provider_response' => 'array',
-            'used_wallet'       => 'boolean',
+            'used_wallet' => 'boolean',
         ];
     }
 

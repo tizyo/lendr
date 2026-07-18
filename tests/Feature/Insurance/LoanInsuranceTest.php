@@ -21,27 +21,27 @@ function insuranceAdmin(): User
 function makeInsuranceProduct(array $attrs = []): InsuranceProduct
 {
     return InsuranceProduct::create(array_merge([
-        'name'          => 'Credit Life Insurance',
-        'code'          => 'CLI-'.rand(1000, 9999),
-        'premium_type'  => 'percentage',
-        'premium_rate'  => 1.5,
+        'name' => 'Credit Life Insurance',
+        'code' => 'CLI-'.rand(1000, 9999),
+        'premium_type' => 'percentage',
+        'premium_rate' => 1.5,
         'coverage_type' => 'credit_life',
-        'is_active'     => true,
+        'is_active' => true,
     ], $attrs));
 }
 
 function insuranceLoan(): Loan
 {
-    $type     = LoanType::first() ?? LoanType::factory()->create();
-    $plan     = LoanPlan::first() ?? LoanPlan::factory()->create(['loan_type_id' => $type->id]);
+    $type = LoanType::first() ?? LoanType::factory()->create();
+    $plan = LoanPlan::first() ?? LoanPlan::factory()->create(['loan_type_id' => $type->id]);
     $borrower = Borrower::factory()->create();
 
     return Loan::factory()->create([
-        'borrower_id'     => $borrower->id,
-        'loan_type_id'    => $type->id,
-        'loan_plan_id'    => $plan->id,
-        'status'          => LoanStatus::Active,
-        'principal_amount'=> 10000,
+        'borrower_id' => $borrower->id,
+        'loan_type_id' => $type->id,
+        'loan_plan_id' => $plan->id,
+        'status' => LoanStatus::Active,
+        'principal_amount' => 10000,
     ]);
 }
 
@@ -49,12 +49,12 @@ function makeLoanInsurance(Loan $loan, InsuranceProduct $product, User $admin): 
 {
     return $loan->insurances()->create([
         'insurance_product_id' => $product->id,
-        'recorded_by'          => $admin->id,
-        'policy_number'        => LoanInsurance::generatePolicyNumber(),
-        'sum_insured'          => $loan->principal_amount,
-        'premium_amount'       => $product->calculatePremium((float) $loan->principal_amount),
-        'start_date'           => now()->toDateString(),
-        'status'               => 'active',
+        'recorded_by' => $admin->id,
+        'policy_number' => LoanInsurance::generatePolicyNumber(),
+        'sum_insured' => $loan->principal_amount,
+        'premium_amount' => $product->calculatePremium((float) $loan->principal_amount),
+        'start_date' => now()->toDateString(),
+        'status' => 'active',
     ]);
 }
 
@@ -77,10 +77,10 @@ test('can create an insurance product', function () {
 
     $resp = $this->actingAs($admin)
         ->postJson(route('api.v1.insurance.products.store'), [
-            'name'          => 'Property Cover',
-            'code'          => 'PROP-01',
-            'premium_type'  => 'flat',
-            'premium_rate'  => 200,
+            'name' => 'Property Cover',
+            'code' => 'PROP-01',
+            'premium_type' => 'flat',
+            'premium_rate' => 200,
             'coverage_type' => 'property',
         ])
         ->assertCreated();
@@ -97,10 +97,10 @@ test('product code must be unique', function () {
 
     $this->actingAs($admin)
         ->postJson(route('api.v1.insurance.products.store'), [
-            'name'          => 'Another',
-            'code'          => 'DUPE-01',
-            'premium_type'  => 'flat',
-            'premium_rate'  => 100,
+            'name' => 'Another',
+            'code' => 'DUPE-01',
+            'premium_type' => 'flat',
+            'premium_rate' => 100,
             'coverage_type' => 'credit_life',
         ])
         ->assertUnprocessable()
@@ -108,12 +108,12 @@ test('product code must be unique', function () {
 });
 
 test('can update an insurance product', function () {
-    $admin   = insuranceAdmin();
+    $admin = insuranceAdmin();
     $product = makeInsuranceProduct();
 
     $resp = $this->actingAs($admin)
         ->putJson(route('api.v1.insurance.products.update', $product), [
-            'is_active'    => false,
+            'is_active' => false,
             'premium_rate' => 2.0,
         ])
         ->assertOk();
@@ -123,7 +123,7 @@ test('can update an insurance product', function () {
 });
 
 test('can delete an insurance product', function () {
-    $admin   = insuranceAdmin();
+    $admin = insuranceAdmin();
     $product = makeInsuranceProduct();
 
     $this->actingAs($admin)
@@ -136,15 +136,15 @@ test('can delete an insurance product', function () {
 // ─── Loan Policy Tests ────────────────────────────────────────────────────────
 
 test('can attach insurance to a loan', function () {
-    $admin   = insuranceAdmin();
-    $loan    = insuranceLoan();
+    $admin = insuranceAdmin();
+    $loan = insuranceLoan();
     $product = makeInsuranceProduct(['premium_rate' => 1.5]);
 
     $resp = $this->actingAs($admin)
         ->postJson(route('api.v1.loans.insurance.attach', $loan), [
             'insurance_product_id' => $product->id,
-            'sum_insured'          => 10000,
-            'start_date'           => now()->toDateString(),
+            'sum_insured' => 10000,
+            'start_date' => now()->toDateString(),
         ])
         ->assertCreated();
 
@@ -155,15 +155,15 @@ test('can attach insurance to a loan', function () {
 });
 
 test('premium calculated correctly for percentage type', function () {
-    $admin   = insuranceAdmin();
-    $loan    = insuranceLoan();
+    $admin = insuranceAdmin();
+    $loan = insuranceLoan();
     $product = makeInsuranceProduct(['premium_type' => 'percentage', 'premium_rate' => 2.0]);
 
     $resp = $this->actingAs($admin)
         ->postJson(route('api.v1.loans.insurance.attach', $loan), [
             'insurance_product_id' => $product->id,
-            'sum_insured'          => 10000,
-            'start_date'           => now()->toDateString(),
+            'sum_insured' => 10000,
+            'start_date' => now()->toDateString(),
         ])
         ->assertCreated();
 
@@ -172,8 +172,8 @@ test('premium calculated correctly for percentage type', function () {
 });
 
 test('can list loan policies', function () {
-    $admin   = insuranceAdmin();
-    $loan    = insuranceLoan();
+    $admin = insuranceAdmin();
+    $loan = insuranceLoan();
     $product = makeInsuranceProduct();
 
     makeLoanInsurance($loan, $product, $admin);
@@ -187,10 +187,10 @@ test('can list loan policies', function () {
 });
 
 test('can update policy status to lapsed', function () {
-    $admin   = insuranceAdmin();
-    $loan    = insuranceLoan();
+    $admin = insuranceAdmin();
+    $loan = insuranceLoan();
     $product = makeInsuranceProduct();
-    $policy  = makeLoanInsurance($loan, $product, $admin);
+    $policy = makeLoanInsurance($loan, $product, $admin);
 
     $resp = $this->actingAs($admin)
         ->putJson(route('api.v1.insurance.policies.update', $policy), [
@@ -204,17 +204,17 @@ test('can update policy status to lapsed', function () {
 // ─── Claim Tests ──────────────────────────────────────────────────────────────
 
 test('can file an insurance claim', function () {
-    $admin   = insuranceAdmin();
-    $loan    = insuranceLoan();
+    $admin = insuranceAdmin();
+    $loan = insuranceLoan();
     $product = makeInsuranceProduct();
-    $policy  = makeLoanInsurance($loan, $product, $admin);
+    $policy = makeLoanInsurance($loan, $product, $admin);
 
     $resp = $this->actingAs($admin)
         ->postJson(route('api.v1.insurance.policies.claims.store', $policy), [
-            'claim_type'    => 'death',
-            'claim_amount'  => 10000,
+            'claim_type' => 'death',
+            'claim_amount' => 10000,
             'incident_date' => '2026-03-01',
-            'description'   => 'Borrower deceased.',
+            'description' => 'Borrower deceased.',
         ])
         ->assertCreated();
 
@@ -223,29 +223,29 @@ test('can file an insurance claim', function () {
 
     $this->assertDatabaseHas('insurance_claims', [
         'loan_insurance_id' => $policy->id,
-        'claim_type'        => 'death',
+        'claim_type' => 'death',
     ]);
 });
 
 test('can approve a claim', function () {
-    $admin   = insuranceAdmin();
-    $loan    = insuranceLoan();
+    $admin = insuranceAdmin();
+    $loan = insuranceLoan();
     $product = makeInsuranceProduct();
-    $policy  = makeLoanInsurance($loan, $product, $admin);
+    $policy = makeLoanInsurance($loan, $product, $admin);
 
     $claim = InsuranceClaim::create([
         'loan_insurance_id' => $policy->id,
-        'recorded_by'       => $admin->id,
-        'claim_number'      => InsuranceClaim::generateClaimNumber(),
-        'claim_type'        => 'disability',
-        'claim_amount'      => 8000,
-        'incident_date'     => '2026-03-10',
-        'status'            => 'pending',
+        'recorded_by' => $admin->id,
+        'claim_number' => InsuranceClaim::generateClaimNumber(),
+        'claim_type' => 'disability',
+        'claim_amount' => 8000,
+        'incident_date' => '2026-03-10',
+        'status' => 'pending',
     ]);
 
     $resp = $this->actingAs($admin)
         ->putJson(route('api.v1.insurance.claims.review', $claim), [
-            'status'          => 'approved',
+            'status' => 'approved',
             'approved_amount' => 7500,
         ])
         ->assertOk();
@@ -255,19 +255,19 @@ test('can approve a claim', function () {
 });
 
 test('can list claims for a policy', function () {
-    $admin   = insuranceAdmin();
-    $loan    = insuranceLoan();
+    $admin = insuranceAdmin();
+    $loan = insuranceLoan();
     $product = makeInsuranceProduct();
-    $policy  = makeLoanInsurance($loan, $product, $admin);
+    $policy = makeLoanInsurance($loan, $product, $admin);
 
     InsuranceClaim::create([
         'loan_insurance_id' => $policy->id,
-        'recorded_by'       => $admin->id,
-        'claim_number'      => InsuranceClaim::generateClaimNumber(),
-        'claim_type'        => 'other',
-        'claim_amount'      => 5000,
-        'incident_date'     => now()->toDateString(),
-        'status'            => 'pending',
+        'recorded_by' => $admin->id,
+        'claim_number' => InsuranceClaim::generateClaimNumber(),
+        'claim_type' => 'other',
+        'claim_amount' => 5000,
+        'incident_date' => now()->toDateString(),
+        'status' => 'pending',
     ]);
 
     $resp = $this->actingAs($admin)

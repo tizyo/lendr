@@ -26,11 +26,12 @@ class ApiGatewayAuth
         }
 
         // Rate limiting
-        $rateLimitKey = 'api-gateway:' . $client->id;
-        $limit        = $client->rate_limit_per_minute;
+        $rateLimitKey = 'api-gateway:'.$client->id;
+        $limit = $client->rate_limit_per_minute;
 
         if (RateLimiter::tooManyAttempts($rateLimitKey, $limit)) {
             $this->log($client, $request, 429);
+
             return response()->json(['message' => 'Too many requests. Rate limit exceeded.'], 429);
         }
 
@@ -40,7 +41,7 @@ class ApiGatewayAuth
         $request->attributes->set('api_client', $client);
 
         $startTime = microtime(true);
-        $response  = $next($request);
+        $response = $next($request);
 
         // Log access
         $this->log($client, $request, $response->getStatusCode(), (int) ((microtime(true) - $startTime) * 1000));
@@ -54,13 +55,13 @@ class ApiGatewayAuth
     private function log(ApiClient $client, Request $request, int $statusCode, int $ms = 0): void
     {
         ApiAccessLog::create([
-            'api_client_id'   => $client->id,
-            'endpoint'        => $request->path(),
-            'method'          => $request->method(),
-            'ip_address'      => $request->ip() ?? '127.0.0.1',
-            'status_code'     => $statusCode,
+            'api_client_id' => $client->id,
+            'endpoint' => $request->path(),
+            'method' => $request->method(),
+            'ip_address' => $request->ip() ?? '127.0.0.1',
+            'status_code' => $statusCode,
             'response_time_ms' => $ms,
-            'created_at'      => now(),
+            'created_at' => now(),
         ]);
     }
 }

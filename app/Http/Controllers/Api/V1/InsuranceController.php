@@ -26,14 +26,14 @@ class InsuranceController extends BaseApiController
     public function storeProduct(Request $request): JsonResponse
     {
         $data = $request->validate([
-            'name'             => ['required', 'string', 'max:255'],
-            'code'             => ['required', 'string', 'max:30', 'unique:insurance_products,code'],
-            'description'      => ['nullable', 'string'],
-            'premium_type'     => ['required', 'in:flat,percentage'],
-            'premium_rate'     => ['required', 'numeric', 'min:0'],
-            'coverage_type'    => ['required', 'in:credit_life,disability,property,comprehensive'],
-            'max_term_months'  => ['nullable', 'integer', 'min:1'],
-            'notes'            => ['nullable', 'string'],
+            'name' => ['required', 'string', 'max:255'],
+            'code' => ['required', 'string', 'max:30', 'unique:insurance_products,code'],
+            'description' => ['nullable', 'string'],
+            'premium_type' => ['required', 'in:flat,percentage'],
+            'premium_rate' => ['required', 'numeric', 'min:0'],
+            'coverage_type' => ['required', 'in:credit_life,disability,property,comprehensive'],
+            'max_term_months' => ['nullable', 'integer', 'min:1'],
+            'notes' => ['nullable', 'string'],
         ]);
 
         $product = InsuranceProduct::create($data);
@@ -44,14 +44,14 @@ class InsuranceController extends BaseApiController
     public function updateProduct(Request $request, InsuranceProduct $product): JsonResponse
     {
         $data = $request->validate([
-            'name'            => ['sometimes', 'required', 'string', 'max:255'],
-            'description'     => ['nullable', 'string'],
-            'premium_type'    => ['sometimes', 'in:flat,percentage'],
-            'premium_rate'    => ['sometimes', 'numeric', 'min:0'],
-            'coverage_type'   => ['sometimes', 'in:credit_life,disability,property,comprehensive'],
+            'name' => ['sometimes', 'required', 'string', 'max:255'],
+            'description' => ['nullable', 'string'],
+            'premium_type' => ['sometimes', 'in:flat,percentage'],
+            'premium_rate' => ['sometimes', 'numeric', 'min:0'],
+            'coverage_type' => ['sometimes', 'in:credit_life,disability,property,comprehensive'],
             'max_term_months' => ['nullable', 'integer', 'min:1'],
-            'is_active'       => ['sometimes', 'boolean'],
-            'notes'           => ['nullable', 'string'],
+            'is_active' => ['sometimes', 'boolean'],
+            'notes' => ['nullable', 'string'],
         ]);
 
         $product->update($data);
@@ -113,39 +113,39 @@ class InsuranceController extends BaseApiController
     {
         $data = $request->validate([
             'insurance_product_id' => ['required', 'exists:insurance_products,id'],
-            'sum_insured'          => ['required', 'numeric', 'min:0'],
-            'start_date'           => ['required', 'date'],
-            'end_date'             => ['nullable', 'date', 'after:start_date'],
-            'notes'                => ['nullable', 'string'],
+            'sum_insured' => ['required', 'numeric', 'min:0'],
+            'start_date' => ['required', 'date'],
+            'end_date' => ['nullable', 'date', 'after:start_date'],
+            'notes' => ['nullable', 'string'],
         ]);
 
         $product = InsuranceProduct::findOrFail($data['insurance_product_id']);
 
         $policy = $loan->insurances()->create([
             'insurance_product_id' => $product->id,
-            'recorded_by'          => $request->user()->id,
-            'policy_number'        => LoanInsurance::generatePolicyNumber(),
-            'sum_insured'          => $data['sum_insured'],
-            'premium_amount'       => $product->calculatePremium((float) $loan->principal_amount),
-            'start_date'           => $data['start_date'],
-            'end_date'             => $data['end_date'] ?? null,
-            'notes'                => $data['notes'] ?? null,
-            'status'               => 'active',
+            'recorded_by' => $request->user()->id,
+            'policy_number' => LoanInsurance::generatePolicyNumber(),
+            'sum_insured' => $data['sum_insured'],
+            'premium_amount' => $product->calculatePremium((float) $loan->principal_amount),
+            'start_date' => $data['start_date'],
+            'end_date' => $data['end_date'] ?? null,
+            'notes' => $data['notes'] ?? null,
+            'status' => 'active',
         ]);
 
         return $this->success(
             ['policy' => $this->formatPolicy($policy->load('product:id,name,code,coverage_type'))],
             'Insurance policy attached.',
-            201
+            201,
         );
     }
 
     public function updatePolicy(Request $request, LoanInsurance $policy): JsonResponse
     {
         $data = $request->validate([
-            'status'   => ['sometimes', 'in:active,lapsed,cancelled,claimed'],
+            'status' => ['sometimes', 'in:active,lapsed,cancelled,claimed'],
             'end_date' => ['nullable', 'date'],
-            'notes'    => ['nullable', 'string'],
+            'notes' => ['nullable', 'string'],
         ]);
 
         $policy->update($data);
@@ -158,21 +158,21 @@ class InsuranceController extends BaseApiController
     public function fileClaim(Request $request, LoanInsurance $policy): JsonResponse
     {
         $data = $request->validate([
-            'claim_type'    => ['required', 'in:death,disability,property_damage,other'],
-            'claim_amount'  => ['required', 'numeric', 'min:1'],
+            'claim_type' => ['required', 'in:death,disability,property_damage,other'],
+            'claim_amount' => ['required', 'numeric', 'min:1'],
             'incident_date' => ['required', 'date'],
-            'description'   => ['nullable', 'string'],
+            'description' => ['nullable', 'string'],
         ]);
 
         $claim = InsuranceClaim::create([
             'loan_insurance_id' => $policy->id,
-            'recorded_by'       => $request->user()->id,
-            'claim_number'      => InsuranceClaim::generateClaimNumber(),
-            'claim_type'        => $data['claim_type'],
-            'claim_amount'      => $data['claim_amount'],
-            'incident_date'     => $data['incident_date'],
-            'description'       => $data['description'] ?? null,
-            'status'            => 'pending',
+            'recorded_by' => $request->user()->id,
+            'claim_number' => InsuranceClaim::generateClaimNumber(),
+            'claim_type' => $data['claim_type'],
+            'claim_amount' => $data['claim_amount'],
+            'incident_date' => $data['incident_date'],
+            'description' => $data['description'] ?? null,
+            'status' => 'pending',
         ]);
 
         return $this->success(['claim' => $this->formatClaim($claim)], 'Claim filed.', 201);
@@ -181,8 +181,8 @@ class InsuranceController extends BaseApiController
     public function reviewClaim(Request $request, InsuranceClaim $claim): JsonResponse
     {
         $data = $request->validate([
-            'status'           => ['required', 'in:approved,paid,rejected,under_review'],
-            'approved_amount'  => ['nullable', 'numeric', 'min:0'],
+            'status' => ['required', 'in:approved,paid,rejected,under_review'],
+            'approved_amount' => ['nullable', 'numeric', 'min:0'],
             'rejection_reason' => ['nullable', 'string'],
         ]);
 
@@ -207,56 +207,56 @@ class InsuranceController extends BaseApiController
     private function formatProduct(InsuranceProduct $p): array
     {
         return [
-            'id'              => $p->id,
-            'name'            => $p->name,
-            'code'            => $p->code,
-            'description'     => $p->description,
-            'premium_type'    => $p->premium_type,
-            'premium_rate'    => (float) $p->premium_rate,
-            'coverage_type'   => $p->coverage_type,
+            'id' => $p->id,
+            'name' => $p->name,
+            'code' => $p->code,
+            'description' => $p->description,
+            'premium_type' => $p->premium_type,
+            'premium_rate' => (float) $p->premium_rate,
+            'coverage_type' => $p->coverage_type,
             'max_term_months' => $p->max_term_months,
-            'is_active'       => $p->is_active,
-            'notes'           => $p->notes,
+            'is_active' => $p->is_active,
+            'notes' => $p->notes,
         ];
     }
 
     private function formatPolicy(LoanInsurance $i): array
     {
         return [
-            'id'             => $i->id,
-            'loan_id'        => $i->loan_id,
-            'policy_number'  => $i->policy_number,
-            'product'        => $i->relationLoaded('product') ? [
-                'id'            => $i->product->id,
-                'name'          => $i->product->name,
-                'code'          => $i->product->code,
+            'id' => $i->id,
+            'loan_id' => $i->loan_id,
+            'policy_number' => $i->policy_number,
+            'product' => $i->relationLoaded('product') ? [
+                'id' => $i->product->id,
+                'name' => $i->product->name,
+                'code' => $i->product->code,
                 'coverage_type' => $i->product->coverage_type,
             ] : null,
-            'sum_insured'    => (float) $i->sum_insured,
+            'sum_insured' => (float) $i->sum_insured,
             'premium_amount' => (float) $i->premium_amount,
-            'start_date'     => $i->start_date?->toDateString(),
-            'end_date'       => $i->end_date?->toDateString(),
-            'status'         => $i->status,
-            'notes'          => $i->notes,
-            'created_at'     => $i->created_at?->toDateString(),
+            'start_date' => $i->start_date?->toDateString(),
+            'end_date' => $i->end_date?->toDateString(),
+            'status' => $i->status,
+            'notes' => $i->notes,
+            'created_at' => $i->created_at?->toDateString(),
         ];
     }
 
     private function formatClaim(InsuranceClaim $c): array
     {
         return [
-            'id'                => $c->id,
+            'id' => $c->id,
             'loan_insurance_id' => $c->loan_insurance_id,
-            'claim_number'      => $c->claim_number,
-            'claim_type'        => $c->claim_type,
-            'claim_amount'      => (float) $c->claim_amount,
-            'approved_amount'   => $c->approved_amount ? (float) $c->approved_amount : null,
-            'status'            => $c->status,
-            'incident_date'     => $c->incident_date?->toDateString(),
-            'description'       => $c->description,
-            'rejection_reason'  => $c->rejection_reason,
-            'reviewed_at'       => $c->reviewed_at?->toDateTimeString(),
-            'created_at'        => $c->created_at?->toDateString(),
+            'claim_number' => $c->claim_number,
+            'claim_type' => $c->claim_type,
+            'claim_amount' => (float) $c->claim_amount,
+            'approved_amount' => $c->approved_amount ? (float) $c->approved_amount : null,
+            'status' => $c->status,
+            'incident_date' => $c->incident_date?->toDateString(),
+            'description' => $c->description,
+            'rejection_reason' => $c->rejection_reason,
+            'reviewed_at' => $c->reviewed_at?->toDateTimeString(),
+            'created_at' => $c->created_at?->toDateString(),
         ];
     }
 }

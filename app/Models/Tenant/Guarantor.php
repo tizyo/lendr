@@ -30,7 +30,7 @@ class Guarantor extends Model
 
     protected $casts = [
         'monthly_income' => 'decimal:2',
-        'status'         => 'string',
+        'status' => 'string',
     ];
 
     // ─── Relations ────────────────────────────────────────────────────────────
@@ -47,7 +47,7 @@ class Guarantor extends Model
         return match ($this->status) {
             'approved' => ['label' => 'Approved', 'color' => 'emerald'],
             'rejected' => ['label' => 'Rejected', 'color' => 'red'],
-            default    => ['label' => 'Pending',  'color' => 'amber'],
+            default => ['label' => 'Pending',  'color' => 'amber'],
         };
     }
 }

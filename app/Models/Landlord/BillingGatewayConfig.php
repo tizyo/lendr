@@ -17,11 +17,11 @@ class BillingGatewayConfig extends Model
     ];
 
     protected $casts = [
-        'is_active'      => 'boolean',
-        'public_key'     => 'encrypted',
-        'secret_key'     => 'encrypted',
+        'is_active' => 'boolean',
+        'public_key' => 'encrypted',
+        'secret_key' => 'encrypted',
         'webhook_secret' => 'encrypted',
-        'extra_config'   => 'array',
+        'extra_config' => 'array',
     ];
 
     protected $hidden = ['public_key', 'secret_key', 'webhook_secret'];
@@ -30,19 +30,28 @@ class BillingGatewayConfig extends Model
 
     public static function active(): ?self
     {
-        if (! Schema::hasTable('billing_gateway_configs')) return null;
+        if (! Schema::hasTable('billing_gateway_configs')) {
+            return null;
+        }
+
         return static::where('is_active', true)->first();
     }
 
     public static function forGateway(string $gateway): ?self
     {
-        if (! Schema::hasTable('billing_gateway_configs')) return null;
+        if (! Schema::hasTable('billing_gateway_configs')) {
+            return null;
+        }
+
         return static::where('gateway', $gateway)->first();
     }
 
     public static function allIndexed(): array
     {
-        if (! Schema::hasTable('billing_gateway_configs')) return [];
+        if (! Schema::hasTable('billing_gateway_configs')) {
+            return [];
+        }
+
         return static::all()->keyBy('gateway')->all();
     }
 }

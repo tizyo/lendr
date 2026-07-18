@@ -24,21 +24,21 @@ test('loans report returns correct structure', function () {
         ->getJson(route('api.v1.reports.generate', 'loans'));
 
     $response->assertOk()
-             ->assertJsonStructure(['data' => ['type', 'total', 'summary', 'rows']]);
+        ->assertJsonStructure(['data' => ['type', 'total', 'summary', 'rows']]);
 
     expect($response->json('data.type'))->toBe('loans');
 });
 
 test('loans report rows include required fields', function () {
-    $user     = reportUser();
+    $user = reportUser();
     $loanType = LoanType::factory()->create();
-    $plan     = LoanPlan::factory()->create(['loan_type_id' => $loanType->id]);
+    $plan = LoanPlan::factory()->create(['loan_type_id' => $loanType->id]);
     $borrower = Borrower::factory()->create();
 
     Loan::factory()->create([
         'loan_type_id' => $loanType->id,
         'loan_plan_id' => $plan->id,
-        'borrower_id'  => $borrower->id,
+        'borrower_id' => $borrower->id,
     ]);
 
     $response = $this->actingAs($user)
@@ -52,9 +52,9 @@ test('loans report rows include required fields', function () {
 });
 
 test('loans report can be filtered by status', function () {
-    $user     = reportUser();
+    $user = reportUser();
     $loanType = LoanType::factory()->create();
-    $plan     = LoanPlan::factory()->create(['loan_type_id' => $loanType->id]);
+    $plan = LoanPlan::factory()->create(['loan_type_id' => $loanType->id]);
     $borrower = Borrower::factory()->create();
 
     Loan::factory()->create(['loan_type_id' => $loanType->id, 'loan_plan_id' => $plan->id, 'borrower_id' => $borrower->id, 'status' => 'draft']);
@@ -96,7 +96,7 @@ test('expenses report returns correct structure', function () {
 
 test('expenses report sums approved amounts', function () {
     $user = reportUser();
-    $cat  = ExpenseCategory::factory()->create();
+    $cat = ExpenseCategory::factory()->create();
 
     Expense::factory()->approved()->create(['expense_category_id' => $cat->id, 'amount' => 500]);
     Expense::factory()->approved()->create(['expense_category_id' => $cat->id, 'amount' => 300]);
@@ -120,7 +120,7 @@ test('borrowers report returns correct structure', function () {
         ->getJson(route('api.v1.reports.generate', 'borrowers'));
 
     $response->assertOk()
-             ->assertJsonPath('data.type', 'borrowers');
+        ->assertJsonPath('data.type', 'borrowers');
 
     expect($response->json('data.rows'))->not->toBeEmpty();
     expect($response->json('data.rows.0'))->toHaveKeys(['borrower_number', 'first_name', 'last_name', 'is_active']);
@@ -136,8 +136,8 @@ test('par report returns portfolio-at-risk structure', function () {
         ->getJson(route('api.v1.reports.generate', 'par'));
 
     $response->assertOk()
-             ->assertJsonPath('data.type', 'par')
-             ->assertJsonStructure(['data' => ['type', 'total', 'summary' => ['total_portfolio', 'par_buckets'], 'rows']]);
+        ->assertJsonPath('data.type', 'par')
+        ->assertJsonStructure(['data' => ['type', 'total', 'summary' => ['total_portfolio', 'par_buckets'], 'rows']]);
 });
 
 test('par report summary includes all dpd buckets', function () {
@@ -162,8 +162,8 @@ test('collection report returns monthly efficiency data', function () {
         ->getJson(route('api.v1.reports.generate', 'collection'));
 
     $response->assertOk()
-             ->assertJsonPath('data.type', 'collection')
-             ->assertJsonStructure(['data' => ['type', 'year', 'summary' => ['total_due', 'total_collected', 'overall_efficiency'], 'rows']]);
+        ->assertJsonPath('data.type', 'collection')
+        ->assertJsonStructure(['data' => ['type', 'year', 'summary' => ['total_due', 'total_collected', 'overall_efficiency'], 'rows']]);
 
     // 12 months
     $this->assertCount(12, $response->json('data.rows'));
@@ -190,7 +190,6 @@ test('unknown report type returns 422', function () {
         ->getJson(route('api.v1.reports.generate', 'foo-bar'))
         ->assertStatus(422);
 });
-
 
 // ─── Export Endpoints ─────────────────────────────────────────────────────────
 

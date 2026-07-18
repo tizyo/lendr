@@ -8,7 +8,6 @@ use App\Models\Tenant\LoanGroup;
 use App\Models\Tenant\LoanGroupMember;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 
 class LoanGroupController extends BaseApiController
 {
@@ -20,14 +19,14 @@ class LoanGroupController extends BaseApiController
     public function index(Request $request): JsonResponse
     {
         $query = LoanGroup::withCount(['activeMembers', 'loans'])
-            ->when($request->search,     fn ($q, $s) => $q->where('name', 'like', "%{$s}%"))
+            ->when($request->search, fn ($q, $s) => $q->where('name', 'like', "%{$s}%"))
             ->when($request->officer_id, fn ($q, $v) => $q->where('officer_id', $v))
-            ->when($request->status,     fn ($q, $v) => $q->where('status', $v))
+            ->when($request->status, fn ($q, $v) => $q->where('status', $v))
             ->orderByDesc('id');
 
         return $this->paginated(
             $query->paginate($request->integer('per_page', 20)),
-            fn ($g) => $this->formatGroup($g)
+            fn ($g) => $this->formatGroup($g),
         );
     }
 
@@ -37,12 +36,12 @@ class LoanGroupController extends BaseApiController
     public function store(Request $request): JsonResponse
     {
         $data = $request->validate([
-            'name'             => ['required', 'string', 'max:150'],
-            'officer_id'       => ['nullable', 'exists:users,id'],
-            'description'      => ['nullable', 'string'],
+            'name' => ['required', 'string', 'max:150'],
+            'officer_id' => ['nullable', 'exists:users,id'],
+            'description' => ['nullable', 'string'],
             'meeting_schedule' => ['nullable', 'string', 'max:150'],
             'meeting_location' => ['nullable', 'string', 'max:150'],
-            'max_members'      => ['nullable', 'integer', 'min:2', 'max:200'],
+            'max_members' => ['nullable', 'integer', 'min:2', 'max:200'],
         ]);
 
         $group = LoanGroup::create([
@@ -70,13 +69,13 @@ class LoanGroupController extends BaseApiController
     public function update(Request $request, LoanGroup $loanGroup): JsonResponse
     {
         $data = $request->validate([
-            'name'             => ['sometimes', 'string', 'max:150'],
-            'officer_id'       => ['nullable', 'exists:users,id'],
-            'description'      => ['nullable', 'string'],
+            'name' => ['sometimes', 'string', 'max:150'],
+            'officer_id' => ['nullable', 'exists:users,id'],
+            'description' => ['nullable', 'string'],
             'meeting_schedule' => ['nullable', 'string', 'max:150'],
             'meeting_location' => ['nullable', 'string', 'max:150'],
-            'status'           => ['sometimes', 'in:active,inactive,dissolved'],
-            'max_members'      => ['nullable', 'integer', 'min:2', 'max:200'],
+            'status' => ['sometimes', 'in:active,inactive,dissolved'],
+            'max_members' => ['nullable', 'integer', 'min:2', 'max:200'],
         ]);
 
         $loanGroup->update($data);
@@ -103,7 +102,7 @@ class LoanGroupController extends BaseApiController
     {
         $data = $request->validate([
             'borrower_id' => ['required', 'exists:borrowers,id'],
-            'role'        => ['nullable', 'in:leader,secretary,member'],
+            'role' => ['nullable', 'in:leader,secretary,member'],
         ]);
 
         // Check capacity
@@ -125,11 +124,11 @@ class LoanGroupController extends BaseApiController
         $member = LoanGroupMember::updateOrCreate(
             ['loan_group_id' => $loanGroup->id, 'borrower_id' => $data['borrower_id']],
             [
-                'role'        => $data['role'] ?? 'member',
-                'is_active'   => true,
+                'role' => $data['role'] ?? 'member',
+                'is_active' => true,
                 'joined_date' => now()->toDateString(),
-                'left_date'   => null,
-            ]
+                'left_date' => null,
+            ],
         );
 
         return $this->success(['member' => $this->formatMember($member->load('borrower'))], 'Member added.', 201);
@@ -159,21 +158,21 @@ class LoanGroupController extends BaseApiController
     private function formatGroup(LoanGroup $g, bool $full = false): array
     {
         $data = [
-            'id'               => $g->id,
-            'group_number'     => $g->group_number,
-            'name'             => $g->name,
-            'status'           => $g->status,
-            'officer_id'       => $g->officer_id,
+            'id' => $g->id,
+            'group_number' => $g->group_number,
+            'name' => $g->name,
+            'status' => $g->status,
+            'officer_id' => $g->officer_id,
             'meeting_schedule' => $g->meeting_schedule,
             'meeting_location' => $g->meeting_location,
-            'max_members'      => $g->max_members,
-            'active_members'   => $g->active_members_count ?? null,
-            'loans_count'      => $g->loans_count ?? null,
+            'max_members' => $g->max_members,
+            'active_members' => $g->active_members_count ?? null,
+            'loans_count' => $g->loans_count ?? null,
         ];
 
         if ($full) {
-            $data['officer']  = $g->relationLoaded('officer') ? ['id' => $g->officer?->id, 'name' => $g->officer?->name] : null;
-            $data['members']  = $g->relationLoaded('activeMembers')
+            $data['officer'] = $g->relationLoaded('officer') ? ['id' => $g->officer?->id, 'name' => $g->officer?->name] : null;
+            $data['members'] = $g->relationLoaded('activeMembers')
                 ? $g->activeMembers->map(fn ($m) => $this->formatMember($m))->values()
                 : [];
         }
@@ -184,10 +183,10 @@ class LoanGroupController extends BaseApiController
     private function formatMember(LoanGroupMember $m): array
     {
         return [
-            'id'          => $m->id,
+            'id' => $m->id,
             'borrower_id' => $m->borrower_id,
-            'name'        => $m->relationLoaded('borrower') ? $m->borrower->full_name : null,
-            'role'        => $m->role,
+            'name' => $m->relationLoaded('borrower') ? $m->borrower->full_name : null,
+            'role' => $m->role,
             'joined_date' => $m->joined_date->toDateString(),
         ];
     }

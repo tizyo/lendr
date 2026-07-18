@@ -27,7 +27,7 @@ class OnboardingWizardController extends BaseApiController
             'metadata' => ['sometimes', 'array'],
         ]);
 
-        $user    = $request->user();
+        $user = $request->user();
         $success = $this->svc->complete($key, $user, $data['metadata'] ?? []);
 
         if (! $success) {

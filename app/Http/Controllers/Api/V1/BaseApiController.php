@@ -13,7 +13,7 @@ class BaseApiController extends Controller
         return response()->json([
             'success' => true,
             'message' => $message,
-            'data'    => $data,
+            'data' => $data,
         ], $status);
     }
 
@@ -35,14 +35,14 @@ class BaseApiController extends Controller
     {
         return response()->json([
             'success' => true,
-            'data'    => $paginator->getCollection()->map($transformer)->values(),
-            'meta'    => [
+            'data' => $paginator->getCollection()->map($transformer)->values(),
+            'meta' => [
                 'current_page' => $paginator->currentPage(),
-                'last_page'    => $paginator->lastPage(),
-                'per_page'     => $paginator->perPage(),
-                'total'        => $paginator->total(),
-                'from'         => $paginator->firstItem(),
-                'to'           => $paginator->lastItem(),
+                'last_page' => $paginator->lastPage(),
+                'per_page' => $paginator->perPage(),
+                'total' => $paginator->total(),
+                'from' => $paginator->firstItem(),
+                'to' => $paginator->lastItem(),
             ],
         ]);
     }

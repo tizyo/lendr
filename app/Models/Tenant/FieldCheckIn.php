@@ -20,9 +20,9 @@ class FieldCheckIn extends Model
     protected function casts(): array
     {
         return [
-            'latitude'      => 'float',
-            'longitude'     => 'float',
-            'accuracy'      => 'float',
+            'latitude' => 'float',
+            'longitude' => 'float',
+            'accuracy' => 'float',
             'checked_in_at' => 'datetime',
         ];
     }

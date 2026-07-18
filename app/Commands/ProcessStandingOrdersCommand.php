@@ -21,15 +21,16 @@ use Illuminate\Support\Facades\Log;
  */
 class ProcessStandingOrdersCommand extends Command
 {
-    protected $signature   = 'lendr:process-standing-orders {--dry-run : Preview without dispatching jobs}';
+    protected $signature = 'lendr:process-standing-orders {--dry-run : Preview without dispatching jobs}';
+
     protected $description = 'Process due standing orders for auto-debit repayments (Enterprise only)';
 
     public function handle(): int
     {
-        $dryRun    = $this->option('dry-run');
-        $today     = now()->toDateString();
+        $dryRun = $this->option('dry-run');
+        $today = now()->toDateString();
         $dispatched = 0;
-        $skipped    = 0;
+        $skipped = 0;
 
         $this->info($dryRun ? '[DRY RUN] Processing standing orders…' : 'Processing standing orders…');
 
@@ -40,6 +41,7 @@ class ProcessStandingOrdersCommand extends Command
 
         if ($wallets->isEmpty()) {
             $this->info('No active debit wallets found.');
+
             return self::SUCCESS;
         }
 
@@ -48,11 +50,13 @@ class ProcessStandingOrdersCommand extends Command
 
             if (! $tenant || $tenant->plan !== 'enterprise') {
                 $skipped++;
+
                 continue;
             }
 
             if ($tenant->status !== 'active') {
                 $skipped++;
+
                 continue;
             }
 
@@ -65,11 +69,11 @@ class ProcessStandingOrdersCommand extends Command
                 $orders = StandingOrder::where('status', 'pending')
                     ->where(function ($q) use ($today) {
                         $q->whereNull('next_attempt_at')
-                          ->where('due_date', '<=', $today);
+                            ->where('due_date', '<=', $today);
                     })
                     ->orWhere(function ($q) {
                         $q->where('status', 'pending')
-                          ->where('next_attempt_at', '<=', now());
+                            ->where('next_attempt_at', '<=', now());
                     })
                     ->get();
 
@@ -84,7 +88,7 @@ class ProcessStandingOrdersCommand extends Command
             } catch (\Throwable $e) {
                 Log::error('[ProcessStandingOrders] Tenant error', [
                     'tenant_id' => $wallet->tenant_id,
-                    'error'     => $e->getMessage(),
+                    'error' => $e->getMessage(),
                 ]);
                 $this->error("  Error for tenant {$wallet->tenant_id}: ".$e->getMessage());
             } finally {

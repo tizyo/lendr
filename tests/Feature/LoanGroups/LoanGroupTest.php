@@ -16,10 +16,10 @@ function groupAdmin(): User
 function makeGroup(array $attrs = []): LoanGroup
 {
     return LoanGroup::create(array_merge([
-        'name'         => 'Test Group',
+        'name' => 'Test Group',
         'group_number' => LoanGroup::generateGroupNumber(),
-        'status'       => 'active',
-        'max_members'  => 10,
+        'status' => 'active',
+        'max_members' => 10,
     ], $attrs));
 }
 
@@ -30,9 +30,9 @@ test('can create a loan group', function () {
 
     $this->actingAs($admin)
         ->postJson(route('api.v1.loan-groups.store'), [
-            'name'             => 'Sunrise Village Group',
+            'name' => 'Sunrise Village Group',
             'meeting_schedule' => 'Every Monday 10AM',
-            'max_members'      => 15,
+            'max_members' => 15,
         ])
         ->assertStatus(201)
         ->assertJsonPath('data.group.name', 'Sunrise Village Group');
@@ -60,7 +60,9 @@ test('create group requires a name', function () {
 
 test('can list loan groups', function () {
     $admin = groupAdmin();
-    makeGroup(); makeGroup(['name' => 'Beta Group']); makeGroup(['name' => 'Gamma Group']);
+    makeGroup();
+    makeGroup(['name' => 'Beta Group']);
+    makeGroup(['name' => 'Gamma Group']);
 
     $this->actingAs($admin)
         ->getJson(route('api.v1.loan-groups.index'))
@@ -91,16 +93,16 @@ test('can soft-delete a group', function () {
 })->group('loan-groups');
 
 test('show returns group with members', function () {
-    $admin    = groupAdmin();
-    $group    = makeGroup();
+    $admin = groupAdmin();
+    $group = makeGroup();
     $borrower = Borrower::factory()->create();
 
     LoanGroupMember::create([
         'loan_group_id' => $group->id,
-        'borrower_id'   => $borrower->id,
-        'role'          => 'member',
-        'is_active'     => true,
-        'joined_date'   => now()->toDateString(),
+        'borrower_id' => $borrower->id,
+        'role' => 'member',
+        'is_active' => true,
+        'joined_date' => now()->toDateString(),
     ]);
 
     $resp = $this->actingAs($admin)
@@ -113,27 +115,27 @@ test('show returns group with members', function () {
 // ─── Member management ────────────────────────────────────────────────────────
 
 test('can add a member to a group', function () {
-    $admin    = groupAdmin();
-    $group    = makeGroup();
+    $admin = groupAdmin();
+    $group = makeGroup();
     $borrower = Borrower::factory()->create();
 
     $this->actingAs($admin)
         ->postJson(route('api.v1.loan-groups.members.add', $group), [
             'borrower_id' => $borrower->id,
-            'role'        => 'leader',
+            'role' => 'leader',
         ])
         ->assertStatus(201)
         ->assertJsonPath('data.member.role', 'leader');
 
     $this->assertDatabaseHas('loan_group_members', [
         'loan_group_id' => $group->id,
-        'borrower_id'   => $borrower->id,
+        'borrower_id' => $borrower->id,
     ]);
 })->group('loan-groups');
 
 test('cannot add duplicate active member', function () {
-    $admin    = groupAdmin();
-    $group    = makeGroup();
+    $admin = groupAdmin();
+    $group = makeGroup();
     $borrower = Borrower::factory()->create();
 
     $this->actingAs($admin)
@@ -161,8 +163,8 @@ test('cannot exceed max_members capacity', function () {
 })->group('loan-groups');
 
 test('can remove a member from a group', function () {
-    $admin    = groupAdmin();
-    $group    = makeGroup();
+    $admin = groupAdmin();
+    $group = makeGroup();
     $borrower = Borrower::factory()->create();
 
     $this->actingAs($admin)
@@ -174,8 +176,8 @@ test('can remove a member from a group', function () {
 
     $this->assertDatabaseHas('loan_group_members', [
         'loan_group_id' => $group->id,
-        'borrower_id'   => $borrower->id,
-        'is_active'     => false,
+        'borrower_id' => $borrower->id,
+        'is_active' => false,
     ]);
 })->group('loan-groups');
 

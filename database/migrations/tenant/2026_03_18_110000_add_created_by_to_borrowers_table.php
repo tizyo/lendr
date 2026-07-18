@@ -10,7 +10,7 @@ return new class extends Migration
     {
         Schema::table('borrowers', function (Blueprint $table) {
             $table->foreignId('created_by')->nullable()->after('legacy_id')
-                  ->constrained('users')->nullOnDelete();
+                ->constrained('users')->nullOnDelete();
         });
     }
 

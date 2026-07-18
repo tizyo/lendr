@@ -16,7 +16,7 @@ class ApplyPenaltiesCommand extends Command
 
     public function handle(PenaltyService $service): int
     {
-        $date   = $this->option('date')
+        $date = $this->option('date')
             ? Carbon::parse($this->option('date'))
             : now();
 
@@ -25,7 +25,7 @@ class ApplyPenaltiesCommand extends Command
         $this->info(sprintf(
             'Applying penalties for %s%s',
             $date->toDateString(),
-            $dryRun ? ' [DRY RUN]' : ''
+            $dryRun ? ' [DRY RUN]' : '',
         ));
 
         $result = $service->applyPenaltiesForDate($date, $dryRun);
@@ -36,7 +36,7 @@ class ApplyPenaltiesCommand extends Command
                 ['Installments penalised', $result['applied']],
                 ['Skipped',               $result['skipped']],
                 ['Total penalty',         number_format($result['total_penalty'], 2)],
-            ]
+            ],
         );
 
         return self::SUCCESS;

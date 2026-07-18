@@ -17,11 +17,11 @@ class StaffCommission extends Model
     protected function casts(): array
     {
         return [
-            'base_amount'       => 'decimal:2',
+            'base_amount' => 'decimal:2',
             'commission_amount' => 'decimal:2',
-            'period_month'      => 'date',
-            'approved_at'       => 'datetime',
-            'paid_at'           => 'datetime',
+            'period_month' => 'date',
+            'approved_at' => 'datetime',
+            'paid_at' => 'datetime',
         ];
     }
 

@@ -12,7 +12,10 @@ use Illuminate\Support\Facades\Log;
  */
 class ZamtelWebhookController extends BaseWebhookController
 {
-    protected function providerName(): string { return 'zamtel_kwacha'; }
+    protected function providerName(): string
+    {
+        return 'zamtel_kwacha';
+    }
 
     protected function verifySignature(Request $request): bool
     {
@@ -26,7 +29,7 @@ class ZamtelWebhookController extends BaseWebhookController
 
         return hash_equals(
             hash_hmac('sha256', $request->getContent(), $secret),
-            $request->header('X-Zamtel-Signature', '')
+            $request->header('X-Zamtel-Signature', ''),
         );
     }
 
@@ -37,19 +40,19 @@ class ZamtelWebhookController extends BaseWebhookController
         $rawStatus = strtolower($body['status'] ?? $body['transactionStatus'] ?? '');
         $status = match ($rawStatus) {
             'success', 'successful', 'completed' => 'success',
-            'failed', 'failure', 'error'         => 'failed',
-            default                              => 'pending',
+            'failed', 'failure', 'error' => 'failed',
+            default => 'pending',
         };
 
         return [
-            'event_id'       => $body['transactionId'] ?? $body['id']  ?? null,
-            'event_type'     => 'payment.' . $status,
-            'internal_ref'   => $body['reference']     ?? $body['ref'] ?? null,
-            'transaction_id' => $body['transactionId'] ?? $body['id']  ?? '',
-            'amount'         => (float) ($body['amount']               ?? 0),
-            'phone'          => $body['msisdn']        ?? $body['phone'] ?? '',
-            'status'         => $status,
-            'raw'            => $body,
+            'event_id' => $body['transactionId'] ?? $body['id'] ?? null,
+            'event_type' => 'payment.'.$status,
+            'internal_ref' => $body['reference'] ?? $body['ref'] ?? null,
+            'transaction_id' => $body['transactionId'] ?? $body['id'] ?? '',
+            'amount' => (float) ($body['amount'] ?? 0),
+            'phone' => $body['msisdn'] ?? $body['phone'] ?? '',
+            'status' => $status,
+            'raw' => $body,
         ];
     }
 }

@@ -29,11 +29,11 @@ class HotDeal extends Model
 
     protected $casts = [
         'interest_rate' => 'float',
-        'min_amount'    => 'float',
-        'max_amount'    => 'float',
-        'is_active'     => 'boolean',
-        'starts_at'     => 'datetime',
-        'expires_at'    => 'datetime',
+        'min_amount' => 'float',
+        'max_amount' => 'float',
+        'is_active' => 'boolean',
+        'starts_at' => 'datetime',
+        'expires_at' => 'datetime',
     ];
 
     // ─── Relationships ─────────────────────────────────────────────────────

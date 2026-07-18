@@ -21,50 +21,50 @@ function mktBorrower(): Borrower
 
 function mktLoanType(): LoanType
 {
-    return LoanType::create(['name' => 'Mkt Personal', 'code' => 'MKT-' . uniqid(), 'is_active' => true]);
+    return LoanType::create(['name' => 'Mkt Personal', 'code' => 'MKT-'.uniqid(), 'is_active' => true]);
 }
 
 function mktPlan(LoanType $lt): LoanPlan
 {
     return LoanPlan::create([
-        'loan_type_id'       => $lt->id,
-        'name'               => 'Basic Plan',
-        'code'               => 'BP-' . uniqid(),
-        'interest_rate'      => 18,
-        'interest_type'      => 'flat',
-        'interest_period'    => 'monthly',
-        'min_tenure'         => 1,
-        'max_tenure'         => 12,
-        'tenure_type'        => 'months',
-        'min_amount'         => 1000,
-        'max_amount'         => 50000,
-        'penalty_rate'       => 2,
-        'penalty_type'       => 'flat',
-        'grace_period_days'  => 0,
+        'loan_type_id' => $lt->id,
+        'name' => 'Basic Plan',
+        'code' => 'BP-'.uniqid(),
+        'interest_rate' => 18,
+        'interest_type' => 'flat',
+        'interest_period' => 'monthly',
+        'min_tenure' => 1,
+        'max_tenure' => 12,
+        'tenure_type' => 'months',
+        'min_amount' => 1000,
+        'max_amount' => 50000,
+        'penalty_rate' => 2,
+        'penalty_type' => 'flat',
+        'grace_period_days' => 0,
         'repayment_schedule' => 'monthly',
-        'processing_fee'     => 2,
-        'insurance_fee'      => 0,
-        'is_active'          => true,
+        'processing_fee' => 2,
+        'insurance_fee' => 0,
+        'is_active' => true,
     ]);
 }
 
 function mktProduct(array $extra = []): PublicLoanProduct
 {
     return PublicLoanProduct::create(array_merge([
-        'tenant_id'          => 'tenant-test-' . uniqid(),
-        'tenant_name'        => 'Test MFI',
-        'product_name'       => 'Quick Loan',
-        'min_amount'         => 1000,
-        'max_amount'         => 50000,
-        'interest_rate'      => 18,
-        'interest_type'      => 'flat',
-        'interest_period'    => 'monthly',
-        'min_tenure'         => 1,
-        'max_tenure'         => 12,
-        'tenure_type'        => 'months',
+        'tenant_id' => 'tenant-test-'.uniqid(),
+        'tenant_name' => 'Test MFI',
+        'product_name' => 'Quick Loan',
+        'min_amount' => 1000,
+        'max_amount' => 50000,
+        'interest_rate' => 18,
+        'interest_type' => 'flat',
+        'interest_period' => 'monthly',
+        'min_tenure' => 1,
+        'max_tenure' => 12,
+        'tenure_type' => 'months',
         'repayment_schedule' => 'monthly',
-        'processing_fee'     => 2,
-        'is_active'          => true,
+        'processing_fee' => 2,
+        'is_active' => true,
     ], $extra));
 }
 
@@ -84,7 +84,7 @@ test('GET marketplace/products lists active products', function () {
 });
 
 test('GET marketplace/products/{id} returns single product', function () {
-    $admin   = mktAdmin();
+    $admin = mktAdmin();
     $product = mktProduct();
 
     $this->actingAs($admin)
@@ -95,7 +95,7 @@ test('GET marketplace/products/{id} returns single product', function () {
 });
 
 test('GET marketplace/products/{id} returns 404 for inactive product', function () {
-    $admin   = mktAdmin();
+    $admin = mktAdmin();
     $product = mktProduct(['is_active' => false]);
 
     $this->actingAs($admin)
@@ -105,7 +105,7 @@ test('GET marketplace/products/{id} returns 404 for inactive product', function 
 
 test('POST marketplace/products publishes a loan type to marketplace', function () {
     $admin = mktAdmin();
-    $lt    = mktLoanType();
+    $lt = mktLoanType();
     mktPlan($lt);
 
     $this->actingAs($admin)
@@ -121,7 +121,7 @@ test('POST marketplace/products publishes a loan type to marketplace', function 
 
 test('POST marketplace/products returns 422 when loan type has no active plan', function () {
     $admin = mktAdmin();
-    $lt    = mktLoanType();
+    $lt = mktLoanType();
     // No plan created
 
     $this->actingAs($admin)
@@ -133,7 +133,7 @@ test('POST marketplace/products returns 422 when loan type has no active plan', 
 });
 
 test('DELETE marketplace/products/{id} deactivates listing', function () {
-    $admin   = mktAdmin();
+    $admin = mktAdmin();
     $product = mktProduct(['tenant_id' => 'local']);
 
     $this->actingAs($admin)
@@ -162,7 +162,7 @@ test('GET marketplace/products filters by amount range', function () {
     mktProduct(['min_amount' => 50000, 'max_amount' => 200000]);
 
     $resp = $this->actingAs($admin)
-        ->getJson(route('api.v1.marketplace.browse') . '?max_amount=15000')
+        ->getJson(route('api.v1.marketplace.browse').'?max_amount=15000')
         ->assertOk();
 
     expect(count($resp->json('data')))->toBe(1);
@@ -181,7 +181,7 @@ test('GET marketplace/products filters by keyword q', function () {
     mktProduct(['product_name' => 'Business Loan']);
 
     $resp = $this->actingAs($admin)
-        ->getJson(route('api.v1.marketplace.browse') . '?q=Agri')
+        ->getJson(route('api.v1.marketplace.browse').'?q=Agri')
         ->assertOk();
 
     expect(count($resp->json('data')))->toBe(1)
@@ -194,7 +194,7 @@ test('GET marketplace/products keyword search matches tenant name', function () 
     mktProduct(['tenant_name' => 'Lusaka Savings', 'product_name' => 'Quick Cash']);
 
     $resp = $this->actingAs($admin)
-        ->getJson(route('api.v1.marketplace.browse') . '?q=Zambia')
+        ->getJson(route('api.v1.marketplace.browse').'?q=Zambia')
         ->assertOk();
 
     expect(count($resp->json('data')))->toBe(1);
@@ -209,7 +209,7 @@ test('GET me/public-products returns active products for borrower', function () 
 
     $token = $borrower->createToken('portal')->plainTextToken;
 
-    $resp = $this->withHeader('Authorization', 'Bearer ' . $token)
+    $resp = $this->withHeader('Authorization', 'Bearer '.$token)
         ->getJson(route('api.v1.borrower.public-products.browse'))
         ->assertOk();
 
@@ -223,8 +223,8 @@ test('GET me/public-products supports keyword search', function () {
 
     $token = $borrower->createToken('portal')->plainTextToken;
 
-    $resp = $this->withHeader('Authorization', 'Bearer ' . $token)
-        ->getJson(route('api.v1.borrower.public-products.browse') . '?q=Micro')
+    $resp = $this->withHeader('Authorization', 'Bearer '.$token)
+        ->getJson(route('api.v1.borrower.public-products.browse').'?q=Micro')
         ->assertOk();
 
     expect(count($resp->json('data')))->toBe(1)
@@ -233,11 +233,11 @@ test('GET me/public-products supports keyword search', function () {
 
 test('POST me/public-products/{id}/apply increments applications_count', function () {
     $borrower = mktBorrower();
-    $product  = mktProduct(['applications_count' => 5]);
+    $product = mktProduct(['applications_count' => 5]);
 
     $token = $borrower->createToken('portal')->plainTextToken;
 
-    $this->withHeader('Authorization', 'Bearer ' . $token)
+    $this->withHeader('Authorization', 'Bearer '.$token)
         ->postJson(route('api.v1.borrower.public-products.apply', $product->id))
         ->assertOk()
         ->assertJsonPath('data.product.applications_count', 6);
@@ -247,11 +247,11 @@ test('POST me/public-products/{id}/apply increments applications_count', functio
 
 test('POST me/public-products/{id}/apply returns 404 for inactive product', function () {
     $borrower = mktBorrower();
-    $product  = mktProduct(['is_active' => false]);
+    $product = mktProduct(['is_active' => false]);
 
     $token = $borrower->createToken('portal')->plainTextToken;
 
-    $this->withHeader('Authorization', 'Bearer ' . $token)
+    $this->withHeader('Authorization', 'Bearer '.$token)
         ->postJson(route('api.v1.borrower.public-products.apply', $product->id))
         ->assertStatus(404);
 });

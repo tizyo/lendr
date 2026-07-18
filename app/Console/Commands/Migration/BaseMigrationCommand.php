@@ -71,7 +71,7 @@ abstract class BaseMigrationCommand extends Command
     protected function printResult(MigrationResult $result): void
     {
         $tag = $result->dryRun ? '[DRY-RUN]' : '';
-        $ok  = $result->isSuccess() ? '<fg=green>OK</>' : '<fg=red>FAIL</>';
+        $ok = $result->isSuccess() ? '<fg=green>OK</>' : '<fg=red>FAIL</>';
 
         $this->line(sprintf(
             '%s %s %s  migrated=%d  skipped=%d  failed=%d',
@@ -94,13 +94,13 @@ abstract class BaseMigrationCommand extends Command
      */
     protected function mapUserRole(int $userType): string
     {
-        return match($userType) {
-            1       => 'super_admin',
-            2       => 'branch_manager',
-            3       => 'loan_officer',
-            4       => 'cashier',
-            5       => 'accountant',
-            6       => 'auditor',
+        return match ($userType) {
+            1 => 'super_admin',
+            2 => 'branch_manager',
+            3 => 'loan_officer',
+            4 => 'cashier',
+            5 => 'accountant',
+            6 => 'auditor',
             default => 'loan_officer',
         };
     }
@@ -111,13 +111,13 @@ abstract class BaseMigrationCommand extends Command
      */
     protected function mapLoanStatus(int $status): string
     {
-        return match($status) {
-            0       => 'submitted',
-            1       => 'active',
-            2       => 'completed',
-            3       => 'defaulted',
-            4       => 'written_off',
-            5       => 'denied',
+        return match ($status) {
+            0 => 'submitted',
+            1 => 'active',
+            2 => 'completed',
+            3 => 'defaulted',
+            4 => 'written_off',
+            5 => 'denied',
             default => 'active',
         };
     }
@@ -129,16 +129,16 @@ abstract class BaseMigrationCommand extends Command
     {
         $method = strtolower(trim($method));
 
-        return match(true) {
-            str_contains($method, 'airtel')              => 'airtel_money',
-            str_contains($method, 'mtn')                 => 'mtn_momo',
-            str_contains($method, 'zamtel')              => 'zamtel_kwacha',
-            str_contains($method, 'bank')                => 'bank_transfer',
+        return match (true) {
+            str_contains($method, 'airtel') => 'airtel_money',
+            str_contains($method, 'mtn') => 'mtn_momo',
+            str_contains($method, 'zamtel') => 'zamtel_kwacha',
+            str_contains($method, 'bank') => 'bank_transfer',
             str_contains($method, 'cheque')
-                || str_contains($method, 'check')        => 'cheque',
-            str_contains($method, 'flutter')             => 'flutterwave',
-            str_contains($method, 'pawa')                => 'pawapay',
-            default                                       => 'cash',
+                || str_contains($method, 'check') => 'cheque',
+            str_contains($method, 'flutter') => 'flutterwave',
+            str_contains($method, 'pawa') => 'pawapay',
+            default => 'cash',
         };
     }
 }

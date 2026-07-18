@@ -11,7 +11,10 @@ use Illuminate\Support\Facades\Log;
  */
 class LipilaWebhookController extends BaseWebhookController
 {
-    protected function providerName(): string { return 'lipila'; }
+    protected function providerName(): string
+    {
+        return 'lipila';
+    }
 
     protected function verifySignature(Request $request): bool
     {
@@ -25,7 +28,7 @@ class LipilaWebhookController extends BaseWebhookController
 
         return hash_equals(
             hash_hmac('sha256', $request->getContent(), $secret),
-            $request->header('X-Lipila-Signature', '')
+            $request->header('X-Lipila-Signature', ''),
         );
     }
 
@@ -36,19 +39,19 @@ class LipilaWebhookController extends BaseWebhookController
         $rawStatus = strtolower($body['status'] ?? $body['transaction_status'] ?? '');
         $status = match ($rawStatus) {
             'success', 'successful', 'completed' => 'success',
-            'failed', 'failure'                  => 'failed',
-            default                              => 'pending',
+            'failed', 'failure' => 'failed',
+            default => 'pending',
         };
 
         return [
-            'event_id'       => $body['transaction_id'] ?? $body['id']        ?? null,
-            'event_type'     => 'payment.' . $status,
-            'internal_ref'   => $body['reference']      ?? $body['order_ref'] ?? null,
-            'transaction_id' => $body['transaction_id'] ?? $body['id']        ?? '',
-            'amount'         => (float) ($body['amount']                       ?? 0),
-            'phone'          => $body['phone']          ?? $body['msisdn']    ?? '',
-            'status'         => $status,
-            'raw'            => $body,
+            'event_id' => $body['transaction_id'] ?? $body['id'] ?? null,
+            'event_type' => 'payment.'.$status,
+            'internal_ref' => $body['reference'] ?? $body['order_ref'] ?? null,
+            'transaction_id' => $body['transaction_id'] ?? $body['id'] ?? '',
+            'amount' => (float) ($body['amount'] ?? 0),
+            'phone' => $body['phone'] ?? $body['msisdn'] ?? '',
+            'status' => $status,
+            'raw' => $body,
         ];
     }
 }

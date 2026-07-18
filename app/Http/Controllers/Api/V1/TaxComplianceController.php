@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers\Api\V1;
 
-use App\Models\Tenant\TaxConfiguration;
 use App\Models\Tenant\TaxComputation;
+use App\Models\Tenant\TaxConfiguration;
 use App\Services\TaxComplianceService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -31,12 +31,12 @@ class TaxComplianceController extends BaseApiController
     public function storeConfig(Request $request): JsonResponse
     {
         $data = $request->validate([
-            'tax_type'            => ['required', 'string', 'in:wht,vat,excise'],
-            'rate'                => ['required', 'numeric', 'min:0', 'max:100'],
-            'label'               => ['nullable', 'string', 'max:100'],
+            'tax_type' => ['required', 'string', 'in:wht,vat,excise'],
+            'rate' => ['required', 'numeric', 'min:0', 'max:100'],
+            'label' => ['nullable', 'string', 'max:100'],
             'applies_to_interest' => ['boolean'],
-            'applies_to_fees'     => ['boolean'],
-            'is_active'           => ['boolean'],
+            'applies_to_fees' => ['boolean'],
+            'is_active' => ['boolean'],
         ]);
 
         $config = TaxConfiguration::create($data);
@@ -50,11 +50,11 @@ class TaxComplianceController extends BaseApiController
     public function updateConfig(Request $request, TaxConfiguration $config): JsonResponse
     {
         $data = $request->validate([
-            'rate'                => ['sometimes', 'numeric', 'min:0', 'max:100'],
-            'label'               => ['nullable', 'string', 'max:100'],
+            'rate' => ['sometimes', 'numeric', 'min:0', 'max:100'],
+            'label' => ['nullable', 'string', 'max:100'],
             'applies_to_interest' => ['boolean'],
-            'applies_to_fees'     => ['boolean'],
-            'is_active'           => ['boolean'],
+            'applies_to_fees' => ['boolean'],
+            'is_active' => ['boolean'],
         ]);
 
         $config->update($data);
@@ -71,7 +71,7 @@ class TaxComplianceController extends BaseApiController
     {
         $request->validate([
             'from' => ['required', 'regex:/^\d{4}-\d{2}$/'],
-            'to'   => ['required', 'regex:/^\d{4}-\d{2}$/'],
+            'to' => ['required', 'regex:/^\d{4}-\d{2}$/'],
         ]);
 
         $summary = $this->tax->whtSummary($request->from, $request->to);
@@ -124,16 +124,16 @@ class TaxComplianceController extends BaseApiController
         return $this->paginated(
             $query->paginate($request->integer('per_page', 50)),
             fn ($c) => [
-                'id'             => $c->id,
-                'tax_type'       => $c->taxConfiguration?->tax_type,
-                'source_type'    => $c->source_type,
-                'source_id'      => $c->source_id,
+                'id' => $c->id,
+                'tax_type' => $c->taxConfiguration?->tax_type,
+                'source_type' => $c->source_type,
+                'source_id' => $c->source_id,
                 'taxable_amount' => (float) $c->taxable_amount,
-                'tax_amount'     => (float) $c->tax_amount,
-                'period'         => $c->period,
-                'status'         => $c->status,
-                'remitted_at'    => $c->remitted_at?->toDateTimeString(),
-            ]
+                'tax_amount' => (float) $c->tax_amount,
+                'period' => $c->period,
+                'status' => $c->status,
+                'remitted_at' => $c->remitted_at?->toDateTimeString(),
+            ],
         );
     }
 
@@ -142,13 +142,13 @@ class TaxComplianceController extends BaseApiController
     private function formatConfig(TaxConfiguration $c): array
     {
         return [
-            'id'                  => $c->id,
-            'tax_type'            => $c->tax_type,
-            'rate'                => (float) $c->rate,
-            'label'               => $c->label,
+            'id' => $c->id,
+            'tax_type' => $c->tax_type,
+            'rate' => (float) $c->rate,
+            'label' => $c->label,
             'applies_to_interest' => $c->applies_to_interest,
-            'applies_to_fees'     => $c->applies_to_fees,
-            'is_active'           => $c->is_active,
+            'applies_to_fees' => $c->applies_to_fees,
+            'is_active' => $c->is_active,
         ];
     }
 }

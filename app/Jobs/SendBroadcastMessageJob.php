@@ -16,12 +16,13 @@ class SendBroadcastMessageJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    public int $tries   = 3;
+    public int $tries = 3;
+
     public int $backoff = 30;
 
     public function __construct(
-        public readonly int    $borrowerId,
-        public readonly array  $channels,   // ['sms', 'email']
+        public readonly int $borrowerId,
+        public readonly array $channels,   // ['sms', 'email']
         public readonly string $subject,
         public readonly string $message,
     ) {}
@@ -40,9 +41,9 @@ class SendBroadcastMessageJob implements ShouldQueue
 
         if (in_array('email', $this->channels) && $borrower->email) {
             $mailer->send($borrower->email, new BroadcastMail(
-                borrowerName: trim(($borrower->first_name ?? '') . ' ' . ($borrower->last_name ?? '')) ?: 'Valued Customer',
-                subject:      $this->subject,
-                message:      $this->message,
+                borrowerName: trim(($borrower->first_name ?? '').' '.($borrower->last_name ?? '')) ?: 'Valued Customer',
+                subject: $this->subject,
+                message: $this->message,
             ));
         }
     }

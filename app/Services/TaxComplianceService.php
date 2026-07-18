@@ -28,7 +28,7 @@ class TaxComplianceService
         }
 
         $taxAmount = round($interestPaid * $wht->rate / 100, 2);
-        $period    = Carbon::parse($payment->payment_date)->format('Y-m');
+        $period = Carbon::parse($payment->payment_date)->format('Y-m');
 
         // Avoid duplicate
         $existing = TaxComputation::where('source_type', 'payment')
@@ -42,12 +42,12 @@ class TaxComplianceService
 
         return TaxComputation::create([
             'tax_configuration_id' => $wht->id,
-            'source_type'          => 'payment',
-            'source_id'            => $payment->id,
-            'taxable_amount'       => $interestPaid,
-            'tax_amount'           => $taxAmount,
-            'period'               => $period,
-            'status'               => 'computed',
+            'source_type' => 'payment',
+            'source_id' => $payment->id,
+            'taxable_amount' => $interestPaid,
+            'tax_amount' => $taxAmount,
+            'period' => $period,
+            'status' => 'computed',
         ]);
     }
 
@@ -65,10 +65,10 @@ class TaxComplianceService
             ->get();
 
         return $rows->map(fn ($r) => [
-            'period'         => $r->period,
-            'total_taxable'  => (float) $r->total_taxable,
-            'total_tax'      => (float) $r->total_tax,
-            'status'         => $r->status,
+            'period' => $r->period,
+            'total_taxable' => (float) $r->total_taxable,
+            'total_tax' => (float) $r->total_tax,
+            'status' => $r->status,
         ])->values()->all();
     }
 
@@ -124,11 +124,11 @@ class TaxComplianceService
         $totalPar = array_sum($buckets);
 
         return [
-            'generated_at'     => now()->toDateTimeString(),
-            'total_portfolio'  => $totalOutstanding,
-            'total_par'        => $totalPar,
-            'par_ratio'        => $totalOutstanding > 0 ? round($totalPar / $totalOutstanding * 100, 2) : 0,
-            'buckets'          => $buckets,
+            'generated_at' => now()->toDateTimeString(),
+            'total_portfolio' => $totalOutstanding,
+            'total_par' => $totalPar,
+            'par_ratio' => $totalOutstanding > 0 ? round($totalPar / $totalOutstanding * 100, 2) : 0,
+            'buckets' => $buckets,
         ];
     }
 
@@ -140,15 +140,15 @@ class TaxComplianceService
         $totalLoans = \App\Models\Tenant\Loan::where('status', 'active')
             ->sum('outstanding_balance');
 
-        $fundRow   = \App\Models\Tenant\FundBalance::current();
+        $fundRow = \App\Models\Tenant\FundBalance::current();
         $totalFund = (float) ($fundRow?->available_balance ?? 0);
 
         $ratio = $totalFund > 0 ? round((float) $totalLoans / $totalFund * 100, 2) : null;
 
         return [
-            'total_loan_book'     => (float) $totalLoans,
-            'total_fund'          => $totalFund,
-            'exposure_ratio_pct'  => $ratio,
+            'total_loan_book' => (float) $totalLoans,
+            'total_fund' => $totalFund,
+            'exposure_ratio_pct' => $ratio,
         ];
     }
 }

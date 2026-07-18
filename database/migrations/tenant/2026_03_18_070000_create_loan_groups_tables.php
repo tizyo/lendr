@@ -42,7 +42,7 @@ return new class extends Migration
 
         Schema::table('loans', function (Blueprint $table) {
             $table->foreignId('loan_group_id')->nullable()->after('borrower_id')
-                  ->constrained('loan_groups')->nullOnDelete();
+                ->constrained('loan_groups')->nullOnDelete();
         });
     }
 

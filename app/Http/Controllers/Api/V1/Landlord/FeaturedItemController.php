@@ -40,8 +40,8 @@ class FeaturedItemController extends BaseApiController
     {
         $data = $request->validate([
             'repo_item_id' => ['required', 'integer', 'exists:repo_items,id'],
-            'note'         => ['nullable', 'string', 'max:500'],
-            'expires_at'   => ['nullable', 'date', 'after:today'],
+            'note' => ['nullable', 'string', 'max:500'],
+            'expires_at' => ['nullable', 'date', 'after:today'],
         ]);
 
         $item = RepoItem::findOrFail($data['repo_item_id']);
@@ -57,15 +57,15 @@ class FeaturedItemController extends BaseApiController
         }
 
         $slot = FeaturedRepoItem::create([
-            'repo_item_id'   => $item->id,
-            'tenant_id'      => $item->tenant_id,
-            'type'           => 'manual',
+            'repo_item_id' => $item->id,
+            'tenant_id' => $item->tenant_id,
+            'type' => 'manual',
             'payment_status' => 'confirmed',
-            'is_active'      => true,
-            'starts_at'      => now(),
-            'expires_at'     => isset($data['expires_at']) ? $data['expires_at'] : null,
-            'approved_by'    => $request->user()?->id,
-            'admin_note'     => $data['note'] ?? null,
+            'is_active' => true,
+            'starts_at' => now(),
+            'expires_at' => isset($data['expires_at']) ? $data['expires_at'] : null,
+            'approved_by' => $request->user()?->id,
+            'admin_note' => $data['note'] ?? null,
         ]);
 
         return $this->success($this->formatSlot($slot->fresh()), 'Item manually featured.', 201);
@@ -94,11 +94,11 @@ class FeaturedItemController extends BaseApiController
         $now = now();
         $slot->update([
             'payment_status' => 'confirmed',
-            'is_active'      => true,
-            'starts_at'      => $now,
-            'expires_at'     => $now->copy()->addDays($slot->days_paid),
-            'approved_by'    => $request->user()?->id,
-            'admin_note'     => $request->input('note'),
+            'is_active' => true,
+            'starts_at' => $now,
+            'expires_at' => $now->copy()->addDays($slot->days_paid),
+            'approved_by' => $request->user()?->id,
+            'admin_note' => $request->input('note'),
         ]);
 
         return $this->success($this->formatSlot($slot->fresh()), 'Payment confirmed and slot activated.');
@@ -117,16 +117,16 @@ class FeaturedItemController extends BaseApiController
             ->paginate(25);
 
         return $this->paginated($deals, fn ($d) => [
-            'id'           => $d->id,
-            'title'        => $d->title,
-            'tenant_id'    => $d->tenant_id,
-            'tenant_name'  => $d->tenant_name,
-            'is_active'    => $d->is_active,
-            'badge_label'  => $d->badge_label,
-            'views_count'  => $d->views_count,
-            'leads_count'  => $d->leads_count,
-            'expires_at'   => $d->expires_at?->toDateString(),
-            'created_at'   => $d->created_at->toDateString(),
+            'id' => $d->id,
+            'title' => $d->title,
+            'tenant_id' => $d->tenant_id,
+            'tenant_name' => $d->tenant_name,
+            'is_active' => $d->is_active,
+            'badge_label' => $d->badge_label,
+            'views_count' => $d->views_count,
+            'leads_count' => $d->leads_count,
+            'expires_at' => $d->expires_at?->toDateString(),
+            'created_at' => $d->created_at->toDateString(),
         ]);
     }
 
@@ -137,6 +137,7 @@ class FeaturedItemController extends BaseApiController
     public function destroyDeal(int $id): JsonResponse
     {
         HotDeal::findOrFail($id)->delete();
+
         return $this->success(null, 'Hot Deal removed.');
     }
 
@@ -145,22 +146,23 @@ class FeaturedItemController extends BaseApiController
     private function formatSlot(FeaturedRepoItem $slot): array
     {
         $item = $slot->repoItem;
+
         return [
-            'id'                => $slot->id,
-            'repo_item_id'      => $slot->repo_item_id,
-            'item_title'        => $item?->title,
-            'item_price'        => $item ? (float) $item->price : null,
-            'tenant_id'         => $slot->tenant_id,
-            'type'              => $slot->type,
-            'amount_paid'       => $slot->amount_paid,
-            'days_paid'         => $slot->days_paid,
+            'id' => $slot->id,
+            'repo_item_id' => $slot->repo_item_id,
+            'item_title' => $item?->title,
+            'item_price' => $item ? (float) $item->price : null,
+            'tenant_id' => $slot->tenant_id,
+            'type' => $slot->type,
+            'amount_paid' => $slot->amount_paid,
+            'days_paid' => $slot->days_paid,
             'payment_reference' => $slot->payment_reference,
-            'payment_status'    => $slot->payment_status,
-            'is_active'         => $slot->is_active,
-            'starts_at'         => $slot->starts_at?->toDateTimeString(),
-            'expires_at'        => $slot->expires_at?->toDateTimeString(),
-            'days_remaining'    => $slot->daysRemaining(),
-            'admin_note'        => $slot->admin_note,
+            'payment_status' => $slot->payment_status,
+            'is_active' => $slot->is_active,
+            'starts_at' => $slot->starts_at?->toDateTimeString(),
+            'expires_at' => $slot->expires_at?->toDateTimeString(),
+            'days_remaining' => $slot->daysRemaining(),
+            'admin_note' => $slot->admin_note,
         ];
     }
 }

@@ -22,9 +22,9 @@ class WebhookDelivery extends Model
     protected function casts(): array
     {
         return [
-            'payload'       => 'array',
+            'payload' => 'array',
             'next_retry_at' => 'datetime',
-            'delivered_at'  => 'datetime',
+            'delivered_at' => 'datetime',
         ];
     }
 

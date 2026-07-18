@@ -34,18 +34,18 @@ class LoanCalculatorController extends BaseApiController
     private function calculateFromPlan(Request $request): JsonResponse
     {
         $data = $request->validate([
-            'plan_id'    => ['required', 'integer', 'exists:loan_plans,id'],
-            'principal'  => ['required', 'numeric', 'min:1'],
-            'tenure'     => ['required', 'integer', 'min:1'],
+            'plan_id' => ['required', 'integer', 'exists:loan_plans,id'],
+            'principal' => ['required', 'numeric', 'min:1'],
+            'tenure' => ['required', 'integer', 'min:1'],
             'start_date' => ['sometimes', 'date'],
         ]);
 
-        $plan   = LoanPlan::findOrFail($data['plan_id']);
+        $plan = LoanPlan::findOrFail($data['plan_id']);
         $result = $this->calc->calculate(
             $plan,
             (float) $data['principal'],
-            (int)   $data['tenure'],
-            $data['start_date'] ?? now()->toDateString()
+            (int) $data['tenure'],
+            $data['start_date'] ?? now()->toDateString(),
         );
 
         return $this->success($result);
@@ -54,16 +54,16 @@ class LoanCalculatorController extends BaseApiController
     private function calculateRaw(Request $request): JsonResponse
     {
         $data = $request->validate([
-            'principal'          => ['required', 'numeric', 'min:1'],
-            'interest_rate'      => ['required', 'numeric', 'min:0', 'max:1000'],
-            'interest_type'      => ['required', 'string', 'in:flat,reducing_balance,compound'],
-            'interest_period'    => ['required', 'string', 'in:daily,weekly,monthly,annually'],
-            'tenure'             => ['required', 'integer', 'min:1'],
-            'tenure_type'        => ['required', 'string', 'in:days,weeks,months'],
+            'principal' => ['required', 'numeric', 'min:1'],
+            'interest_rate' => ['required', 'numeric', 'min:0', 'max:1000'],
+            'interest_type' => ['required', 'string', 'in:flat,reducing_balance,compound'],
+            'interest_period' => ['required', 'string', 'in:daily,weekly,monthly,annually'],
+            'tenure' => ['required', 'integer', 'min:1'],
+            'tenure_type' => ['required', 'string', 'in:days,weeks,months'],
             'repayment_schedule' => ['required', 'string', 'in:daily,weekly,bi_weekly,monthly,bullet,quarterly'],
-            'processing_fee'     => ['sometimes', 'numeric', 'min:0'],
-            'insurance_fee'      => ['sometimes', 'numeric', 'min:0'],
-            'start_date'         => ['sometimes', 'date'],
+            'processing_fee' => ['sometimes', 'numeric', 'min:0'],
+            'insurance_fee' => ['sometimes', 'numeric', 'min:0'],
+            'start_date' => ['sometimes', 'date'],
         ]);
 
         $result = $this->calc->preview($data);

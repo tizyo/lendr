@@ -36,7 +36,7 @@ test('admin can update branding settings', function () {
 
     $this->actingAs($admin)
         ->putJson(route('api.v1.branding.update'), [
-            'company_name'  => 'MicroBank',
+            'company_name' => 'MicroBank',
             'primary_color' => '#1B5E20',
             'support_email' => 'support@microbank.com',
         ])

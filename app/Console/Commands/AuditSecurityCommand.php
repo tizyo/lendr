@@ -14,7 +14,8 @@ use Illuminate\Support\Facades\File;
  */
 class AuditSecurityCommand extends Command
 {
-    protected $signature   = 'audit:security {--fix : Auto-fix minor issues where possible}';
+    protected $signature = 'audit:security {--fix : Auto-fix minor issues where possible}';
+
     protected $description = 'Run the LENDR security checklist against the current environment';
 
     private array $results = [];
@@ -62,7 +63,7 @@ class AuditSecurityCommand extends Command
                 ? $this->markFail('plain_text_passwords', "{$bad} user(s) have non-hashed passwords")
                 : $this->markPass('plain_text_passwords', 'All passwords are bcrypt/argon hashed');
         } catch (\Throwable $e) {
-            $this->markWarn('plain_text_passwords', 'Could not query users table: ' . $e->getMessage());
+            $this->markWarn('plain_text_passwords', 'Could not query users table: '.$e->getMessage());
         }
     }
 
@@ -77,7 +78,7 @@ class AuditSecurityCommand extends Command
 
         $found = false;
         foreach ($patterns as $pattern) {
-            $result = shell_exec("grep -r --include='*.php' -l " . escapeshellarg($pattern) . " app/ 2>/dev/null");
+            $result = shell_exec("grep -r --include='*.php' -l ".escapeshellarg($pattern).' app/ 2>/dev/null');
             if (trim((string) $result)) {
                 $found = true;
                 break;
@@ -96,7 +97,7 @@ class AuditSecurityCommand extends Command
         } else {
             $this->markPass('debug_disabled', app()->environment('production')
                 ? 'APP_DEBUG=false in production'
-                : 'Not in production (debug=' . (config('app.debug') ? 'true' : 'false') . ')');
+                : 'Not in production (debug='.(config('app.debug') ? 'true' : 'false').')');
         }
     }
 
@@ -113,7 +114,7 @@ class AuditSecurityCommand extends Command
     {
         // Look for native float arithmetic on financial fields (rough heuristic)
         $suspects = shell_exec(
-            "grep -rn --include='*.php' -E '\\\$[a-z_]*(amount|balance|principal|interest|fee|total)[a-z_]*\\s*[+\\-\\*]\s*\\\\$' app/Services/ app/Http/Controllers/ 2>/dev/null | grep -v '//' | wc -l"
+            "grep -rn --include='*.php' -E '\\\$[a-z_]*(amount|balance|principal|interest|fee|total)[a-z_]*\\s*[+\\-\\*]\s*\\\\$' app/Services/ app/Http/Controllers/ 2>/dev/null | grep -v '//' | wc -l",
         );
 
         $count = (int) trim((string) $suspects);
@@ -142,13 +143,13 @@ class AuditSecurityCommand extends Command
 
         empty($missing)
             ? $this->markPass('webhook_signatures', 'Webhook signature validation found in all gateway controllers')
-            : $this->markFail('webhook_signatures', 'Missing signature validation in: ' . implode(', ', $missing));
+            : $this->markFail('webhook_signatures', 'Missing signature validation in: '.implode(', ', $missing));
     }
 
     private function checkRateLimitingConfigured(): void
     {
         $routeFile = base_path('routes/api.php');
-        $content   = File::exists($routeFile) ? File::get($routeFile) : '';
+        $content = File::exists($routeFile) ? File::get($routeFile) : '';
 
         str_contains($content, 'throttle')
             ? $this->markPass('rate_limiting', 'Throttle middleware found in api.php routes')
@@ -229,7 +230,7 @@ class AuditSecurityCommand extends Command
     private function printResults(): void
     {
         foreach ($this->results as $check => $result) {
-            $colour = match($result['status']) {
+            $colour = match ($result['status']) {
                 'PASS' => 'green',
                 'WARN' => 'yellow',
                 'FAIL' => 'red',
@@ -246,10 +247,10 @@ class AuditSecurityCommand extends Command
 
         $this->newLine();
 
-        $passed  = count(array_filter($this->results, fn ($r) => $r['status'] === 'PASS'));
-        $warned  = count(array_filter($this->results, fn ($r) => $r['status'] === 'WARN'));
-        $failed  = count(array_filter($this->results, fn ($r) => $r['status'] === 'FAIL'));
-        $total   = count($this->results);
+        $passed = count(array_filter($this->results, fn ($r) => $r['status'] === 'PASS'));
+        $warned = count(array_filter($this->results, fn ($r) => $r['status'] === 'WARN'));
+        $failed = count(array_filter($this->results, fn ($r) => $r['status'] === 'FAIL'));
+        $total = count($this->results);
 
         $this->line("  Results: <fg=green>{$passed} passed</>  <fg=yellow>{$warned} warnings</>  <fg=red>{$failed} failed</>  ({$total} total)");
         $this->newLine();
@@ -257,7 +258,7 @@ class AuditSecurityCommand extends Command
         if ($failed > 0) {
             $this->line('  <fg=red;options=bold>✗ SECURITY AUDIT FAILED — resolve all FAIL items before deploying to production.</>');
         } else {
-            $this->line('  <fg=green;options=bold>✓ Security audit passed' . ($warned > 0 ? ' (with warnings)' : '') . '.</>');
+            $this->line('  <fg=green;options=bold>✓ Security audit passed'.($warned > 0 ? ' (with warnings)' : '').'.</>');
         }
 
         $this->newLine();

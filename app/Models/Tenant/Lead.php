@@ -37,7 +37,7 @@ class Lead extends Model
     {
         return [
             'requested_amount' => 'decimal:2',
-            'follow_up_date'   => 'date',
+            'follow_up_date' => 'date',
         ];
     }
 

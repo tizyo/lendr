@@ -7,7 +7,6 @@ use App\Models\Tenant\CollectionCase;
 use App\Models\Tenant\EscalationRule;
 use App\Models\Tenant\Loan;
 use App\Models\Tenant\LoanSchedule;
-use Illuminate\Support\Collection;
 
 class CollectionAutomationService
 {
@@ -64,22 +63,23 @@ class CollectionAutomationService
             if ($existing->escalation_rule_id !== $rule->id) {
                 $existing->update([
                     'escalation_rule_id' => $rule->id,
-                    'action_taken'       => $rule->action,
-                    'assigned_to'        => $rule->assigned_to ?? $existing->assigned_to,
-                    'status'             => 'escalated',
+                    'action_taken' => $rule->action,
+                    'assigned_to' => $rule->assigned_to ?? $existing->assigned_to,
+                    'status' => 'escalated',
                 ]);
             }
+
             return $rule->action;
         }
 
         CollectionCase::create([
-            'loan_id'            => $loan->id,
-            'borrower_id'        => $loan->borrower_id,
-            'assigned_to'        => $rule->assigned_to,
+            'loan_id' => $loan->id,
+            'borrower_id' => $loan->borrower_id,
+            'assigned_to' => $rule->assigned_to,
             'escalation_rule_id' => $rule->id,
-            'action_taken'       => $rule->action,
-            'status'             => 'open',
-            'dpd_at_creation'    => $dpd,
+            'action_taken' => $rule->action,
+            'status' => 'open',
+            'dpd_at_creation' => $dpd,
         ]);
 
         return $rule->action;

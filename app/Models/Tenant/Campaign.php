@@ -30,9 +30,9 @@ class Campaign extends Model
     {
         return [
             'custom_borrower_ids' => 'array',
-            'scheduled_at'        => 'datetime',
-            'started_at'          => 'datetime',
-            'completed_at'        => 'datetime',
+            'scheduled_at' => 'datetime',
+            'started_at' => 'datetime',
+            'completed_at' => 'datetime',
         ];
     }
 

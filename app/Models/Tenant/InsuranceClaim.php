@@ -25,10 +25,10 @@ class InsuranceClaim extends Model
     protected function casts(): array
     {
         return [
-            'claim_amount'    => 'decimal:2',
+            'claim_amount' => 'decimal:2',
             'approved_amount' => 'decimal:2',
-            'incident_date'   => 'date',
-            'reviewed_at'     => 'datetime',
+            'incident_date' => 'date',
+            'reviewed_at' => 'datetime',
         ];
     }
 

@@ -18,7 +18,7 @@ class RegulatoryReportConfig extends Model
     protected function casts(): array
     {
         return [
-            'is_active'    => 'boolean',
+            'is_active' => 'boolean',
             'last_sent_at' => 'datetime',
         ];
     }

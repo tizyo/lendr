@@ -18,8 +18,8 @@ class DeviceTokenController extends BaseApiController
     public function register(Request $request): JsonResponse
     {
         $data = $request->validate([
-            'token'       => ['required', 'string', 'max:512'],
-            'platform'    => ['required', 'string', 'in:fcm,apns'],
+            'token' => ['required', 'string', 'max:512'],
+            'platform' => ['required', 'string', 'in:fcm,apns'],
             'device_name' => ['sometimes', 'string', 'max:100'],
         ]);
 

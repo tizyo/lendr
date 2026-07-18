@@ -18,13 +18,13 @@ class ExpenseCategoryController extends Controller
             ->orderBy('name')
             ->get()
             ->map(fn ($c) => [
-                'id'             => $c->id,
-                'name'           => $c->name,
-                'code'           => $c->code,
-                'icon'           => $c->icon,
-                'colour'         => $c->colour,
-                'description'    => $c->description,
-                'is_active'      => $c->is_active,
+                'id' => $c->id,
+                'name' => $c->name,
+                'code' => $c->code,
+                'icon' => $c->icon,
+                'colour' => $c->colour,
+                'description' => $c->description,
+                'is_active' => $c->is_active,
                 'expenses_count' => $c->expenses_count,
             ])
             ->values();
@@ -35,12 +35,12 @@ class ExpenseCategoryController extends Controller
             ->orderBy('period_month')
             ->get()
             ->map(fn ($b) => [
-                'id'           => $b->id,
-                'category_id'  => $b->expense_category_id,
-                'category'     => $b->category?->name,
-                'amount'       => (float) $b->amount,
-                'period'       => $b->period,
-                'period_year'  => $b->period_year,
+                'id' => $b->id,
+                'category_id' => $b->expense_category_id,
+                'category' => $b->category?->name,
+                'amount' => (float) $b->amount,
+                'period' => $b->period,
+                'period_year' => $b->period_year,
                 'period_month' => $b->period_month,
             ]);
 
@@ -48,11 +48,11 @@ class ExpenseCategoryController extends Controller
             ->with('category:id,name')
             ->get()
             ->map(fn ($s) => [
-                'id'               => $s->id,
-                'category_id'      => $s->expense_category_id,
-                'category'         => $s->category?->name,
+                'id' => $s->id,
+                'category_id' => $s->expense_category_id,
+                'category' => $s->category?->name,
                 'threshold_amount' => (float) $s->threshold_amount,
-                'approver_role'    => $s->approver_role,
+                'approver_role' => $s->approver_role,
                 'requires_receipt' => $s->requires_receipt,
             ]);
 

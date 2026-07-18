@@ -29,24 +29,24 @@ class FundDepositController extends BaseApiController
     public function store(Request $request): JsonResponse
     {
         $request->validate([
-            'amount'         => ['required', 'numeric', 'min:0.01'],
-            'source'         => ['required', 'string', 'max:200'],
+            'amount' => ['required', 'numeric', 'min:0.01'],
+            'source' => ['required', 'string', 'max:200'],
             'payment_method' => ['required', 'in:cash,bank_transfer,cheque'],
             'bank_reference' => ['nullable', 'string', 'max:100'],
-            'deposit_date'   => ['required', 'date'],
-            'notes'          => ['nullable', 'string', 'max:1000'],
+            'deposit_date' => ['required', 'date'],
+            'notes' => ['nullable', 'string', 'max:1000'],
         ]);
 
         $deposit = FundDeposit::create([
-            'reference'      => $this->generateReference(),
-            'amount'         => $request->amount,
-            'source'         => $request->source,
+            'reference' => $this->generateReference(),
+            'amount' => $request->amount,
+            'source' => $request->source,
             'payment_method' => $request->payment_method,
             'bank_reference' => $request->bank_reference,
-            'deposit_date'   => $request->deposit_date,
-            'notes'          => $request->notes,
-            'deposited_by'   => auth()->id(),
-            'status'         => 'pending',
+            'deposit_date' => $request->deposit_date,
+            'notes' => $request->notes,
+            'deposited_by' => auth()->id(),
+            'status' => 'pending',
         ]);
 
         return $this->success($this->formatDeposit($deposit->load('depositedBy')), 'Deposit recorded.', 201);
@@ -66,12 +66,12 @@ class FundDepositController extends BaseApiController
         }
 
         $request->validate([
-            'amount'         => ['sometimes', 'numeric', 'min:0.01'],
-            'source'         => ['sometimes', 'string', 'max:200'],
+            'amount' => ['sometimes', 'numeric', 'min:0.01'],
+            'source' => ['sometimes', 'string', 'max:200'],
             'payment_method' => ['sometimes', 'in:cash,bank_transfer,cheque'],
             'bank_reference' => ['nullable', 'string', 'max:100'],
-            'deposit_date'   => ['sometimes', 'date'],
-            'notes'          => ['nullable', 'string', 'max:1000'],
+            'deposit_date' => ['sometimes', 'date'],
+            'notes' => ['nullable', 'string', 'max:1000'],
         ]);
 
         $deposit->update($request->only(['amount', 'source', 'payment_method', 'bank_reference', 'deposit_date', 'notes']));
@@ -105,10 +105,10 @@ class FundDepositController extends BaseApiController
 
         DB::transaction(function () use ($deposit, $request) {
             $deposit->update([
-                'status'      => 'approved',
+                'status' => 'approved',
                 'approved_by' => auth()->id(),
                 'approved_at' => now(),
-                'notes'       => $request->notes ? ($deposit->notes."\n".$request->notes) : $deposit->notes,
+                'notes' => $request->notes ? ($deposit->notes."\n".$request->notes) : $deposit->notes,
             ]);
 
             $this->fund->recordDeposit($deposit, auth()->id());
@@ -130,7 +130,7 @@ class FundDepositController extends BaseApiController
 
         $deposit->update([
             'status' => 'rejected',
-            'notes'  => $deposit->notes
+            'notes' => $deposit->notes
                 ? $deposit->notes."\nRejection reason: ".$request->reason
                 : 'Rejection reason: '.$request->reason,
         ]);
@@ -143,8 +143,8 @@ class FundDepositController extends BaseApiController
     private function generateReference(): string
     {
         $prefix = 'DEP-'.now()->format('Ym').'-';
-        $last   = FundDeposit::where('reference', 'like', $prefix.'%')->max('reference');
-        $seq    = $last ? ((int) Str::afterLast($last, '-')) + 1 : 1;
+        $last = FundDeposit::where('reference', 'like', $prefix.'%')->max('reference');
+        $seq = $last ? ((int) Str::afterLast($last, '-')) + 1 : 1;
 
         return $prefix.str_pad($seq, 5, '0', STR_PAD_LEFT);
     }
@@ -152,18 +152,18 @@ class FundDepositController extends BaseApiController
     private function formatDeposit(FundDeposit $d, bool $full = false): array
     {
         $data = [
-            'id'             => $d->id,
-            'reference'      => $d->reference,
-            'amount'         => (float) $d->amount,
-            'source'         => $d->source,
+            'id' => $d->id,
+            'reference' => $d->reference,
+            'amount' => (float) $d->amount,
+            'source' => $d->source,
             'payment_method' => $d->payment_method,
             'bank_reference' => $d->bank_reference,
-            'deposit_date'   => $d->deposit_date->toDateString(),
-            'status'         => $d->status,
-            'deposited_by'   => $d->relationLoaded('depositedBy') ? $d->depositedBy?->name : null,
-            'approved_by'    => $d->relationLoaded('approvedBy') ? $d->approvedBy?->name : null,
-            'approved_at'    => $d->approved_at?->toDateTimeString(),
-            'created_at'     => $d->created_at->format('d M Y'),
+            'deposit_date' => $d->deposit_date->toDateString(),
+            'status' => $d->status,
+            'deposited_by' => $d->relationLoaded('depositedBy') ? $d->depositedBy?->name : null,
+            'approved_by' => $d->relationLoaded('approvedBy') ? $d->approvedBy?->name : null,
+            'approved_at' => $d->approved_at?->toDateTimeString(),
+            'created_at' => $d->created_at->format('d M Y'),
         ];
 
         if ($full) {

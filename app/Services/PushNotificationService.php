@@ -23,7 +23,7 @@ class PushNotificationService
     /**
      * Send a push notification to all active devices of a borrower.
      *
-     * @param  array<string, mixed> $data  Extra payload (e.g. ['loan_id' => 1])
+     * @param  array<string, mixed>  $data  Extra payload (e.g. ['loan_id' => 1])
      */
     public function sendToBorrower(Borrower $borrower, string $title, string $body, array $data = []): int
     {
@@ -44,7 +44,7 @@ class PushNotificationService
                     $sent++;
                 }
             } catch (\Throwable $e) {
-                Log::warning("Push notification failed for token #{$tokenId}: " . $e->getMessage());
+                Log::warning("Push notification failed for token #{$tokenId}: ".$e->getMessage());
             }
         }
 
@@ -81,26 +81,28 @@ class PushNotificationService
         if (! $serverKey) {
             // No FCM key configured — log and skip (non-fatal)
             Log::debug('FCM server key not configured; push notification skipped.');
+
             return false;
         }
 
         $payload = [
-            'to'           => $token,
+            'to' => $token,
             'notification' => [
                 'title' => $title,
-                'body'  => $body,
+                'body' => $body,
                 'sound' => 'default',
             ],
             'data' => $data,
         ];
 
         $response = Http::withHeaders([
-            'Authorization' => 'key=' . $serverKey,
-            'Content-Type'  => 'application/json',
+            'Authorization' => 'key='.$serverKey,
+            'Content-Type' => 'application/json',
         ])->post(self::FCM_ENDPOINT, $payload);
 
         if ($response->failed()) {
-            Log::warning('FCM push failed: ' . $response->body());
+            Log::warning('FCM push failed: '.$response->body());
+
             return false;
         }
 

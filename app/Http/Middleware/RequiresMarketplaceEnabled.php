@@ -26,13 +26,13 @@ class RequiresMarketplaceEnabled
                 return response()->json([
                     'success' => false,
                     'message' => 'The Marketplace is coming soon. This feature is not yet enabled for your plan.',
-                    'code'    => 'MARKETPLACE_DISABLED',
+                    'code' => 'MARKETPLACE_DISABLED',
                 ], 503);
             }
 
             return redirect()->route('dashboard')->with(
                 'error',
-                'The Marketplace is coming soon and is not yet enabled for your account.'
+                'The Marketplace is coming soon and is not yet enabled for your account.',
             );
         }
 

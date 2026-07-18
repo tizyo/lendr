@@ -29,12 +29,12 @@ class MarketplaceController extends BaseApiController
             ->paginate($request->integer('per_page', 20));
 
         return $this->success([
-            'data'       => $listings->map(fn ($l) => $this->formatListing($l)),
+            'data' => $listings->map(fn ($l) => $this->formatListing($l)),
             'pagination' => [
-                'total'        => $listings->total(),
-                'per_page'     => $listings->perPage(),
+                'total' => $listings->total(),
+                'per_page' => $listings->perPage(),
                 'current_page' => $listings->currentPage(),
-                'last_page'    => $listings->lastPage(),
+                'last_page' => $listings->lastPage(),
             ],
         ]);
     }
@@ -64,13 +64,13 @@ class MarketplaceController extends BaseApiController
 
         $data = $request->validate([
             'amount_offered' => ['nullable', 'numeric', 'min:1'],
-            'interest_rate'  => ['nullable', 'numeric', 'min:0', 'max:100'],
-            'message'        => ['nullable', 'string', 'max:500'],
+            'interest_rate' => ['nullable', 'numeric', 'min:0', 'max:100'],
+            'message' => ['nullable', 'string', 'max:500'],
         ]);
 
         $interest = MarketplaceInterest::updateOrCreate(
             ['listing_id' => $listing->id, 'user_id' => $request->user()->id],
-            array_merge($data, ['status' => 'pending'])
+            array_merge($data, ['status' => 'pending']),
         );
 
         return $this->success($interest, 'Interest expressed.', 201);
@@ -88,7 +88,7 @@ class MarketplaceController extends BaseApiController
             ->paginate(20);
 
         return $this->success([
-            'data'       => $interests->items(),
+            'data' => $interests->items(),
             'pagination' => ['total' => $interests->total(), 'current_page' => $interests->currentPage(), 'last_page' => $interests->lastPage()],
         ]);
     }
@@ -102,13 +102,13 @@ class MarketplaceController extends BaseApiController
         $reviews = $listing->reviews()->with('reviewer:id,name')->latest()->get();
 
         return $this->success([
-            'listing_id'    => $listing->id,
-            'average_rating'=> $reviews->avg('rating'),
-            'reviews'       => $reviews->map(fn ($r) => [
-                'id'         => $r->id,
-                'rating'     => $r->rating,
-                'comment'    => $r->comment,
-                'reviewer'   => $r->reviewer->name,
+            'listing_id' => $listing->id,
+            'average_rating' => $reviews->avg('rating'),
+            'reviews' => $reviews->map(fn ($r) => [
+                'id' => $r->id,
+                'rating' => $r->rating,
+                'comment' => $r->comment,
+                'reviewer' => $r->reviewer->name,
                 'created_at' => $r->created_at->toDateTimeString(),
             ]),
         ]);
@@ -121,13 +121,13 @@ class MarketplaceController extends BaseApiController
     {
         $data = $request->validate([
             'listing_id' => ['required', 'integer', 'exists:marketplace_listings,id'],
-            'rating'     => ['required', 'integer', 'min:1', 'max:5'],
-            'comment'    => ['nullable', 'string', 'max:1000'],
+            'rating' => ['required', 'integer', 'min:1', 'max:5'],
+            'comment' => ['nullable', 'string', 'max:1000'],
         ]);
 
         $review = MarketplaceReview::updateOrCreate(
             ['listing_id' => $data['listing_id'], 'reviewer_id' => $request->user()->id],
-            ['rating' => $data['rating'], 'comment' => $data['comment'] ?? null]
+            ['rating' => $data['rating'], 'comment' => $data['comment'] ?? null],
         );
 
         return $this->success($review, 'Review posted.', 201);
@@ -138,32 +138,32 @@ class MarketplaceController extends BaseApiController
     private function formatListing(MarketplaceListing $listing, bool $full = false): array
     {
         $data = [
-            'id'                    => $listing->id,
-            'title'                 => $listing->title,
-            'description'           => $full ? $listing->description : null,
-            'amount_requested'      => (float) $listing->amount_requested,
+            'id' => $listing->id,
+            'title' => $listing->title,
+            'description' => $full ? $listing->description : null,
+            'amount_requested' => (float) $listing->amount_requested,
             'interest_rate_offered' => $listing->interest_rate_offered ? (float) $listing->interest_rate_offered : null,
-            'purpose'               => $listing->purpose,
-            'tenure_months'         => $listing->tenure_months,
-            'status'                => $listing->status,
-            'interests_count'       => $listing->interests?->count() ?? 0,
-            'published_at'          => $listing->published_at?->toDateTimeString(),
-            'expires_at'            => $listing->expires_at?->toDateTimeString(),
-            'borrower'              => $listing->borrower ? [
-                'id'           => $listing->borrower->id,
-                'name'         => $listing->borrower->full_name,
+            'purpose' => $listing->purpose,
+            'tenure_months' => $listing->tenure_months,
+            'status' => $listing->status,
+            'interests_count' => $listing->interests?->count() ?? 0,
+            'published_at' => $listing->published_at?->toDateTimeString(),
+            'expires_at' => $listing->expires_at?->toDateTimeString(),
+            'borrower' => $listing->borrower ? [
+                'id' => $listing->borrower->id,
+                'name' => $listing->borrower->full_name,
                 'credit_score' => $listing->borrower->credit_score,
             ] : null,
         ];
 
         if ($full) {
             $data['interests'] = $listing->interests?->map(fn ($i) => [
-                'id'             => $i->id,
-                'user'           => $i->user->name ?? null,
+                'id' => $i->id,
+                'user' => $i->user->name ?? null,
                 'amount_offered' => $i->amount_offered ? (float) $i->amount_offered : null,
-                'interest_rate'  => $i->interest_rate  ? (float) $i->interest_rate  : null,
-                'status'         => $i->status,
-                'message'        => $i->message,
+                'interest_rate' => $i->interest_rate ? (float) $i->interest_rate : null,
+                'status' => $i->status,
+                'message' => $i->message,
             ]);
         }
 

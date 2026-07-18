@@ -22,7 +22,7 @@ class CreateStandingOrdersJob implements ShouldQueue
 
     public function __construct(
         public readonly Loan $loan,
-        public readonly int  $walletId,
+        public readonly int $walletId,
     ) {}
 
     public function handle(): void
@@ -40,6 +40,7 @@ class CreateStandingOrdersJob implements ShouldQueue
 
         if (! $phone) {
             Log::warning('[StandingOrders] No phone for loan', ['loan_id' => $loan->id]);
+
             return;
         }
 
@@ -57,14 +58,14 @@ class CreateStandingOrdersJob implements ShouldQueue
             }
 
             StandingOrder::create([
-                'loan_id'         => $loan->id,
+                'loan_id' => $loan->id,
                 'loan_schedule_id' => $instalment->id,
-                'borrower_id'     => $loan->borrower_id,
-                'amount'          => $instalment->total_due,
-                'phone'           => $phone,
-                'gateway'         => $wallet->gateway,
-                'due_date'        => $instalment->due_date,
-                'status'          => 'pending',
+                'borrower_id' => $loan->borrower_id,
+                'amount' => $instalment->total_due,
+                'phone' => $phone,
+                'gateway' => $wallet->gateway,
+                'due_date' => $instalment->due_date,
+                'status' => 'pending',
             ]);
 
             $created++;

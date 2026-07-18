@@ -15,13 +15,13 @@ class TrialExpiryWarningMail extends Mailable
 
     public function __construct(
         public readonly Tenant $tenant,
-        public readonly int    $daysRemaining,
+        public readonly int $daysRemaining,
     ) {}
 
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: "Your LENDR trial ends in {$this->daysRemaining} day" . ($this->daysRemaining === 1 ? '' : 's'),
+            subject: "Your LENDR trial ends in {$this->daysRemaining} day".($this->daysRemaining === 1 ? '' : 's'),
         );
     }
 

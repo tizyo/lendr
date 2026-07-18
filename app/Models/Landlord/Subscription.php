@@ -22,9 +22,9 @@ class Subscription extends Model
     ];
 
     protected $casts = [
-        'amount'    => 'decimal:2',
+        'amount' => 'decimal:2',
         'starts_at' => 'datetime',
-        'ends_at'   => 'datetime',
+        'ends_at' => 'datetime',
     ];
 
     // ─── Relations ────────────────────────────────────────────────────────────

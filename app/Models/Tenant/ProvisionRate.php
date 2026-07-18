@@ -18,11 +18,11 @@ class ProvisionRate extends Model
     protected function casts(): array
     {
         return [
-            'stage'          => 'integer',
-            'dpd_from'       => 'integer',
-            'dpd_to'         => 'integer',
+            'stage' => 'integer',
+            'dpd_from' => 'integer',
+            'dpd_to' => 'integer',
             'provision_rate' => 'decimal:4',
-            'is_active'      => 'boolean',
+            'is_active' => 'boolean',
         ];
     }
 

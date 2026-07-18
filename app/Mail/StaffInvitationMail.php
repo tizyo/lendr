@@ -14,7 +14,7 @@ class StaffInvitationMail extends Mailable
     use Queueable, SerializesModels;
 
     public function __construct(
-        public readonly User   $staff,
+        public readonly User $staff,
         public readonly string $invitationUrl,
         public readonly string $orgName,
     ) {}
@@ -22,7 +22,7 @@ class StaffInvitationMail extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: "You've been invited to join {$this->orgName} on " . config('app.name'),
+            subject: "You've been invited to join {$this->orgName} on ".config('app.name'),
         );
     }
 

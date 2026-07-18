@@ -3,10 +3,10 @@
 namespace App\Models\Landlord;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Stancl\Tenancy\Database\Models\Tenant as BaseTenant;
 use Stancl\Tenancy\Contracts\TenantWithDatabase;
 use Stancl\Tenancy\Database\Concerns\HasDatabase;
 use Stancl\Tenancy\Database\Concerns\HasDomains;
+use Stancl\Tenancy\Database\Models\Tenant as BaseTenant;
 
 class Tenant extends BaseTenant implements TenantWithDatabase
 {
@@ -33,11 +33,11 @@ class Tenant extends BaseTenant implements TenantWithDatabase
     ];
 
     protected $casts = [
-        'data'              => 'array',
+        'data' => 'array',
         'email_verified_at' => 'datetime',
-        'trial_ends_at'     => 'datetime',
-        'is_verified'       => 'boolean',
-        'verified_at'       => 'datetime',
+        'trial_ends_at' => 'datetime',
+        'is_verified' => 'boolean',
+        'verified_at' => 'datetime',
     ];
 
     /** Plans that share the app portal (no custom subdomain). */
@@ -90,6 +90,7 @@ class Tenant extends BaseTenant implements TenantWithDatabase
         if ($this->is_verified) {
             return 'gold';
         }
+
         return null;
     }
 

@@ -18,22 +18,22 @@ class AuditLogController extends BaseApiController
         $logs = Activity::query()
             ->with('causer:id,name')
             ->when($request->subject_type, fn ($q, $t) => $q->where('subject_type', 'like', "%{$t}%"))
-            ->when($request->causer_id,    fn ($q, $id) => $q->where('causer_id', $id))
-            ->when($request->event,        fn ($q, $e) => $q->where('description', $e))
+            ->when($request->causer_id, fn ($q, $id) => $q->where('causer_id', $id))
+            ->when($request->event, fn ($q, $e) => $q->where('description', $e))
             ->when($request->date_from, fn ($q, $d) => $q->where('created_at', '>=', $d))
-            ->when($request->date_to,   fn ($q, $d) => $q->where('created_at', '<=', $d.' 23:59:59'))
+            ->when($request->date_to, fn ($q, $d) => $q->where('created_at', '<=', $d.' 23:59:59'))
             ->latest()
             ->paginate($request->integer('per_page', 30));
 
         return $this->paginated($logs, fn (Activity $log) => [
-            'id'           => $log->id,
-            'log_name'     => $log->log_name,
-            'description'  => $log->description,
+            'id' => $log->id,
+            'log_name' => $log->log_name,
+            'description' => $log->description,
             'subject_type' => class_basename($log->subject_type ?? ''),
-            'subject_id'   => $log->subject_id,
-            'causer'       => $log->causer ? ['id' => $log->causer->id, 'name' => $log->causer->name] : null,
-            'properties'   => $log->properties,
-            'created_at'   => $log->created_at->toDateTimeString(),
+            'subject_id' => $log->subject_id,
+            'causer' => $log->causer ? ['id' => $log->causer->id, 'name' => $log->causer->name] : null,
+            'properties' => $log->properties,
+            'created_at' => $log->created_at->toDateTimeString(),
         ]);
     }
 
@@ -46,10 +46,10 @@ class AuditLogController extends BaseApiController
         $logs = Activity::query()
             ->with('causer:id,name')
             ->when($request->subject_type, fn ($q, $t) => $q->where('subject_type', 'like', "%{$t}%"))
-            ->when($request->causer_id,    fn ($q, $id) => $q->where('causer_id', $id))
-            ->when($request->event,        fn ($q, $e) => $q->where('description', $e))
+            ->when($request->causer_id, fn ($q, $id) => $q->where('causer_id', $id))
+            ->when($request->event, fn ($q, $e) => $q->where('description', $e))
             ->when($request->date_from, fn ($q, $d) => $q->where('created_at', '>=', $d))
-            ->when($request->date_to,   fn ($q, $d) => $q->where('created_at', '<=', $d.' 23:59:59'))
+            ->when($request->date_to, fn ($q, $d) => $q->where('created_at', '<=', $d.' 23:59:59'))
             ->latest()
             ->limit(5000)
             ->get();
@@ -65,11 +65,11 @@ class AuditLogController extends BaseApiController
             '"'.addcslashes($log->log_name ?? '', '"').'"',
         ]));
 
-        $csv      = $header."\n".$rows->implode("\n");
+        $csv = $header."\n".$rows->implode("\n");
         $filename = 'audit-log-'.now()->format('Y-m-d').'.csv';
 
         return response($csv, 200, [
-            'Content-Type'        => 'text/csv',
+            'Content-Type' => 'text/csv',
             'Content-Disposition' => "attachment; filename=\"{$filename}\"",
         ]);
     }

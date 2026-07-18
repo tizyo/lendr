@@ -17,6 +17,7 @@ class ESignatureController extends BaseApiController
     public function show(Loan $loan): JsonResponse
     {
         $agreement = LoanAgreement::where('loan_id', $loan->id)->first();
+
         return $this->success($agreement ? $this->format($agreement) : null);
     }
 
@@ -27,7 +28,7 @@ class ESignatureController extends BaseApiController
             $loan,
             auth()->id(),
             $request->ip(),
-            $request->userAgent() ?? ''
+            $request->userAgent() ?? '',
         );
 
         return $this->success($this->format($agreement), 'Agreement generated.', 201);
@@ -75,7 +76,7 @@ class ESignatureController extends BaseApiController
             $agreement,
             $request->otp,
             $request->ip(),
-            $request->userAgent() ?? ''
+            $request->userAgent() ?? '',
         );
 
         if (! $ok) {
@@ -91,11 +92,11 @@ class ESignatureController extends BaseApiController
         $agreement = LoanAgreement::where('loan_id', $loan->id)->firstOrFail();
 
         $events = $agreement->auditEvents->map(fn ($e) => [
-            'id'          => $e->id,
-            'event'       => $e->event,
-            'actor'       => $e->actor,
-            'ip_address'  => $e->ip_address,
-            'context'     => $e->context ?? [],
+            'id' => $e->id,
+            'event' => $e->event,
+            'actor' => $e->actor,
+            'ip_address' => $e->ip_address,
+            'context' => $e->context ?? [],
             'occurred_at' => $e->occurred_at?->toDateTimeString(),
         ]);
 
@@ -115,8 +116,8 @@ class ESignatureController extends BaseApiController
         $this->esig->logDownload($agreement, $request->ip(), $request->userAgent() ?? '');
 
         return response($bytes, 200, [
-            'Content-Type'        => 'application/pdf',
-            'Content-Disposition' => 'inline; filename="agreement_' . $loan->loan_number . '.pdf"',
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'inline; filename="agreement_'.$loan->loan_number.'.pdf"',
         ]);
     }
 
@@ -125,16 +126,16 @@ class ESignatureController extends BaseApiController
     private function format(LoanAgreement $a): array
     {
         return [
-            'id'             => $a->id,
-            'loan_id'        => $a->loan_id,
-            'status'         => $a->status,
-            'document_hash'  => $a->document_hash,
-            'has_pdf'        => (bool) $a->pdf_path,
+            'id' => $a->id,
+            'loan_id' => $a->loan_id,
+            'status' => $a->status,
+            'document_hash' => $a->document_hash,
+            'has_pdf' => (bool) $a->pdf_path,
             'signed_by_name' => $a->signed_by_name,
             'signed_by_phone' => $a->signed_by_phone,
-            'signed_at'      => $a->signed_at?->toDateTimeString(),
-            'generated_at'   => $a->created_at?->toDateTimeString(),
-            'updated_at'     => $a->updated_at?->toDateTimeString(),
+            'signed_at' => $a->signed_at?->toDateTimeString(),
+            'generated_at' => $a->created_at?->toDateTimeString(),
+            'updated_at' => $a->updated_at?->toDateTimeString(),
         ];
     }
 }

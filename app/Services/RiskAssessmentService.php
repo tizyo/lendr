@@ -18,13 +18,13 @@ class RiskAssessmentService
         $borrower = $loan->borrower;
 
         $context = [
-            'borrower_id'      => $borrower->id,
-            'credit_score'     => (int) ($borrower->credit_score ?? 0),
-            'monthly_income'   => (float) ($borrower->monthly_income ?? 0),
+            'borrower_id' => $borrower->id,
+            'credit_score' => (int) ($borrower->credit_score ?? 0),
+            'monthly_income' => (float) ($borrower->monthly_income ?? 0),
             'requested_amount' => (float) $loan->principal_amount,
-            'city'             => strtolower(trim($borrower->city ?? '')),
-            'employer'         => strtolower(trim($borrower->employer ?? '')),
-            'date_of_birth'    => $borrower->date_of_birth ?? null,
+            'city' => strtolower(trim($borrower->city ?? '')),
+            'employer' => strtolower(trim($borrower->employer ?? '')),
+            'date_of_birth' => $borrower->date_of_birth ?? null,
         ];
 
         // Clear previous unoverridden flags for this loan
@@ -46,18 +46,18 @@ class RiskAssessmentService
             }
 
             $flag = RiskFlag::create([
-                'loan_id'        => $loan->id,
+                'loan_id' => $loan->id,
                 'risk_policy_id' => $policy->id,
-                'severity'       => $policy->action,
-                'detail'         => $detail,
-                'overridden'     => false,
+                'severity' => $policy->action,
+                'detail' => $detail,
+                'overridden' => false,
             ]);
 
             $flags[] = [
-                'id'       => $flag->id,
-                'policy'   => $policy->name,
+                'id' => $flag->id,
+                'policy' => $policy->name,
                 'severity' => $policy->action,
-                'detail'   => $detail,
+                'detail' => $detail,
             ];
         }
 

@@ -17,22 +17,23 @@ function writeoffAdmin(): User
     $user = User::factory()->create(['role' => UserRole::SuperAdmin, 'is_active' => true]);
     Permission::firstOrCreate(['name' => 'loans.write_off', 'guard_name' => 'web']);
     $user->givePermissionTo('loans.write_off');
+
     return $user;
 }
 
 function writtenOffLoan(): Loan
 {
-    $type     = LoanType::factory()->create();
-    $plan     = LoanPlan::factory()->create(['loan_type_id' => $type->id]);
+    $type = LoanType::factory()->create();
+    $plan = LoanPlan::factory()->create(['loan_type_id' => $type->id]);
     $borrower = Borrower::factory()->create();
-    $staff    = User::factory()->create(['role' => UserRole::LoanOfficer, 'is_active' => true]);
+    $staff = User::factory()->create(['role' => UserRole::LoanOfficer, 'is_active' => true]);
 
     return Loan::factory()->create([
-        'borrower_id'         => $borrower->id,
-        'loan_type_id'        => $type->id,
-        'loan_plan_id'        => $plan->id,
-        'created_by'          => $staff->id,
-        'status'              => LoanStatus::Defaulted->value,
+        'borrower_id' => $borrower->id,
+        'loan_type_id' => $type->id,
+        'loan_plan_id' => $plan->id,
+        'created_by' => $staff->id,
+        'status' => LoanStatus::Defaulted->value,
         'outstanding_balance' => 5000.00,
     ]);
 }
@@ -41,22 +42,22 @@ function writtenOffLoan(): Loan
 
 test('write off a defaulted loan creates a writeoff record', function () {
     $admin = writeoffAdmin();
-    $loan  = writtenOffLoan();
+    $loan = writtenOffLoan();
 
     $this->actingAs($admin)
         ->postJson(route('api.v1.loans.write-off', $loan), ['reason' => 'Borrower is untraceable.'])
         ->assertOk();
 
     $this->assertDatabaseHas('loan_writeoffs', [
-        'loan_id'            => $loan->id,
-        'written_off_by'     => $admin->id,
+        'loan_id' => $loan->id,
+        'written_off_by' => $admin->id,
         'written_off_amount' => 5000.00,
     ]);
 })->group('writeoffs');
 
 test('write off updates loan status to written_off', function () {
     $admin = writeoffAdmin();
-    $loan  = writtenOffLoan();
+    $loan = writtenOffLoan();
 
     $this->actingAs($admin)
         ->postJson(route('api.v1.loans.write-off', $loan), ['reason' => 'Non-performing.'])
@@ -66,7 +67,7 @@ test('write off updates loan status to written_off', function () {
 
 test('write off a frozen loan', function () {
     $admin = writeoffAdmin();
-    $loan  = writtenOffLoan();
+    $loan = writtenOffLoan();
     $loan->update(['status' => LoanStatus::Frozen->value]);
 
     $this->actingAs($admin)
@@ -77,7 +78,7 @@ test('write off a frozen loan', function () {
 
 test('write off requires a reason', function () {
     $admin = writeoffAdmin();
-    $loan  = writtenOffLoan();
+    $loan = writtenOffLoan();
 
     $this->actingAs($admin)
         ->postJson(route('api.v1.loans.write-off', $loan), [])
@@ -86,7 +87,7 @@ test('write off requires a reason', function () {
 
 test('cannot write off an active loan', function () {
     $admin = writeoffAdmin();
-    $loan  = writtenOffLoan();
+    $loan = writtenOffLoan();
     $loan->update(['status' => LoanStatus::Active->value]);
 
     $this->actingAs($admin)
@@ -98,7 +99,7 @@ test('cannot write off an active loan', function () {
 
 test('record a recovery on a written-off loan', function () {
     $admin = writeoffAdmin();
-    $loan  = writtenOffLoan();
+    $loan = writtenOffLoan();
 
     // Write off first
     $this->actingAs($admin)
@@ -107,8 +108,8 @@ test('record a recovery on a written-off loan', function () {
     // Record recovery
     $response = $this->actingAs($admin)
         ->postJson(route('api.v1.loans.writeoff.recovery', $loan), [
-            'amount'    => 1000,
-            'method'    => 'cash',
+            'amount' => 1000,
+            'method' => 'cash',
             'reference' => 'RCV-001',
         ])
         ->assertStatus(201);
@@ -119,7 +120,7 @@ test('record a recovery on a written-off loan', function () {
 
 test('recovery updates total_recovered on writeoff record', function () {
     $admin = writeoffAdmin();
-    $loan  = writtenOffLoan();
+    $loan = writtenOffLoan();
 
     $this->actingAs($admin)
         ->postJson(route('api.v1.loans.write-off', $loan), ['reason' => 'Non-performing.']);
@@ -136,7 +137,7 @@ test('recovery updates total_recovered on writeoff record', function () {
 
 test('recovery requires amount and method', function () {
     $admin = writeoffAdmin();
-    $loan  = writtenOffLoan();
+    $loan = writtenOffLoan();
 
     $this->actingAs($admin)
         ->postJson(route('api.v1.loans.write-off', $loan), ['reason' => 'Test.']);
@@ -148,7 +149,7 @@ test('recovery requires amount and method', function () {
 
 test('recovery rejects invalid method', function () {
     $admin = writeoffAdmin();
-    $loan  = writtenOffLoan();
+    $loan = writtenOffLoan();
 
     $this->actingAs($admin)
         ->postJson(route('api.v1.loans.write-off', $loan), ['reason' => 'Test.']);
@@ -160,7 +161,7 @@ test('recovery rejects invalid method', function () {
 
 test('show writeoff details for a written-off loan', function () {
     $admin = writeoffAdmin();
-    $loan  = writtenOffLoan();
+    $loan = writtenOffLoan();
 
     $this->actingAs($admin)
         ->postJson(route('api.v1.loans.write-off', $loan), ['reason' => 'Test.']);

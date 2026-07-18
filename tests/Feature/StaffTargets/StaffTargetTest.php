@@ -1,12 +1,6 @@
 <?php
 
-use App\Enums\LoanStatus;
 use App\Enums\UserRole;
-use App\Models\Tenant\Borrower;
-use App\Models\Tenant\Loan;
-use App\Models\Tenant\LoanPlan;
-use App\Models\Tenant\LoanType;
-use App\Models\Tenant\Payment;
 use App\Models\Tenant\StaffTarget;
 use App\Models\Tenant\User;
 
@@ -25,32 +19,32 @@ function targetOfficer(): User
 // ─── Tests ────────────────────────────────────────────────────────────────────
 
 test('can create a staff target', function () {
-    $admin   = targetAdmin();
+    $admin = targetAdmin();
     $officer = targetOfficer();
 
     $resp = $this->actingAs($admin)
         ->postJson(route('api.v1.staff-targets.upsert'), [
-            'user_id'             => $officer->id,
-            'period_month'        => 3,
-            'period_year'         => 2026,
+            'user_id' => $officer->id,
+            'period_month' => 3,
+            'period_year' => 2026,
             'disbursement_target' => 100000,
-            'collection_target'   => 80000,
-            'new_borrowers_target'=> 10,
-            'new_loans_target'    => 15,
+            'collection_target' => 80000,
+            'new_borrowers_target' => 10,
+            'new_loans_target' => 15,
         ])
         ->assertStatus(201);
 
     expect($resp->json('data.target.disbursement_target'))->toEqual(100000);
 
     $this->assertDatabaseHas('staff_targets', [
-        'user_id'      => $officer->id,
+        'user_id' => $officer->id,
         'period_month' => 3,
-        'period_year'  => 2026,
+        'period_year' => 2026,
     ]);
 })->group('staff-targets');
 
 test('upserting same period updates existing target', function () {
-    $admin   = targetAdmin();
+    $admin = targetAdmin();
     $officer = targetOfficer();
 
     $payload = ['user_id' => $officer->id, 'period_month' => 3, 'period_year' => 2026, 'disbursement_target' => 100000];
@@ -64,8 +58,8 @@ test('upserting same period updates existing target', function () {
 
 test('can list targets for a period', function () {
     $admin = targetAdmin();
-    $o1    = targetOfficer();
-    $o2    = targetOfficer();
+    $o1 = targetOfficer();
+    $o2 = targetOfficer();
 
     StaffTarget::create(['user_id' => $o1->id, 'period_month' => 3, 'period_year' => 2026, 'disbursement_target' => 0, 'collection_target' => 0, 'new_borrowers_target' => 0, 'new_loans_target' => 0]);
     StaffTarget::create(['user_id' => $o2->id, 'period_month' => 3, 'period_year' => 2026, 'disbursement_target' => 0, 'collection_target' => 0, 'new_borrowers_target' => 0, 'new_loans_target' => 0]);
@@ -78,18 +72,18 @@ test('can list targets for a period', function () {
 })->group('staff-targets');
 
 test('target response includes actuals and achievement', function () {
-    $admin   = targetAdmin();
+    $admin = targetAdmin();
     $officer = targetOfficer();
 
     $this->actingAs($admin)
         ->postJson(route('api.v1.staff-targets.upsert'), [
-            'user_id'             => $officer->id,
-            'period_month'        => 3,
-            'period_year'         => 2026,
+            'user_id' => $officer->id,
+            'period_month' => 3,
+            'period_year' => 2026,
             'disbursement_target' => 50000,
-            'collection_target'   => 40000,
-            'new_borrowers_target'=> 5,
-            'new_loans_target'    => 8,
+            'collection_target' => 40000,
+            'new_borrowers_target' => 5,
+            'new_loans_target' => 8,
         ]);
 
     $resp = $this->actingAs($admin)
@@ -102,7 +96,7 @@ test('target response includes actuals and achievement', function () {
 })->group('staff-targets');
 
 test('can delete a staff target', function () {
-    $admin   = targetAdmin();
+    $admin = targetAdmin();
     $officer = targetOfficer();
 
     $target = StaffTarget::create([
@@ -118,7 +112,7 @@ test('can delete a staff target', function () {
 })->group('staff-targets');
 
 test('performance endpoint returns team summary', function () {
-    $admin   = targetAdmin();
+    $admin = targetAdmin();
     $officer = targetOfficer();
 
     StaffTarget::create([

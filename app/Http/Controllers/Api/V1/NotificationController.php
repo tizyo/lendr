@@ -26,7 +26,7 @@ class NotificationController extends BaseApiController
 
         return $this->success([
             'notifications' => $notifications,
-            'unread_count'  => $unreadCount,
+            'unread_count' => $unreadCount,
         ]);
     }
 
@@ -62,14 +62,14 @@ class NotificationController extends BaseApiController
     private function formatNotification(InAppNotification $n): array
     {
         return [
-            'id'         => $n->id,
-            'type'       => $n->type,
-            'title'      => $n->title,
-            'body'       => $n->body,
-            'icon'       => $n->icon,
-            'data'       => $n->data,
-            'is_read'    => $n->isRead(),
-            'read_at'    => $n->read_at?->toDateTimeString(),
+            'id' => $n->id,
+            'type' => $n->type,
+            'title' => $n->title,
+            'body' => $n->body,
+            'icon' => $n->icon,
+            'data' => $n->data,
+            'is_read' => $n->isRead(),
+            'read_at' => $n->read_at?->toDateTimeString(),
             'created_at' => $n->created_at->toDateTimeString(),
         ];
     }

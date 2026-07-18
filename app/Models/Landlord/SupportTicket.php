@@ -46,9 +46,9 @@ class SupportTicket extends Model
     public function typeBadge(): string
     {
         return match ($this->type) {
-            'bug'     => 'Bug',
+            'bug' => 'Bug',
             'feature' => 'Feature Request',
-            default   => 'Support',
+            default => 'Support',
         };
     }
 }

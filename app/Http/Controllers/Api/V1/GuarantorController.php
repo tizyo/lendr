@@ -15,7 +15,7 @@ class GuarantorController extends BaseApiController
     public function index(Loan $loan): JsonResponse
     {
         return $this->success(
-            $loan->guarantors()->get()->map(fn ($g) => $this->format($g))
+            $loan->guarantors()->get()->map(fn ($g) => $this->format($g)),
         );
     }
 
@@ -25,15 +25,15 @@ class GuarantorController extends BaseApiController
     public function store(Request $request, Loan $loan): JsonResponse
     {
         $data = $request->validate([
-            'name'           => ['required', 'string', 'max:255'],
-            'national_id'    => ['nullable', 'string', 'max:64'],
-            'phone'          => ['nullable', 'string', 'max:32'],
-            'email'          => ['nullable', 'email', 'max:255'],
-            'address'        => ['nullable', 'string'],
-            'relationship'   => ['nullable', 'string', 'max:64'],
-            'employer'       => ['nullable', 'string', 'max:255'],
+            'name' => ['required', 'string', 'max:255'],
+            'national_id' => ['nullable', 'string', 'max:64'],
+            'phone' => ['nullable', 'string', 'max:32'],
+            'email' => ['nullable', 'email', 'max:255'],
+            'address' => ['nullable', 'string'],
+            'relationship' => ['nullable', 'string', 'max:64'],
+            'employer' => ['nullable', 'string', 'max:255'],
             'monthly_income' => ['nullable', 'numeric', 'min:0'],
-            'notes'          => ['nullable', 'string'],
+            'notes' => ['nullable', 'string'],
         ]);
 
         $guarantor = $loan->guarantors()->create($data);
@@ -55,16 +55,16 @@ class GuarantorController extends BaseApiController
     public function update(Request $request, Guarantor $guarantor): JsonResponse
     {
         $data = $request->validate([
-            'name'           => ['sometimes', 'required', 'string', 'max:255'],
-            'national_id'    => ['nullable', 'string', 'max:64'],
-            'phone'          => ['nullable', 'string', 'max:32'],
-            'email'          => ['nullable', 'email', 'max:255'],
-            'address'        => ['nullable', 'string'],
-            'relationship'   => ['nullable', 'string', 'max:64'],
-            'employer'       => ['nullable', 'string', 'max:255'],
+            'name' => ['sometimes', 'required', 'string', 'max:255'],
+            'national_id' => ['nullable', 'string', 'max:64'],
+            'phone' => ['nullable', 'string', 'max:32'],
+            'email' => ['nullable', 'email', 'max:255'],
+            'address' => ['nullable', 'string'],
+            'relationship' => ['nullable', 'string', 'max:64'],
+            'employer' => ['nullable', 'string', 'max:255'],
             'monthly_income' => ['nullable', 'numeric', 'min:0'],
-            'status'         => ['sometimes', 'in:pending,approved,rejected'],
-            'notes'          => ['nullable', 'string'],
+            'status' => ['sometimes', 'in:pending,approved,rejected'],
+            'notes' => ['nullable', 'string'],
         ]);
 
         $guarantor->update($data);
@@ -87,20 +87,20 @@ class GuarantorController extends BaseApiController
     private function format(Guarantor $g): array
     {
         return [
-            'id'             => $g->id,
-            'loan_id'        => $g->loan_id,
-            'name'           => $g->name,
-            'national_id'    => $g->national_id,
-            'phone'          => $g->phone,
-            'email'          => $g->email,
-            'address'        => $g->address,
-            'relationship'   => $g->relationship,
-            'employer'       => $g->employer,
+            'id' => $g->id,
+            'loan_id' => $g->loan_id,
+            'name' => $g->name,
+            'national_id' => $g->national_id,
+            'phone' => $g->phone,
+            'email' => $g->email,
+            'address' => $g->address,
+            'relationship' => $g->relationship,
+            'employer' => $g->employer,
             'monthly_income' => $g->monthly_income ? (float) $g->monthly_income : null,
-            'status'         => $g->status,
-            'status_badge'   => $g->statusBadge(),
-            'notes'          => $g->notes,
-            'created_at'     => $g->created_at?->toDateString(),
+            'status' => $g->status,
+            'status_badge' => $g->statusBadge(),
+            'notes' => $g->notes,
+            'created_at' => $g->created_at?->toDateString(),
         ];
     }
 }

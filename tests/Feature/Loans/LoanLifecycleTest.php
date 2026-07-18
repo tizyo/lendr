@@ -12,7 +12,7 @@ use Spatie\Permission\Models\Permission;
 function loanUser(array $permissions = [], UserRole $role = UserRole::LoanOfficer): User
 {
     $user = User::factory()->create([
-        'role'      => $role,
+        'role' => $role,
         'is_active' => true,
     ]);
 
@@ -30,18 +30,18 @@ function loanUser(array $permissions = [], UserRole $role = UserRole::LoanOffice
 // ─── Tests ───────────────────────────────────────────────────────────────────
 
 test('loan officer with permission can create a loan application', function () {
-    $user     = loanUser(['loans.create']);
+    $user = loanUser(['loans.create']);
     $borrower = Borrower::factory()->create();
-    $plan     = makePlan();
+    $plan = makePlan();
 
     $response = $this->actingAs($user)
         ->withHeaders(['Accept' => 'application/json'])
         ->postJson(route('api.v1.loans.store'), [
-            'borrower_id'      => $borrower->id,
-            'loan_type_id'     => $plan->loan_type_id,
-            'loan_plan_id'     => $plan->id,
+            'borrower_id' => $borrower->id,
+            'loan_type_id' => $plan->loan_type_id,
+            'loan_plan_id' => $plan->id,
             'principal_amount' => 5000,
-            'tenure'           => 6,
+            'tenure' => 6,
             'application_date' => now()->toDateString(),
         ]);
 
@@ -49,24 +49,24 @@ test('loan officer with permission can create a loan application', function () {
         ->assertJsonPath('data.status', 'submitted');
 
     $this->assertDatabaseHas('loans', [
-        'borrower_id'  => $borrower->id,
+        'borrower_id' => $borrower->id,
         'loan_plan_id' => $plan->id,
     ]);
 });
 
 test('loan number follows LN-YYYYMM-XXXXX format', function () {
-    $user     = loanUser(['loans.create']);
+    $user = loanUser(['loans.create']);
     $borrower = Borrower::factory()->create();
-    $plan     = makePlan();
+    $plan = makePlan();
 
     $response = $this->actingAs($user)
         ->withHeaders(['Accept' => 'application/json'])
         ->postJson(route('api.v1.loans.store'), [
-            'borrower_id'      => $borrower->id,
-            'loan_type_id'     => $plan->loan_type_id,
-            'loan_plan_id'     => $plan->id,
+            'borrower_id' => $borrower->id,
+            'loan_type_id' => $plan->loan_type_id,
+            'loan_plan_id' => $plan->id,
             'principal_amount' => 3000,
-            'tenure'           => 3,
+            'tenure' => 3,
             'application_date' => now()->toDateString(),
         ]);
 
@@ -82,18 +82,18 @@ test('unauthenticated request to loans API returns 401', function () {
 
 test('loan creation without permission returns 403', function () {
     // Cashier role has no loans.create permission (LoanOfficer's default role does)
-    $user     = loanUser([], UserRole::Cashier);
+    $user = loanUser([], UserRole::Cashier);
     $borrower = Borrower::factory()->create();
-    $plan     = makePlan();
+    $plan = makePlan();
 
     $this->actingAs($user)
         ->withHeaders(['Accept' => 'application/json'])
         ->postJson(route('api.v1.loans.store'), [
-            'borrower_id'      => $borrower->id,
-            'loan_type_id'     => $plan->loan_type_id,
-            'loan_plan_id'     => $plan->id,
+            'borrower_id' => $borrower->id,
+            'loan_type_id' => $plan->loan_type_id,
+            'loan_plan_id' => $plan->id,
             'principal_amount' => 5000,
-            'tenure'           => 6,
+            'tenure' => 6,
             'application_date' => now()->toDateString(),
         ])
         ->assertForbidden();
@@ -139,17 +139,17 @@ test('an approved loan can be disbursed and generates a schedule', function () {
     $user = loanUser(['loans.disburse']);
     $plan = makePlan(); // flat, monthly, 6 months
     $loan = Loan::factory()->approved()->create([
-        'loan_plan_id'     => $plan->id,
+        'loan_plan_id' => $plan->id,
         'principal_amount' => 5000,
-        'interest_amount'  => 1500,
-        'tenure'           => 6,
+        'interest_amount' => 1500,
+        'tenure' => 6,
     ]);
 
     $this->actingAs($user)
         ->withHeaders(['Accept' => 'application/json'])
         ->postJson(route('api.v1.loans.disburse', $loan), [
             'disbursement_method' => 'cash',
-            'disbursement_date'   => now()->toDateString(),
+            'disbursement_date' => now()->toDateString(),
         ])
         ->assertOk()
         ->assertJsonPath('data.status', 'active');

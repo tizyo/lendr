@@ -2,7 +2,6 @@
 
 use App\Enums\LoanStatus;
 use App\Enums\UserRole;
-use App\Jobs\AutoDisburseLoanJob;
 use App\Jobs\CreateStandingOrdersJob;
 use App\Models\Landlord\LandlordUser;
 use App\Models\Landlord\Tenant;
@@ -17,7 +16,6 @@ use App\Models\Tenant\StandingOrder;
 use App\Models\Tenant\User;
 use App\Services\Payment\AutoDisbursementService;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Str;
 
 // ─── Cleanup ─────────────────────────────────────────────────────────────────
@@ -39,14 +37,15 @@ function disbAdmin(): User
 function disbTenant(string $plan = 'enterprise'): Tenant
 {
     $tenant = Tenant::create([
-        'id'       => (string) Str::uuid(),
-        'name'     => 'MFI ' . uniqid(),
-        'slug'     => 'mfi-' . uniqid(),
-        'plan'     => $plan,
-        'status'   => 'active',
+        'id' => (string) Str::uuid(),
+        'name' => 'MFI '.uniqid(),
+        'slug' => 'mfi-'.uniqid(),
+        'plan' => $plan,
+        'status' => 'active',
         'currency' => 'ZMW',
         'timezone' => 'Africa/Lusaka',
     ]);
+
     return $tenant->refresh();
 }
 
@@ -57,31 +56,31 @@ function disbTenant(string $plan = 'enterprise'): Tenant
 function disbWallet(Tenant $tenant, array $attrs = []): TenantWallet
 {
     return TenantWallet::create(array_merge([
-        'tenant_id'        => $tenant->id,
-        'gateway'          => 'flutterwave',
-        'environment'      => 'sandbox',
-        'api_key'          => 'FLW-TEST-KEY',
-        'api_secret'       => 'FLW-SECRET',
+        'tenant_id' => $tenant->id,
+        'gateway' => 'flutterwave',
+        'environment' => 'sandbox',
+        'api_key' => 'FLW-TEST-KEY',
+        'api_secret' => 'FLW-SECRET',
         'disburse_enabled' => true,
-        'debit_enabled'    => true,
-        'is_active'        => true,
+        'debit_enabled' => true,
+        'is_active' => true,
     ], $attrs));
 }
 
 function disbLoan(array $attrs = []): Loan
 {
-    $type     = LoanType::factory()->create();
-    $plan     = LoanPlan::factory()->create(['loan_type_id' => $type->id]);
+    $type = LoanType::factory()->create();
+    $plan = LoanPlan::factory()->create(['loan_type_id' => $type->id]);
     $borrower = Borrower::factory()->create(['phone' => '0971234567']);
 
     return Loan::factory()->create(array_merge([
-        'borrower_id'          => $borrower->id,
-        'loan_type_id'         => $type->id,
-        'loan_plan_id'         => $plan->id,
-        'created_by'           => null,
-        'status'               => LoanStatus::Active,
-        'principal_amount'     => 5000.00,
-        'outstanding_balance'  => 5000.00,
+        'borrower_id' => $borrower->id,
+        'loan_type_id' => $type->id,
+        'loan_plan_id' => $plan->id,
+        'created_by' => null,
+        'status' => LoanStatus::Active,
+        'principal_amount' => 5000.00,
+        'outstanding_balance' => 5000.00,
         'disbursement_account' => '0971234567',
     ], $attrs));
 }
@@ -90,14 +89,14 @@ function disbSchedule(Loan $loan, int $count = 3): void
 {
     for ($i = 1; $i <= $count; $i++) {
         LoanSchedule::create([
-            'loan_id'           => $loan->id,
+            'loan_id' => $loan->id,
             'instalment_number' => $i,
-            'due_date'          => now()->addMonths($i),
-            'principal_due'     => 1666.67,
-            'interest_due'      => 100.00,
-            'total_due'         => 1766.67,
-            'outstanding'       => 1766.67,
-            'is_paid'           => false,
+            'due_date' => now()->addMonths($i),
+            'principal_due' => 1666.67,
+            'interest_due' => 100.00,
+            'total_due' => 1766.67,
+            'outstanding' => 1766.67,
+            'is_paid' => false,
         ]);
     }
 }
@@ -113,18 +112,18 @@ function landlordActorDisb(): LandlordUser
 
 it('landlord can create a wallet for an enterprise tenant', function () {
     $landlord = landlordActorDisb();
-    $tenant   = disbTenant();
+    $tenant = disbTenant();
 
     $response = $this->actingAs($landlord, 'sanctum')
         ->putJson("/api/v1/landlord/tenants/{$tenant->id}/wallet", [
-            'gateway'          => 'mtn_momo',
-            'environment'      => 'sandbox',
-            'api_key'          => 'MTN-API-KEY-123',
-            'api_secret'       => 'MTN-SECRET-456',
-            'webhook_secret'   => 'WEBHOOK-SECRET',
+            'gateway' => 'mtn_momo',
+            'environment' => 'sandbox',
+            'api_key' => 'MTN-API-KEY-123',
+            'api_secret' => 'MTN-SECRET-456',
+            'webhook_secret' => 'WEBHOOK-SECRET',
             'disburse_enabled' => true,
-            'debit_enabled'    => true,
-            'is_active'        => true,
+            'debit_enabled' => true,
+            'is_active' => true,
         ]);
 
     $response->assertOk()
@@ -139,7 +138,7 @@ it('landlord can create a wallet for an enterprise tenant', function () {
 
 it('landlord can view a wallet config', function () {
     $landlord = landlordActorDisb();
-    $tenant   = disbTenant();
+    $tenant = disbTenant();
     disbWallet($tenant, ['gateway' => 'airtel_money']);
 
     $response = $this->actingAs($landlord, 'sanctum')
@@ -152,7 +151,7 @@ it('landlord can view a wallet config', function () {
 
 it('landlord gets null when no wallet configured', function () {
     $landlord = landlordActorDisb();
-    $tenant   = disbTenant();
+    $tenant = disbTenant();
 
     $response = $this->actingAs($landlord, 'sanctum')
         ->getJson("/api/v1/landlord/tenants/{$tenant->id}/wallet");
@@ -162,7 +161,7 @@ it('landlord gets null when no wallet configured', function () {
 
 it('landlord can delete a wallet', function () {
     $landlord = landlordActorDisb();
-    $tenant   = disbTenant();
+    $tenant = disbTenant();
     disbWallet($tenant);
 
     $this->actingAs($landlord, 'sanctum')
@@ -174,13 +173,13 @@ it('landlord can delete a wallet', function () {
 
 it('wallet validation rejects unknown gateway', function () {
     $landlord = landlordActorDisb();
-    $tenant   = disbTenant();
+    $tenant = disbTenant();
 
     $this->actingAs($landlord, 'sanctum')
         ->putJson("/api/v1/landlord/tenants/{$tenant->id}/wallet", [
-            'gateway'     => 'unknown_gateway',
+            'gateway' => 'unknown_gateway',
             'environment' => 'sandbox',
-            'api_key'     => 'KEY',
+            'api_key' => 'KEY',
         ])
         ->assertStatus(422)
         ->assertJsonValidationErrors('gateway');
@@ -199,11 +198,11 @@ it('AutoDisbursementService creates a DisbursementLog and calls Flutterwave API'
 
     Http::fake(['*' => Http::response([
         'status' => 'success',
-        'data'   => ['id' => 'FLW-TX-001', 'status' => 'NEW'],
+        'data' => ['id' => 'FLW-TX-001', 'status' => 'NEW'],
     ], 200)]);
 
     $service = app(AutoDisbursementService::class);
-    $log     = $service->disburse($loan, $wallet);
+    $log = $service->disburse($loan, $wallet);
 
     expect($log)->toBeInstanceOf(DisbursementLog::class);
     expect($log->loan_id)->toBe($loan->id);
@@ -224,7 +223,7 @@ it('AutoDisbursementService marks log failed on HTTP error', function () {
     Http::fake(['*' => Http::response(['message' => 'Bad credentials'], 401)]);
 
     $service = app(AutoDisbursementService::class);
-    $log     = $service->disburse($loan, $wallet);
+    $log = $service->disburse($loan, $wallet);
 
     expect($log->status)->toBe('failed');
 

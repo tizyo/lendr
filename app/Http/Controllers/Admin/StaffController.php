@@ -26,35 +26,35 @@ class StaffController extends Controller
         $staff = User::query()
             ->when($request->search, fn ($q, $s) => $q->where(function ($q) use ($s) {
                 $q->where('name', 'like', "%{$s}%")
-                  ->orWhere('email', 'like', "%{$s}%")
-                  ->orWhere('username', 'like', "%{$s}%");
+                    ->orWhere('email', 'like', "%{$s}%")
+                    ->orWhere('username', 'like', "%{$s}%");
             }))
             ->when($request->role, fn ($q, $r) => $q->where('role', $r))
             ->when($request->department, fn ($q, $d) => $q->where('department', $d))
             ->when($request->status, fn ($q, $s) => match ($s) {
-                'active'   => $q->where('is_active', true),
+                'active' => $q->where('is_active', true),
                 'inactive' => $q->where('is_active', false),
-                default    => $q,
+                default => $q,
             })
             ->latest()
             ->paginate(20)
             ->withQueryString()
             ->through(fn ($u) => [
-                'id'         => $u->id,
-                'name'       => $u->name,
-                'email'      => $u->email,
-                'username'   => $u->username,
-                'phone'      => $u->phone,
-                'role'       => $u->role?->value,
+                'id' => $u->id,
+                'name' => $u->name,
+                'email' => $u->email,
+                'username' => $u->username,
+                'phone' => $u->phone,
+                'role' => $u->role?->value,
                 'department' => $u->department,
-                'is_active'  => $u->is_active,
+                'is_active' => $u->is_active,
                 'created_at' => $u->created_at->format('d M Y'),
             ]);
 
         return Inertia::render('staff/Index', [
-            'staff'   => $staff,
+            'staff' => $staff,
             'filters' => $request->only(['search', 'role', 'department', 'status']),
-            'roles'   => collect(UserRole::cases())->map(fn ($r) => ['value' => $r->value, 'label' => $r->label()]),
+            'roles' => collect(UserRole::cases())->map(fn ($r) => ['value' => $r->value, 'label' => $r->label()]),
         ]);
     }
 
@@ -65,16 +65,16 @@ class StaffController extends Controller
 
         if (! $svc->canAddUser($currentCount)) {
             return back()->with('error',
-                "Your plan allows a maximum of {$svc->limitLabel('max_users')} staff members. Upgrade to add more."
+                "Your plan allows a maximum of {$svc->limitLabel('max_users')} staff members. Upgrade to add more.",
             );
         }
 
         $data = $request->validate([
-            'name'       => ['required', 'string', 'max:255'],
-            'email'      => ['required', 'email', 'unique:users,email'],
-            'username'   => ['nullable', 'string', 'max:50', 'unique:users,username'],
-            'phone'      => ['nullable', 'string', 'max:20'],
-            'role'       => ['required', Rule::enum(UserRole::class)],
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'email', 'unique:users,email'],
+            'username' => ['nullable', 'string', 'max:50', 'unique:users,username'],
+            'phone' => ['nullable', 'string', 'max:20'],
+            'role' => ['required', Rule::enum(UserRole::class)],
             'department' => ['nullable', 'string', 'max:100'],
         ]);
 
@@ -84,13 +84,13 @@ class StaffController extends Controller
 
         $staff = User::create([
             ...$data,
-            'password'         => null,
-            'is_active'        => false,
+            'password' => null,
+            'is_active' => false,
             'invitation_token' => $token,
-            'invited_at'       => now(),
+            'invited_at' => now(),
         ]);
 
-        $tenant  = tenancy()->tenant;
+        $tenant = tenancy()->tenant;
         $orgName = $tenant?->name ?? config('app.name');
 
         // Build invitation URL — uses central domain route so it works for both
@@ -100,17 +100,17 @@ class StaffController extends Controller
             (new TenantMailService)->send($staff->email, new StaffInvitationMail($staff, $invitationUrl, $orgName));
         }
 
-        return back()->with('success', 'Invitation sent to ' . $staff->email . '.');
+        return back()->with('success', 'Invitation sent to '.$staff->email.'.');
     }
 
     public function update(Request $request, User $staff): RedirectResponse
     {
         $data = $request->validate([
-            'name'       => ['required', 'string', 'max:255'],
-            'email'      => ['required', 'email', "unique:users,email,{$staff->id}"],
-            'username'   => ['nullable', 'string', 'max:50', "unique:users,username,{$staff->id}"],
-            'phone'      => ['nullable', 'string', 'max:20'],
-            'role'       => ['required', Rule::enum(UserRole::class)],
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'email', "unique:users,email,{$staff->id}"],
+            'username' => ['nullable', 'string', 'max:50', "unique:users,username,{$staff->id}"],
+            'phone' => ['nullable', 'string', 'max:20'],
+            'role' => ['required', Rule::enum(UserRole::class)],
             'department' => ['nullable', 'string', 'max:100'],
         ]);
 

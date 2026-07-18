@@ -19,7 +19,7 @@ class WebhookEndpointController extends BaseApiController
             ->map(fn ($e) => $this->formatEndpoint($e));
 
         return $this->success([
-            'endpoints'       => $endpoints,
+            'endpoints' => $endpoints,
             'available_events' => WebhookEndpoint::availableEvents(),
         ]);
     }
@@ -30,15 +30,15 @@ class WebhookEndpointController extends BaseApiController
     public function store(Request $request): JsonResponse
     {
         $data = $request->validate([
-            'url'         => ['required', 'url', 'max:500'],
-            'events'      => ['required', 'array', 'min:1'],
-            'events.*'    => ['string', 'in:'.implode(',', WebhookEndpoint::availableEvents())],
+            'url' => ['required', 'url', 'max:500'],
+            'events' => ['required', 'array', 'min:1'],
+            'events.*' => ['string', 'in:'.implode(',', WebhookEndpoint::availableEvents())],
             'description' => ['nullable', 'string', 'max:255'],
         ]);
 
         $endpoint = WebhookEndpoint::create([
             ...$data,
-            'secret'    => Str::random(32),
+            'secret' => Str::random(32),
             'is_active' => true,
         ]);
 
@@ -59,11 +59,11 @@ class WebhookEndpointController extends BaseApiController
     public function update(Request $request, WebhookEndpoint $webhookEndpoint): JsonResponse
     {
         $data = $request->validate([
-            'url'         => ['sometimes', 'url', 'max:500'],
-            'events'      => ['sometimes', 'array', 'min:1'],
-            'events.*'    => ['string', 'in:'.implode(',', WebhookEndpoint::availableEvents())],
+            'url' => ['sometimes', 'url', 'max:500'],
+            'events' => ['sometimes', 'array', 'min:1'],
+            'events.*' => ['string', 'in:'.implode(',', WebhookEndpoint::availableEvents())],
             'description' => ['nullable', 'string', 'max:255'],
-            'is_active'   => ['sometimes', 'boolean'],
+            'is_active' => ['sometimes', 'boolean'],
         ]);
 
         $webhookEndpoint->update($data);
@@ -103,7 +103,7 @@ class WebhookEndpointController extends BaseApiController
 
         return $this->paginated(
             $query->paginate($request->integer('per_page', 20)),
-            fn ($d) => $this->formatDelivery($d)
+            fn ($d) => $this->formatDelivery($d),
         );
     }
 
@@ -127,15 +127,15 @@ class WebhookEndpointController extends BaseApiController
     private function formatEndpoint(WebhookEndpoint $e, bool $withSecret = false): array
     {
         $data = [
-            'id'                => $e->id,
-            'url'               => $e->url,
-            'events'            => $e->events,
-            'description'       => $e->description,
-            'is_active'         => $e->is_active,
-            'failure_count'     => $e->failure_count,
+            'id' => $e->id,
+            'url' => $e->url,
+            'events' => $e->events,
+            'description' => $e->description,
+            'is_active' => $e->is_active,
+            'failure_count' => $e->failure_count,
             'last_triggered_at' => $e->last_triggered_at?->toDateTimeString(),
-            'last_success_at'   => $e->last_success_at?->toDateTimeString(),
-            'created_at'        => $e->created_at->toDateString(),
+            'last_success_at' => $e->last_success_at?->toDateTimeString(),
+            'created_at' => $e->created_at->toDateString(),
         ];
 
         if ($withSecret) {
@@ -148,13 +148,13 @@ class WebhookEndpointController extends BaseApiController
     private function formatDelivery(WebhookDelivery $d): array
     {
         return [
-            'id'            => $d->id,
-            'event'         => $d->event,
-            'status'        => $d->status,
+            'id' => $d->id,
+            'event' => $d->event,
+            'status' => $d->status,
             'response_code' => $d->response_code,
-            'attempts'      => $d->attempts,
-            'delivered_at'  => $d->delivered_at?->toDateTimeString(),
-            'created_at'    => $d->created_at->toDateTimeString(),
+            'attempts' => $d->attempts,
+            'delivered_at' => $d->delivered_at?->toDateTimeString(),
+            'created_at' => $d->created_at->toDateTimeString(),
         ];
     }
 }

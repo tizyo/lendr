@@ -29,12 +29,12 @@ class ExchangeRateController extends BaseApiController
         $rates = $query->paginate($request->integer('per_page', 20));
 
         return $this->success([
-            'data'       => $rates->items(),
+            'data' => $rates->items(),
             'pagination' => [
-                'total'        => $rates->total(),
-                'per_page'     => $rates->perPage(),
+                'total' => $rates->total(),
+                'per_page' => $rates->perPage(),
                 'current_page' => $rates->currentPage(),
-                'last_page'    => $rates->lastPage(),
+                'last_page' => $rates->lastPage(),
             ],
         ]);
     }
@@ -45,22 +45,22 @@ class ExchangeRateController extends BaseApiController
     public function store(Request $request): JsonResponse
     {
         $data = $request->validate([
-            'from_currency'  => ['required', 'string', 'size:3'],
-            'to_currency'    => ['required', 'string', 'size:3'],
-            'rate'           => ['required', 'numeric', 'min:0.000001'],
+            'from_currency' => ['required', 'string', 'size:3'],
+            'to_currency' => ['required', 'string', 'size:3'],
+            'rate' => ['required', 'numeric', 'min:0.000001'],
             'effective_date' => ['required', 'date'],
         ]);
 
         $data['from_currency'] = strtoupper($data['from_currency']);
-        $data['to_currency']   = strtoupper($data['to_currency']);
+        $data['to_currency'] = strtoupper($data['to_currency']);
 
         $rate = ExchangeRate::updateOrCreate(
             [
-                'from_currency'  => $data['from_currency'],
-                'to_currency'    => $data['to_currency'],
+                'from_currency' => $data['from_currency'],
+                'to_currency' => $data['to_currency'],
                 'effective_date' => $data['effective_date'],
             ],
-            ['rate' => $data['rate']]
+            ['rate' => $data['rate']],
         );
 
         return $this->success($rate, 'Exchange rate saved.', 201);
@@ -72,7 +72,7 @@ class ExchangeRateController extends BaseApiController
     public function update(Request $request, ExchangeRate $exchangeRate): JsonResponse
     {
         $data = $request->validate([
-            'rate'           => ['sometimes', 'numeric', 'min:0.000001'],
+            'rate' => ['sometimes', 'numeric', 'min:0.000001'],
             'effective_date' => ['sometimes', 'date'],
         ]);
 
@@ -98,7 +98,7 @@ class ExchangeRateController extends BaseApiController
     public function current(Request $request): JsonResponse
     {
         $from = strtoupper($request->string('from', 'USD'));
-        $to   = strtoupper($request->string('to', 'ZMW'));
+        $to = strtoupper($request->string('to', 'ZMW'));
 
         $rate = ExchangeRate::current($from, $to);
 
@@ -107,11 +107,11 @@ class ExchangeRateController extends BaseApiController
         }
 
         return $this->success([
-            'from_currency'  => $rate->from_currency,
-            'to_currency'    => $rate->to_currency,
-            'rate'           => (float) $rate->rate,
+            'from_currency' => $rate->from_currency,
+            'to_currency' => $rate->to_currency,
+            'rate' => (float) $rate->rate,
             'effective_date' => $rate->effective_date->toDateString(),
-            'updated_at'     => $rate->updated_at->toDateTimeString(),
+            'updated_at' => $rate->updated_at->toDateTimeString(),
         ]);
     }
 }

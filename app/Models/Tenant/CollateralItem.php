@@ -24,12 +24,12 @@ class CollateralItem extends Model
 
     protected $attributes = [
         'status' => 'pending',
-        'type'   => 'other',
+        'type' => 'other',
     ];
 
     protected $casts = [
         'estimated_value' => 'decimal:2',
-        'assessed_value'  => 'decimal:2',
+        'assessed_value' => 'decimal:2',
         'assessment_date' => 'date',
     ];
 
@@ -45,12 +45,12 @@ class CollateralItem extends Model
     public function typeLabel(): string
     {
         return match ($this->type) {
-            'property'  => 'Property',
-            'vehicle'   => 'Vehicle',
+            'property' => 'Property',
+            'vehicle' => 'Vehicle',
             'equipment' => 'Equipment',
-            'land'      => 'Land',
-            'savings'   => 'Savings/Deposit',
-            default     => 'Other',
+            'land' => 'Land',
+            'savings' => 'Savings/Deposit',
+            default => 'Other',
         };
     }
 
@@ -59,7 +59,7 @@ class CollateralItem extends Model
         return match ($this->status) {
             'verified' => ['label' => 'Verified',  'color' => 'emerald'],
             'released' => ['label' => 'Released',  'color' => 'neutral'],
-            default    => ['label' => 'Pending',   'color' => 'amber'],
+            default => ['label' => 'Pending',   'color' => 'amber'],
         };
     }
 }

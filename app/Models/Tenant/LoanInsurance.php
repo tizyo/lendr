@@ -28,10 +28,10 @@ class LoanInsurance extends Model
     protected function casts(): array
     {
         return [
-            'sum_insured'    => 'decimal:2',
+            'sum_insured' => 'decimal:2',
             'premium_amount' => 'decimal:2',
-            'start_date'     => 'date',
-            'end_date'       => 'date',
+            'start_date' => 'date',
+            'end_date' => 'date',
         ];
     }
 

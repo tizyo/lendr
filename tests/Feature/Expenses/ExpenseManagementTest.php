@@ -34,33 +34,33 @@ function makeCategory(): ExpenseCategory
 
 test('an expense can be created in draft status', function () {
     $user = expUser(['expenses.create']);
-    $cat  = makeCategory();
+    $cat = makeCategory();
 
     $response = $this->actingAs($user)
         ->withHeaders(['Accept' => 'application/json'])
         ->postJson(route('api.v1.expenses.store'), [
             'expense_category_id' => $cat->id,
-            'title'               => 'Office supplies purchase',
-            'amount'              => 250.00,
-            'expense_date'        => now()->toDateString(),
+            'title' => 'Office supplies purchase',
+            'amount' => 250.00,
+            'expense_date' => now()->toDateString(),
         ]);
 
     $response->assertStatus(201)
-             ->assertJsonPath('data.status', 'draft')
-             ->assertJsonPath('data.title', 'Office supplies purchase');
+        ->assertJsonPath('data.status', 'draft')
+        ->assertJsonPath('data.title', 'Office supplies purchase');
 });
 
 test('expense number is generated in EXP-YYYYMM-NNNNN format', function () {
     $user = expUser(['expenses.create']);
-    $cat  = makeCategory();
+    $cat = makeCategory();
 
     $response = $this->actingAs($user)
         ->withHeaders(['Accept' => 'application/json'])
         ->postJson(route('api.v1.expenses.store'), [
             'expense_category_id' => $cat->id,
-            'title'               => 'Travel reimbursement',
-            'amount'              => 500,
-            'expense_date'        => now()->toDateString(),
+            'title' => 'Travel reimbursement',
+            'amount' => 500,
+            'expense_date' => now()->toDateString(),
         ]);
 
     $number = $response->json('data.expense_number');
@@ -91,7 +91,7 @@ test('expenses list returns paginated results', function () {
 });
 
 test('expense detail can be fetched', function () {
-    $user    = expUser();
+    $user = expUser();
     $expense = Expense::factory()->create(['submitted_by' => $user->id]);
 
     $this->actingAs($user)
@@ -104,7 +104,7 @@ test('expense detail can be fetched', function () {
 // ─── Update ───────────────────────────────────────────────────────────────────
 
 test('a draft expense can be updated', function () {
-    $user    = expUser(['expenses.edit']);
+    $user = expUser(['expenses.edit']);
     $expense = Expense::factory()->draft()->create(['submitted_by' => $user->id]);
 
     $this->actingAs($user)
@@ -115,7 +115,7 @@ test('a draft expense can be updated', function () {
 });
 
 test('a pending expense cannot be edited', function () {
-    $user    = expUser(['expenses.edit']);
+    $user = expUser(['expenses.edit']);
     $expense = Expense::factory()->pending()->create(['submitted_by' => $user->id]);
 
     $this->actingAs($user)
@@ -127,7 +127,7 @@ test('a pending expense cannot be edited', function () {
 // ─── Delete ───────────────────────────────────────────────────────────────────
 
 test('a draft expense can be deleted', function () {
-    $user    = expUser(['expenses.delete']);
+    $user = expUser(['expenses.delete']);
     $expense = Expense::factory()->draft()->create(['submitted_by' => $user->id]);
 
     $this->actingAs($user)
@@ -139,7 +139,7 @@ test('a draft expense can be deleted', function () {
 });
 
 test('an approved expense cannot be deleted', function () {
-    $user    = expUser(['expenses.delete']);
+    $user = expUser(['expenses.delete']);
     $expense = Expense::factory()->approved()->create(['submitted_by' => $user->id]);
 
     $this->actingAs($user)
@@ -151,7 +151,7 @@ test('an approved expense cannot be deleted', function () {
 // ─── Submit ───────────────────────────────────────────────────────────────────
 
 test('a draft expense can be submitted for approval', function () {
-    $user    = expUser(['expenses.edit']);
+    $user = expUser(['expenses.edit']);
     $expense = Expense::factory()->draft()->create(['submitted_by' => $user->id]);
 
     $this->actingAs($user)
@@ -164,7 +164,7 @@ test('a draft expense can be submitted for approval', function () {
 });
 
 test('a rejected expense can be resubmitted', function () {
-    $user    = expUser(['expenses.edit']);
+    $user = expUser(['expenses.edit']);
     $expense = Expense::factory()->rejected()->create(['submitted_by' => $user->id]);
 
     $this->actingAs($user)
@@ -177,7 +177,7 @@ test('a rejected expense can be resubmitted', function () {
 // ─── Approve ─────────────────────────────────────────────────────────────────
 
 test('a pending expense can be approved by authorised user', function () {
-    $user    = expUser(['expenses.approve']);
+    $user = expUser(['expenses.approve']);
     $expense = Expense::factory()->pending()->create(['submitted_by' => $user->id]);
 
     FundBalance::current(); // initialise balance
@@ -192,10 +192,10 @@ test('a pending expense can be approved by authorised user', function () {
 });
 
 test('approving an expense debits the fund balance', function () {
-    $user    = expUser(['expenses.approve']);
+    $user = expUser(['expenses.approve']);
     $expense = Expense::factory()->pending()->create([
         'submitted_by' => $user->id,
-        'amount'       => 1000,
+        'amount' => 1000,
     ]);
 
     $balance = FundBalance::current();
@@ -212,7 +212,7 @@ test('approving an expense debits the fund balance', function () {
 
 test('approving requires expenses.approve permission', function () {
     // LoanOfficer has expenses.create/edit but not expenses.approve
-    $user    = expUser([], UserRole::LoanOfficer);
+    $user = expUser([], UserRole::LoanOfficer);
     $expense = Expense::factory()->pending()->create(['submitted_by' => $user->id]);
 
     $this->actingAs($user)
@@ -222,7 +222,7 @@ test('approving requires expenses.approve permission', function () {
 });
 
 test('only pending expenses can be approved', function () {
-    $user    = expUser(['expenses.approve']);
+    $user = expUser(['expenses.approve']);
     $expense = Expense::factory()->draft()->create(['submitted_by' => $user->id]);
 
     $this->actingAs($user)
@@ -234,7 +234,7 @@ test('only pending expenses can be approved', function () {
 // ─── Reject ──────────────────────────────────────────────────────────────────
 
 test('a pending expense can be rejected with a reason', function () {
-    $user    = expUser();
+    $user = expUser();
     $expense = Expense::factory()->pending()->create(['submitted_by' => $user->id]);
 
     $this->actingAs($user)
@@ -249,7 +249,7 @@ test('a pending expense can be rejected with a reason', function () {
 });
 
 test('rejection requires a reason', function () {
-    $user    = expUser();
+    $user = expUser();
     $expense = Expense::factory()->pending()->create(['submitted_by' => $user->id]);
 
     $this->actingAs($user)
@@ -260,10 +260,10 @@ test('rejection requires a reason', function () {
 });
 
 test('rejection does not affect fund balance', function () {
-    $user    = expUser();
+    $user = expUser();
     $expense = Expense::factory()->pending()->create([
         'submitted_by' => $user->id,
-        'amount'       => 500,
+        'amount' => 500,
     ]);
 
     $balance = FundBalance::current();

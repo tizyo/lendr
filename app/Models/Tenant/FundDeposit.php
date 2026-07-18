@@ -27,9 +27,9 @@ class FundDeposit extends Model
     protected function casts(): array
     {
         return [
-            'amount'       => 'decimal:2',
+            'amount' => 'decimal:2',
             'deposit_date' => 'date',
-            'approved_at'  => 'datetime',
+            'approved_at' => 'datetime',
         ];
     }
 

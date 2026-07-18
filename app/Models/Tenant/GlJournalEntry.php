@@ -41,17 +41,18 @@ class GlJournalEntry extends Model
 
     public static function nextReference(): string
     {
-        $prefix = 'JNL-' . now()->format('Y') . '-';
-        $last   = self::where('reference', 'like', $prefix . '%')->max('reference');
-        $seq    = $last ? ((int) Str::afterLast($last, '-')) + 1 : 1;
-        return $prefix . str_pad($seq, 4, '0', STR_PAD_LEFT);
+        $prefix = 'JNL-'.now()->format('Y').'-';
+        $last = self::where('reference', 'like', $prefix.'%')->max('reference');
+        $seq = $last ? ((int) Str::afterLast($last, '-')) + 1 : 1;
+
+        return $prefix.str_pad($seq, 4, '0', STR_PAD_LEFT);
     }
 
     // ─── Double-Entry Validation ──────────────────────────────────────────────
 
     public function isBalanced(): bool
     {
-        $debits  = (float) $this->lines()->where('side', 'debit')->sum('amount');
+        $debits = (float) $this->lines()->where('side', 'debit')->sum('amount');
         $credits = (float) $this->lines()->where('side', 'credit')->sum('amount');
 
         return abs($debits - $credits) < 0.01;

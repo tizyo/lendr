@@ -9,19 +9,19 @@ use PragmaRX\Google2FA\Google2FA;
 function twoFaUser(): User
 {
     return User::factory()->create([
-        'role'      => UserRole::LoanOfficer,
+        'role' => UserRole::LoanOfficer,
         'is_active' => true,
-        'password'  => bcrypt('Secret@123'),
+        'password' => bcrypt('Secret@123'),
     ]);
 }
 
 function userWithTwoFaEnabled(): User
 {
-    $user   = twoFaUser();
+    $user = twoFaUser();
     $secret = (new Google2FA)->generateSecretKey();
 
     $user->forceFill([
-        'two_factor_secret'       => $secret,
+        'two_factor_secret' => $secret,
         'two_factor_confirmed_at' => now(),
     ])->save();
 
@@ -67,7 +67,7 @@ test('unauthenticated user cannot call 2fa setup', function () {
 // ─── 2FA Verify (confirm setup) ───────────────────────────────────────────────
 
 test('user can confirm 2fa setup with valid totp code', function () {
-    $user   = twoFaUser();
+    $user = twoFaUser();
     $google = new Google2FA;
     $secret = $google->generateSecretKey();
 
@@ -85,7 +85,7 @@ test('user can confirm 2fa setup with valid totp code', function () {
 })->group('2fa');
 
 test('verify fails with invalid totp code', function () {
-    $user   = twoFaUser();
+    $user = twoFaUser();
     $secret = (new Google2FA)->generateSecretKey();
     $user->forceFill(['two_factor_secret' => $secret])->save();
 
@@ -138,7 +138,7 @@ test('login returns two_factor flag and pre_auth_token when 2fa is enabled', fun
     $user = userWithTwoFaEnabled();
 
     $response = $this->postJson(route('api.v1.auth.login'), [
-        'login'    => $user->email,
+        'login' => $user->email,
         'password' => 'Secret@123',
     ])->assertOk();
 
@@ -148,18 +148,18 @@ test('login returns two_factor flag and pre_auth_token when 2fa is enabled', fun
 })->group('2fa');
 
 test('challenge returns full token on valid totp code', function () {
-    $user   = twoFaUser();
+    $user = twoFaUser();
     $google = new Google2FA;
     $secret = $google->generateSecretKey();
 
     $user->forceFill([
-        'two_factor_secret'       => $secret,
+        'two_factor_secret' => $secret,
         'two_factor_confirmed_at' => now(),
     ])->save();
 
     // Get pre-auth token
     $loginResp = $this->postJson(route('api.v1.auth.login'), [
-        'login'    => $user->email,
+        'login' => $user->email,
         'password' => 'Secret@123',
     ])->assertOk();
 
@@ -176,10 +176,10 @@ test('challenge returns full token on valid totp code', function () {
 })->group('2fa');
 
 test('challenge rejects invalid totp code', function () {
-    $user   = userWithTwoFaEnabled();
+    $user = userWithTwoFaEnabled();
 
     $loginResp = $this->postJson(route('api.v1.auth.login'), [
-        'login'    => $user->email,
+        'login' => $user->email,
         'password' => 'Secret@123',
     ])->assertOk();
 
@@ -195,7 +195,7 @@ test('challenge requires 6-digit code', function () {
     $user = userWithTwoFaEnabled();
 
     $loginResp = $this->postJson(route('api.v1.auth.login'), [
-        'login'    => $user->email,
+        'login' => $user->email,
         'password' => 'Secret@123',
     ])->assertOk();
 
@@ -211,7 +211,7 @@ test('normal login (no 2fa) returns token directly', function () {
     $user = twoFaUser(); // 2FA not enabled
 
     $response = $this->postJson(route('api.v1.auth.login'), [
-        'login'    => $user->email,
+        'login' => $user->email,
         'password' => 'Secret@123',
     ])->assertOk();
 
@@ -223,7 +223,7 @@ test('login with 2fa enabled does not expose full token until challenge passed',
     $user = userWithTwoFaEnabled();
 
     $response = $this->postJson(route('api.v1.auth.login'), [
-        'login'    => $user->email,
+        'login' => $user->email,
         'password' => 'Secret@123',
     ])->assertOk();
 

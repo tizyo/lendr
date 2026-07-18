@@ -69,7 +69,7 @@ test('unauthenticated request to audit log is rejected', function () {
 // ─── Filter by subject_type ───────────────────────────────────────────────────
 
 test('audit log filters by subject_type', function () {
-    $user     = auditAdmin();
+    $user = auditAdmin();
     $borrower = Borrower::factory()->create();
 
     activity()->on($borrower)->log('created');
@@ -127,15 +127,15 @@ test('audit log filters by date_from', function () {
 
     // Old entry
     $old = Activity::create([
-        'log_name'     => 'default',
-        'description'  => 'old event',
+        'log_name' => 'default',
+        'description' => 'old event',
         'subject_type' => null,
-        'subject_id'   => null,
-        'causer_type'  => null,
-        'causer_id'    => null,
-        'properties'   => '{}',
-        'created_at'   => now()->subDays(10),
-        'updated_at'   => now()->subDays(10),
+        'subject_id' => null,
+        'causer_type' => null,
+        'causer_id' => null,
+        'properties' => '{}',
+        'created_at' => now()->subDays(10),
+        'updated_at' => now()->subDays(10),
     ]);
 
     activity()->log('new event'); // today

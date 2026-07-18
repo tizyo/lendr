@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\Api\V1;
 
-use App\Models\Tenant\Borrower;
 use App\Models\Tenant\SavingsAccount;
 use App\Models\Tenant\SavingsTransaction;
 use Illuminate\Http\JsonResponse;
@@ -20,13 +19,13 @@ class SavingsController extends BaseApiController
     {
         $query = SavingsAccount::with('borrower')
             ->when($request->borrower_id, fn ($q, $v) => $q->where('borrower_id', $v))
-            ->when($request->status,      fn ($q, $v) => $q->where('status', $v))
-            ->when($request->type,        fn ($q, $v) => $q->where('type', $v))
+            ->when($request->status, fn ($q, $v) => $q->where('status', $v))
+            ->when($request->type, fn ($q, $v) => $q->where('type', $v))
             ->orderByDesc('id');
 
         return $this->paginated(
             $query->paginate($request->integer('per_page', 20)),
-            fn ($a) => $this->formatAccount($a)
+            fn ($a) => $this->formatAccount($a),
         );
     }
 
@@ -36,20 +35,20 @@ class SavingsController extends BaseApiController
     public function store(Request $request): JsonResponse
     {
         $data = $request->validate([
-            'borrower_id'   => ['required', 'exists:borrowers,id'],
-            'type'          => ['required', 'in:regular,fixed,target'],
+            'borrower_id' => ['required', 'exists:borrowers,id'],
+            'type' => ['required', 'in:regular,fixed,target'],
             'interest_rate' => ['nullable', 'numeric', 'min:0', 'max:100'],
             'maturity_date' => ['nullable', 'date', 'after:today'],
             'target_amount' => ['nullable', 'numeric', 'min:0.01'],
-            'notes'         => ['nullable', 'string'],
+            'notes' => ['nullable', 'string'],
         ]);
 
         $account = SavingsAccount::create([
             ...$data,
             'account_number' => SavingsAccount::generateAccountNumber(),
-            'opened_by'      => auth()->id(),
-            'opened_date'    => now()->toDateString(),
-            'balance'        => 0,
+            'opened_by' => auth()->id(),
+            'opened_date' => now()->toDateString(),
+            'balance' => 0,
         ]);
 
         return $this->success(['account' => $this->formatAccount($account->load('borrower'))], 'Savings account opened.', 201);
@@ -85,9 +84,9 @@ class SavingsController extends BaseApiController
     public function deposit(Request $request, SavingsAccount $savings): JsonResponse
     {
         $request->validate([
-            'amount'    => ['required', 'numeric', 'min:0.01'],
+            'amount' => ['required', 'numeric', 'min:0.01'],
             'reference' => ['nullable', 'string', 'max:100'],
-            'notes'     => ['nullable', 'string'],
+            'notes' => ['nullable', 'string'],
         ]);
 
         if ($savings->status !== 'active') {
@@ -99,12 +98,12 @@ class SavingsController extends BaseApiController
             $savings->update(['balance' => $newBalance]);
 
             return $savings->transactions()->create([
-                'recorded_by'      => auth()->id(),
-                'type'             => 'deposit',
-                'amount'           => $request->amount,
-                'balance_after'    => $newBalance,
-                'reference'        => $request->reference,
-                'notes'            => $request->notes,
+                'recorded_by' => auth()->id(),
+                'type' => 'deposit',
+                'amount' => $request->amount,
+                'balance_after' => $newBalance,
+                'reference' => $request->reference,
+                'notes' => $request->notes,
                 'transaction_date' => now()->toDateString(),
             ]);
         });
@@ -118,9 +117,9 @@ class SavingsController extends BaseApiController
     public function withdraw(Request $request, SavingsAccount $savings): JsonResponse
     {
         $request->validate([
-            'amount'    => ['required', 'numeric', 'min:0.01'],
+            'amount' => ['required', 'numeric', 'min:0.01'],
             'reference' => ['nullable', 'string', 'max:100'],
-            'notes'     => ['nullable', 'string'],
+            'notes' => ['nullable', 'string'],
         ]);
 
         if ($savings->status !== 'active') {
@@ -136,12 +135,12 @@ class SavingsController extends BaseApiController
             $savings->update(['balance' => $newBalance]);
 
             return $savings->transactions()->create([
-                'recorded_by'      => auth()->id(),
-                'type'             => 'withdrawal',
-                'amount'           => $request->amount,
-                'balance_after'    => $newBalance,
-                'reference'        => $request->reference,
-                'notes'            => $request->notes,
+                'recorded_by' => auth()->id(),
+                'type' => 'withdrawal',
+                'amount' => $request->amount,
+                'balance_after' => $newBalance,
+                'reference' => $request->reference,
+                'notes' => $request->notes,
                 'transaction_date' => now()->toDateString(),
             ]);
         });
@@ -162,7 +161,7 @@ class SavingsController extends BaseApiController
 
         return $this->success([
             'transaction' => $this->formatTxn($txn),
-            'balance'     => (float) $savings->fresh()->balance,
+            'balance' => (float) $savings->fresh()->balance,
         ], 'Interest accrued.');
     }
 
@@ -173,13 +172,13 @@ class SavingsController extends BaseApiController
     {
         $query = $savings->transactions()
             ->when($request->date_from, fn ($q, $d) => $q->whereDate('transaction_date', '>=', $d))
-            ->when($request->date_to,   fn ($q, $d) => $q->whereDate('transaction_date', '<=', $d))
+            ->when($request->date_to, fn ($q, $d) => $q->whereDate('transaction_date', '<=', $d))
             ->orderByDesc('transaction_date')
             ->orderByDesc('id');
 
         return $this->paginated(
             $query->paginate($request->integer('per_page', 50)),
-            fn ($t) => $this->formatTxn($t)
+            fn ($t) => $this->formatTxn($t),
         );
     }
 
@@ -193,17 +192,17 @@ class SavingsController extends BaseApiController
             return $this->error('Goal progress is only available for target savings accounts.', 422);
         }
 
-        $target   = (float) $savings->target_amount;
-        $balance  = (float) $savings->balance;
+        $target = (float) $savings->target_amount;
+        $balance = (float) $savings->balance;
         $progress = $target > 0 ? round(($balance / $target) * 100, 2) : 0.0;
 
         return $this->success([
-            'account_id'    => $savings->id,
-            'balance'       => $balance,
+            'account_id' => $savings->id,
+            'balance' => $balance,
             'target_amount' => $target,
-            'progress_pct'  => $progress,
-            'remaining'     => max(0, round($target - $balance, 2)),
-            'achieved'      => $balance >= $target,
+            'progress_pct' => $progress,
+            'remaining' => max(0, round($target - $balance, 2)),
+            'achieved' => $balance >= $target,
         ]);
     }
 
@@ -256,18 +255,18 @@ class SavingsController extends BaseApiController
     private function formatAccount(SavingsAccount $a): array
     {
         return [
-            'id'             => $a->id,
+            'id' => $a->id,
             'account_number' => $a->account_number,
-            'type'           => $a->type,
-            'status'         => $a->status,
-            'balance'        => (float) $a->balance,
-            'interest_rate'  => (float) $a->interest_rate,
-            'target_amount'  => $a->target_amount ? (float) $a->target_amount : null,
-            'maturity_date'  => $a->maturity_date?->toDateString(),
-            'opened_date'    => $a->opened_date->toDateString(),
-            'borrower'       => $a->relationLoaded('borrower') ? [
-                'id'              => $a->borrower->id,
-                'name'            => $a->borrower->full_name,
+            'type' => $a->type,
+            'status' => $a->status,
+            'balance' => (float) $a->balance,
+            'interest_rate' => (float) $a->interest_rate,
+            'target_amount' => $a->target_amount ? (float) $a->target_amount : null,
+            'maturity_date' => $a->maturity_date?->toDateString(),
+            'opened_date' => $a->opened_date->toDateString(),
+            'borrower' => $a->relationLoaded('borrower') ? [
+                'id' => $a->borrower->id,
+                'name' => $a->borrower->full_name,
                 'borrower_number' => $a->borrower->borrower_number,
             ] : ['id' => $a->borrower_id],
         ];
@@ -276,12 +275,12 @@ class SavingsController extends BaseApiController
     private function formatTxn(SavingsTransaction $t): array
     {
         return [
-            'id'               => $t->id,
-            'type'             => $t->type,
-            'amount'           => (float) $t->amount,
-            'balance_after'    => (float) $t->balance_after,
-            'reference'        => $t->reference,
-            'notes'            => $t->notes,
+            'id' => $t->id,
+            'type' => $t->type,
+            'amount' => (float) $t->amount,
+            'balance_after' => (float) $t->balance_after,
+            'reference' => $t->reference,
+            'notes' => $t->notes,
             'transaction_date' => $t->transaction_date->toDateString(),
         ];
     }

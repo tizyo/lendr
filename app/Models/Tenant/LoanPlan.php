@@ -43,13 +43,13 @@ class LoanPlan extends Model
     protected function casts(): array
     {
         return [
-            'interest_rate'      => 'decimal:4',
-            'min_amount'         => 'decimal:2',
-            'max_amount'         => 'decimal:2',
-            'penalty_rate'       => 'decimal:4',
-            'processing_fee'     => 'decimal:4',
-            'insurance_fee'      => 'decimal:4',
-            'is_active'          => 'boolean',
+            'interest_rate' => 'decimal:4',
+            'min_amount' => 'decimal:2',
+            'max_amount' => 'decimal:2',
+            'penalty_rate' => 'decimal:4',
+            'processing_fee' => 'decimal:4',
+            'insurance_fee' => 'decimal:4',
+            'is_active' => 'boolean',
             'repayment_schedule' => RepaymentSchedule::class,
         ];
     }

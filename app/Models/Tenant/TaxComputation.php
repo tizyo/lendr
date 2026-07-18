@@ -22,8 +22,8 @@ class TaxComputation extends Model
     {
         return [
             'taxable_amount' => 'float',
-            'tax_amount'     => 'float',
-            'remitted_at'    => 'datetime',
+            'tax_amount' => 'float',
+            'remitted_at' => 'datetime',
         ];
     }
 

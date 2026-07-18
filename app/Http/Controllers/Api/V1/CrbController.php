@@ -25,13 +25,13 @@ class CrbController extends BaseApiController
     public function check(Request $request): JsonResponse
     {
         $data = $request->validate([
-            'type'  => ['required', Rule::in(['nrc', 'tpin', 'company_reg'])],
+            'type' => ['required', Rule::in(['nrc', 'tpin', 'company_reg'])],
             'value' => ['required', 'string', 'max:50'],
         ]);
 
         $tenantId = tenant('id') ?? 'unknown';
-        $hash     = $this->crb->hash($data['value'], $data['type']);
-        $result   = $this->crb->check($hash, $data['type'], $tenantId, 'manual_check');
+        $hash = $this->crb->hash($data['value'], $data['type']);
+        $result = $this->crb->check($hash, $data['type'], $tenantId, 'manual_check');
 
         return $this->success(array_merge($result, ['identity_hash' => $hash]));
     }
@@ -49,8 +49,8 @@ class CrbController extends BaseApiController
         }
 
         $tenantId = tenant('id') ?? 'unknown';
-        $hash     = $this->crb->hash($identifier['value'], $identifier['type']);
-        $result   = $this->crb->check($hash, $identifier['type'], $tenantId, 'manual_check');
+        $hash = $this->crb->hash($identifier['value'], $identifier['type']);
+        $result = $this->crb->check($hash, $identifier['type'], $tenantId, 'manual_check');
 
         // Enrich with all identifier checks if multiple exist
         $allResults = [];
@@ -61,8 +61,8 @@ class CrbController extends BaseApiController
         }
 
         return $this->success([
-            'primary'     => $result,
-            'by_type'     => $allResults,
+            'primary' => $result,
+            'by_type' => $allResults,
             'borrower_id' => $borrower->id,
         ]);
     }
@@ -79,13 +79,13 @@ class CrbController extends BaseApiController
             return $this->error('Borrower has no CRB identifier on file.', 422);
         }
 
-        $hash     = $this->crb->hash($identifier['value'], $identifier['type']);
+        $hash = $this->crb->hash($identifier['value'], $identifier['type']);
         $identity = $this->crb->getOrCreate($hash, $identifier['type']);
         $this->crb->recalculateFromEvents($identity);
 
         return $this->success([
             'credit_score' => $identity->fresh()->credit_score,
-            'score_band'   => $identity->fresh()->score_band,
+            'score_band' => $identity->fresh()->score_band,
         ], 'Score recalculated.');
     }
 
@@ -102,14 +102,14 @@ class CrbController extends BaseApiController
             ->limit(100)
             ->get()
             ->map(fn ($inq) => [
-                'id'               => $inq->id,
-                'identity_hash'    => $inq->identity_hash,
-                'purpose'          => $inq->purpose,
+                'id' => $inq->id,
+                'identity_hash' => $inq->identity_hash,
+                'purpose' => $inq->purpose,
                 'score_at_inquiry' => $inq->result_score,
-                'risk_level'       => $inq->result_risk_level,
-                'active_loans'     => $inq->result_active_loans,
+                'risk_level' => $inq->result_risk_level,
+                'active_loans' => $inq->result_active_loans,
                 'has_active_loans' => $inq->result_has_active_loans,
-                'created_at'       => $inq->created_at?->toIso8601String(),
+                'created_at' => $inq->created_at?->toIso8601String(),
             ]);
 
         return $this->success($rows);

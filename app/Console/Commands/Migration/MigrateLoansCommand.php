@@ -25,16 +25,16 @@ class MigrateLoansCommand extends BaseMigrationCommand
 
     public function handle(): int
     {
-        $svc      = $this->makeService();
-        $dryRun   = $this->isDryRun();
-        $batch    = $this->batchSize();
-        $errors   = [];
+        $svc = $this->makeService();
+        $dryRun = $this->isDryRun();
+        $batch = $this->batchSize();
+        $errors = [];
         $migrated = 0;
-        $skipped  = 0;
+        $skipped = 0;
 
         // Determine legacy table names
         $primaryTable = 'loan';
-        $portalTable  = $svc->legacy()->getSchemaBuilder()->hasTable('loans') ? 'loans' : null;
+        $portalTable = $svc->legacy()->getSchemaBuilder()->hasTable('loans') ? 'loans' : null;
 
         foreach (array_filter([$primaryTable, $portalTable]) as $table) {
             $source = ($table === $portalTable) ? 'online_portal' : 'branch';
@@ -46,6 +46,7 @@ class MigrateLoansCommand extends BaseMigrationCommand
                 foreach ($rows as $row) {
                     if ($svc->alreadyMigrated($table, $row->id)) {
                         $skipped++;
+
                         continue;
                     }
 
@@ -59,6 +60,7 @@ class MigrateLoansCommand extends BaseMigrationCommand
                         if (! $borrowerNewId) {
                             $errors[] = "{$table} id={$row->id}: no mapped borrower";
                             $svc->logFailed($table, $row->id, 'no mapped borrower');
+
                             continue;
                         }
 
@@ -67,31 +69,31 @@ class MigrateLoansCommand extends BaseMigrationCommand
                         $loanPlanNewId = $svc->newId('loan_plans', (int) ($row->loan_plan_id ?? 0));
 
                         // Generate ref_no if missing
-                        $refNo = $row->ref_no ?? $row->loan_number ?? ('LN-' . strtoupper(Str::random(8)));
+                        $refNo = $row->ref_no ?? $row->loan_number ?? ('LN-'.strtoupper(Str::random(8)));
 
                         if (! $dryRun) {
-                            $principal  = (string) ($row->amount ?? $row->principal_amount ?? 0);
-                            $interest   = (string) ($row->interest_amount ?? 0);
+                            $principal = (string) ($row->amount ?? $row->principal_amount ?? 0);
+                            $interest = (string) ($row->interest_amount ?? 0);
                             $totalPayable = bcadd($principal, $interest, 2);
 
                             $newId = DB::table('loans')->insertGetId([
-                                'borrower_id'         => $borrowerNewId,
-                                'loan_type_id'        => $loanTypeNewId,
-                                'loan_plan_id'        => $loanPlanNewId,
-                                'ref_no'              => $refNo,
-                                'principal_amount'    => $principal,
-                                'interest_amount'     => $interest,
-                                'total_payable'       => $row->total_payable ?? $totalPayable,
+                                'borrower_id' => $borrowerNewId,
+                                'loan_type_id' => $loanTypeNewId,
+                                'loan_plan_id' => $loanPlanNewId,
+                                'ref_no' => $refNo,
+                                'principal_amount' => $principal,
+                                'interest_amount' => $interest,
+                                'total_payable' => $row->total_payable ?? $totalPayable,
                                 'outstanding_balance' => $row->balance ?? $row->outstanding_balance ?? $totalPayable,
-                                'total_paid'          => $row->total_paid ?? 0,
-                                'penalty_balance'     => $row->penalty ?? $row->penalty_balance ?? 0,
-                                'duration_months'     => $row->duration ?? $row->duration_months ?? null,
-                                'disbursement_date'   => $row->disbursement_date ?? $row->date_issued ?? null,
-                                'maturity_date'       => $row->maturity_date ?? $row->due_date ?? null,
-                                'status'              => $this->mapLoanStatus((int) ($row->status ?? 1)),
-                                'source'              => $source,
-                                'created_at'          => $row->created_at ?? now(),
-                                'updated_at'          => $row->updated_at ?? now(),
+                                'total_paid' => $row->total_paid ?? 0,
+                                'penalty_balance' => $row->penalty ?? $row->penalty_balance ?? 0,
+                                'duration_months' => $row->duration ?? $row->duration_months ?? null,
+                                'disbursement_date' => $row->disbursement_date ?? $row->date_issued ?? null,
+                                'maturity_date' => $row->maturity_date ?? $row->due_date ?? null,
+                                'status' => $this->mapLoanStatus((int) ($row->status ?? 1)),
+                                'source' => $source,
+                                'created_at' => $row->created_at ?? now(),
+                                'updated_at' => $row->updated_at ?? now(),
                             ]);
                             $svc->logSuccess($table, $row->id, $newId, "ref_no={$refNo}");
                         }
@@ -105,12 +107,12 @@ class MigrateLoansCommand extends BaseMigrationCommand
         }
 
         $result = new MigrationResult(
-            step:     'loans',
+            step: 'loans',
             migrated: $migrated,
-            skipped:  $skipped,
-            failed:   count($errors),
-            dryRun:   $dryRun,
-            errors:   $errors,
+            skipped: $skipped,
+            failed: count($errors),
+            dryRun: $dryRun,
+            errors: $errors,
         );
 
         $this->printResult($result);

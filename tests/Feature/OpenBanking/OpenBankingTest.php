@@ -20,14 +20,14 @@ function openBankingAdmin(): User
 
 function makeApiClient(array $attrs = []): array
 {
-    $rawKey = $attrs['client_key'] ?? 'lndr_' . str_repeat('x', 40);
+    $rawKey = $attrs['client_key'] ?? 'lndr_'.str_repeat('x', 40);
 
     $client = ApiClient::create(array_merge([
-        'name'                  => 'Test Client',
-        'client_key'            => $rawKey,
-        'client_secret'         => Hash::make($rawKey),
-        'scopes'                => ['products_read', 'loan_apply', 'loan_status', 'payment_initiate'],
-        'is_active'             => true,
+        'name' => 'Test Client',
+        'client_key' => $rawKey,
+        'client_secret' => Hash::make($rawKey),
+        'scopes' => ['products_read', 'loan_apply', 'loan_status', 'payment_initiate'],
+        'is_active' => true,
         'rate_limit_per_minute' => 60,
     ], $attrs));
 
@@ -46,7 +46,7 @@ test('admin can create an API client', function () {
 
     $resp = $this->actingAs($admin)
         ->postJson(route('api.v1.api-clients.store'), [
-            'name'   => 'Partner Integration',
+            'name' => 'Partner Integration',
             'scopes' => ['products_read', 'loan_status'],
         ])
         ->assertStatus(201);
@@ -57,8 +57,8 @@ test('admin can create an API client', function () {
 
 test('admin can list API clients', function () {
     $admin = openBankingAdmin();
-    makeApiClient(['name' => 'Client A', 'client_key' => 'lndr_' . str_repeat('a', 40)]);
-    makeApiClient(['name' => 'Client B', 'client_key' => 'lndr_' . str_repeat('b', 40)]);
+    makeApiClient(['name' => 'Client A', 'client_key' => 'lndr_'.str_repeat('a', 40)]);
+    makeApiClient(['name' => 'Client B', 'client_key' => 'lndr_'.str_repeat('b', 40)]);
 
     $resp = $this->actingAs($admin)
         ->getJson(route('api.v1.api-clients.index'))
@@ -68,8 +68,8 @@ test('admin can list API clients', function () {
 });
 
 test('admin can rotate API key', function () {
-    $admin  = openBankingAdmin();
-    $data   = makeApiClient();
+    $admin = openBankingAdmin();
+    $data = makeApiClient();
     $client = $data['client'];
 
     $resp = $this->actingAs($admin)
@@ -82,8 +82,8 @@ test('admin can rotate API key', function () {
 });
 
 test('admin can deactivate an API client', function () {
-    $admin  = openBankingAdmin();
-    $data   = makeApiClient();
+    $admin = openBankingAdmin();
+    $data = makeApiClient();
     $client = $data['client'];
 
     $this->actingAs($admin)
@@ -112,7 +112,7 @@ test('open API rejects invalid API key', function () {
 });
 
 test('open API rejects inactive client', function () {
-    $data = makeApiClient(['is_active' => false, 'client_key' => 'lndr_' . str_repeat('i', 40)]);
+    $data = makeApiClient(['is_active' => false, 'client_key' => 'lndr_'.str_repeat('i', 40)]);
 
     $this->withHeaders(apiHeaders($data['key']))
         ->getJson('/api/v1/open/v1/products')
@@ -135,20 +135,20 @@ test('can submit a loan application via open API', function () {
     $data = makeApiClient();
     $type = LoanType::factory()->create(['is_active' => true]);
     $plan = LoanPlan::factory()->create([
-        'loan_type_id'   => $type->id,
-        'is_active'      => true,
-        'interest_rate'  => 24,
-        'interest_type'  => 'flat',
+        'loan_type_id' => $type->id,
+        'is_active' => true,
+        'interest_rate' => 24,
+        'interest_type' => 'flat',
         'interest_period' => 'monthly',
     ]);
 
     $resp = $this->withHeaders(apiHeaders($data['key']))
         ->postJson('/api/v1/open/v1/loan/apply', [
-            'first_name'   => 'John',
-            'phone'        => '+260977000001',
+            'first_name' => 'John',
+            'phone' => '+260977000001',
             'loan_plan_id' => $plan->id,
-            'amount'       => 5000,
-            'tenure'       => 6,
+            'amount' => 5000,
+            'tenure' => 6,
         ])
         ->assertStatus(201);
 
@@ -160,10 +160,10 @@ test('loan application creates or reuses borrower by phone', function () {
     $data = makeApiClient();
     $type = LoanType::factory()->create(['is_active' => true]);
     $plan = LoanPlan::factory()->create([
-        'loan_type_id'   => $type->id,
-        'is_active'      => true,
-        'interest_rate'  => 24,
-        'interest_type'  => 'flat',
+        'loan_type_id' => $type->id,
+        'is_active' => true,
+        'interest_rate' => 24,
+        'interest_type' => 'flat',
         'interest_period' => 'monthly',
     ]);
 
@@ -190,11 +190,11 @@ test('can check loan status by reference', function () {
     $borrower = Borrower::factory()->create();
 
     $loan = Loan::factory()->create([
-        'borrower_id'      => $borrower->id,
-        'loan_type_id'     => $type->id,
-        'loan_plan_id'     => $plan->id,
-        'loan_number'      => 'LN-EXT-TESTREF',
-        'status'           => LoanStatus::Active,
+        'borrower_id' => $borrower->id,
+        'loan_type_id' => $type->id,
+        'loan_plan_id' => $plan->id,
+        'loan_number' => 'LN-EXT-TESTREF',
+        'status' => LoanStatus::Active,
         'principal_amount' => 10000,
         'outstanding_balance' => 8000,
     ]);
@@ -216,25 +216,25 @@ test('loan status returns 404 for unknown reference', function () {
 });
 
 test('can initiate a payment via open API', function () {
-    $data     = makeApiClient();
-    $type     = LoanType::factory()->create(['is_active' => true]);
-    $plan     = LoanPlan::factory()->create(['loan_type_id' => $type->id, 'is_active' => true]);
+    $data = makeApiClient();
+    $type = LoanType::factory()->create(['is_active' => true]);
+    $plan = LoanPlan::factory()->create(['loan_type_id' => $type->id, 'is_active' => true]);
     $borrower = Borrower::factory()->create();
 
     Loan::factory()->create([
-        'borrower_id'         => $borrower->id,
-        'loan_type_id'        => $type->id,
-        'loan_plan_id'        => $plan->id,
-        'loan_number'         => 'LN-EXT-PAYTEST',
-        'status'              => LoanStatus::Active,
+        'borrower_id' => $borrower->id,
+        'loan_type_id' => $type->id,
+        'loan_plan_id' => $plan->id,
+        'loan_number' => 'LN-EXT-PAYTEST',
+        'status' => LoanStatus::Active,
         'outstanding_balance' => 5000,
     ]);
 
     $resp = $this->withHeaders(apiHeaders($data['key']))
         ->postJson('/api/v1/open/v1/payment/initiate', [
             'loan_reference' => 'LN-EXT-PAYTEST',
-            'amount'         => 500,
-            'phone'          => '+260977111222',
+            'amount' => 500,
+            'phone' => '+260977111222',
         ])
         ->assertStatus(201);
 
@@ -253,7 +253,7 @@ test('API access is logged after each request', function () {
 });
 
 test('rate limit returns 429 when exceeded', function () {
-    $data = makeApiClient(['rate_limit_per_minute' => 1, 'client_key' => 'lndr_' . str_repeat('r', 40)]);
+    $data = makeApiClient(['rate_limit_per_minute' => 1, 'client_key' => 'lndr_'.str_repeat('r', 40)]);
 
     // First request — ok
     $this->withHeaders(apiHeaders($data['key']))->getJson('/api/v1/open/v1/products')->assertOk();

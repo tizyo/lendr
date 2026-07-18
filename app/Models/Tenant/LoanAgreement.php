@@ -28,8 +28,8 @@ class LoanAgreement extends Model
     {
         return [
             'otp_expires_at' => 'datetime',
-            'signed_at'      => 'datetime',
-            'otp_attempts'   => 'integer',
+            'signed_at' => 'datetime',
+            'otp_attempts' => 'integer',
         ];
     }
 

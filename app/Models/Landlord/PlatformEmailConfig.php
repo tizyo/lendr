@@ -19,9 +19,9 @@ class PlatformEmailConfig extends Model
     ];
 
     protected $casts = [
-        'port'      => 'integer',
+        'port' => 'integer',
         'is_active' => 'boolean',
-        'password'  => 'encrypted',
+        'password' => 'encrypted',
     ];
 
     protected $hidden = ['password'];
@@ -30,7 +30,10 @@ class PlatformEmailConfig extends Model
 
     public static function active(): ?self
     {
-        if (! Schema::hasTable('platform_email_configs')) return null;
+        if (! Schema::hasTable('platform_email_configs')) {
+            return null;
+        }
+
         return static::where('is_active', true)->first();
     }
 
@@ -45,12 +48,12 @@ class PlatformEmailConfig extends Model
     public function toMailerConfig(): array
     {
         return [
-            'transport'  => 'smtp',
-            'host'       => $this->host,
-            'port'       => $this->port,
+            'transport' => 'smtp',
+            'host' => $this->host,
+            'port' => $this->port,
             'encryption' => $this->encryption ?: null,
-            'username'   => $this->username,
-            'password'   => $this->password,
+            'username' => $this->username,
+            'password' => $this->password,
         ];
     }
 }

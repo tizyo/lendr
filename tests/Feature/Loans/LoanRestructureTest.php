@@ -18,20 +18,20 @@ function restructureAdmin(): User
 
 function restructureLoan(array $attrs = []): Loan
 {
-    $type     = LoanType::factory()->create();
-    $plan     = LoanPlan::factory()->create(['loan_type_id' => $type->id]);
+    $type = LoanType::factory()->create();
+    $plan = LoanPlan::factory()->create(['loan_type_id' => $type->id]);
     $borrower = Borrower::factory()->create();
-    $staff    = User::factory()->create(['role' => UserRole::LoanOfficer, 'is_active' => true]);
+    $staff = User::factory()->create(['role' => UserRole::LoanOfficer, 'is_active' => true]);
 
     return Loan::factory()->create(array_merge([
-        'borrower_id'        => $borrower->id,
-        'loan_type_id'       => $type->id,
-        'loan_plan_id'       => $plan->id,
-        'created_by'         => $staff->id,
-        'status'             => LoanStatus::Active,
+        'borrower_id' => $borrower->id,
+        'loan_type_id' => $type->id,
+        'loan_plan_id' => $plan->id,
+        'created_by' => $staff->id,
+        'status' => LoanStatus::Active,
         'outstanding_balance' => 4000.00,
-        'principal_amount'   => 5000.00,
-        'tenure'             => 6,
+        'principal_amount' => 5000.00,
+        'tenure' => 6,
     ], $attrs));
 }
 
@@ -39,15 +39,15 @@ function seedSchedule(Loan $loan, int $count = 3): void
 {
     for ($i = 1; $i <= $count; $i++) {
         LoanSchedule::create([
-            'loan_id'           => $loan->id,
+            'loan_id' => $loan->id,
             'instalment_number' => $i,
-            'due_date'          => now()->addMonths($i),
-            'principal_due'     => 666.67,
-            'interest_due'      => 200.00,
-            'fee_due'           => 0,
-            'total_due'         => 866.67,
-            'outstanding'       => 4000.00 - ($i - 1) * 666.67,
-            'is_paid'           => false,
+            'due_date' => now()->addMonths($i),
+            'principal_due' => 666.67,
+            'interest_due' => 200.00,
+            'fee_due' => 0,
+            'total_due' => 866.67,
+            'outstanding' => 4000.00 - ($i - 1) * 666.67,
+            'is_paid' => false,
         ]);
     }
 }
@@ -56,7 +56,7 @@ function seedSchedule(Loan $loan, int $count = 3): void
 
 test('can restructure an active loan', function () {
     $admin = restructureAdmin();
-    $loan  = restructureLoan();
+    $loan = restructureLoan();
     seedSchedule($loan, 3);
 
     $this->actingAs($admin)
@@ -73,7 +73,7 @@ test('can restructure an active loan', function () {
 
 test('restructure replaces unpaid schedule entries', function () {
     $admin = restructureAdmin();
-    $loan  = restructureLoan();
+    $loan = restructureLoan();
     seedSchedule($loan, 4);
 
     $before = LoanSchedule::where('loan_id', $loan->id)->count();
@@ -92,7 +92,7 @@ test('restructure replaces unpaid schedule entries', function () {
 
 test('restructure preserves paid instalments in numbering', function () {
     $admin = restructureAdmin();
-    $loan  = restructureLoan();
+    $loan = restructureLoan();
 
     // 2 paid, 3 unpaid (unpaid start at instalment 3 to avoid unique constraint)
     LoanSchedule::create(['loan_id' => $loan->id, 'instalment_number' => 1, 'due_date' => now()->subMonths(2), 'principal_due' => 833, 'interest_due' => 250, 'fee_due' => 0, 'total_due' => 1083, 'outstanding' => 5000, 'is_paid' => true]);
@@ -118,7 +118,7 @@ test('restructure preserves paid instalments in numbering', function () {
 
 test('can restructure a frozen loan', function () {
     $admin = restructureAdmin();
-    $loan  = restructureLoan(['status' => LoanStatus::Frozen]);
+    $loan = restructureLoan(['status' => LoanStatus::Frozen]);
     seedSchedule($loan);
 
     $this->actingAs($admin)
@@ -131,7 +131,7 @@ test('can restructure a frozen loan', function () {
 
 test('can restructure a defaulted loan', function () {
     $admin = restructureAdmin();
-    $loan  = restructureLoan(['status' => LoanStatus::Defaulted]);
+    $loan = restructureLoan(['status' => LoanStatus::Defaulted]);
     seedSchedule($loan);
 
     $this->actingAs($admin)
@@ -144,7 +144,7 @@ test('can restructure a defaulted loan', function () {
 
 test('restructure logs an activity record', function () {
     $admin = restructureAdmin();
-    $loan  = restructureLoan();
+    $loan = restructureLoan();
     seedSchedule($loan);
 
     $this->actingAs($admin)
@@ -155,8 +155,8 @@ test('restructure logs an activity record', function () {
         ->assertOk();
 
     $this->assertDatabaseHas('activity_log', [
-        'description'  => 'restructured',
-        'subject_id'   => $loan->id,
+        'description' => 'restructured',
+        'subject_id' => $loan->id,
     ]);
 })->group('restructure');
 
@@ -164,7 +164,7 @@ test('restructure logs an activity record', function () {
 
 test('restructure fails without tenure', function () {
     $admin = restructureAdmin();
-    $loan  = restructureLoan();
+    $loan = restructureLoan();
 
     $this->actingAs($admin)
         ->postJson(route('api.v1.loans.restructure', $loan), [
@@ -176,7 +176,7 @@ test('restructure fails without tenure', function () {
 
 test('restructure fails without reason', function () {
     $admin = restructureAdmin();
-    $loan  = restructureLoan();
+    $loan = restructureLoan();
 
     $this->actingAs($admin)
         ->postJson(route('api.v1.loans.restructure', $loan), [
@@ -188,7 +188,7 @@ test('restructure fails without reason', function () {
 
 test('cannot restructure a submitted loan', function () {
     $admin = restructureAdmin();
-    $loan  = restructureLoan(['status' => LoanStatus::Submitted]);
+    $loan = restructureLoan(['status' => LoanStatus::Submitted]);
 
     $this->actingAs($admin)
         ->postJson(route('api.v1.loans.restructure', $loan), [
@@ -201,7 +201,7 @@ test('cannot restructure a submitted loan', function () {
 
 test('cannot restructure a completed loan', function () {
     $admin = restructureAdmin();
-    $loan  = restructureLoan(['status' => LoanStatus::Completed]);
+    $loan = restructureLoan(['status' => LoanStatus::Completed]);
 
     $this->actingAs($admin)
         ->postJson(route('api.v1.loans.restructure', $loan), [

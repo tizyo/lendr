@@ -39,11 +39,11 @@ class AcceptInvitationController extends Controller
         }
 
         return Inertia::render('auth/AcceptInvitation', [
-            'tenantId'  => $tenantId,
-            'token'     => $token,
-            'name'      => $user->name,
-            'email'     => $user->email,
-            'orgName'   => $tenant->name,
+            'tenantId' => $tenantId,
+            'token' => $token,
+            'name' => $user->name,
+            'email' => $user->email,
+            'orgName' => $tenant->name,
         ]);
     }
 
@@ -71,10 +71,10 @@ class AcceptInvitationController extends Controller
                 ->firstOrFail();
 
             $user->update([
-                'password'         => $request->password,
-                'is_active'        => true,
+                'password' => $request->password,
+                'is_active' => true,
                 'invitation_token' => null,
-                'invited_at'       => null,
+                'invited_at' => null,
                 'email_verified_at' => now(),
                 'force_password_reset' => false,
             ]);

@@ -20,40 +20,41 @@ function csvFile(string $content, string $name = 'import.csv'): UploadedFile
 {
     $path = tempnam(sys_get_temp_dir(), 'csv_');
     file_put_contents($path, $content);
+
     return new UploadedFile($path, $name, 'text/csv', null, true);
 }
 
 function submittedLoan(User $admin): Loan
 {
-    $type     = LoanType::factory()->create();
-    $plan     = LoanPlan::factory()->create(['loan_type_id' => $type->id]);
+    $type = LoanType::factory()->create();
+    $plan = LoanPlan::factory()->create(['loan_type_id' => $type->id]);
     $borrower = Borrower::factory()->create();
 
     return Loan::factory()->create([
-        'borrower_id'    => $borrower->id,
-        'loan_type_id'   => $type->id,
-        'loan_plan_id'   => $plan->id,
-        'created_by'     => $admin->id,
-        'status'         => LoanStatus::Submitted,
+        'borrower_id' => $borrower->id,
+        'loan_type_id' => $type->id,
+        'loan_plan_id' => $plan->id,
+        'created_by' => $admin->id,
+        'status' => LoanStatus::Submitted,
         'principal_amount' => 3000,
-        'tenure'         => 6,
+        'tenure' => 6,
     ]);
 }
 
 function approvedLoan(User $admin): Loan
 {
-    $type     = LoanType::factory()->create();
-    $plan     = LoanPlan::factory()->create(['loan_type_id' => $type->id]);
+    $type = LoanType::factory()->create();
+    $plan = LoanPlan::factory()->create(['loan_type_id' => $type->id]);
     $borrower = Borrower::factory()->create();
 
     return Loan::factory()->create([
-        'borrower_id'    => $borrower->id,
-        'loan_type_id'   => $type->id,
-        'loan_plan_id'   => $plan->id,
-        'created_by'     => $admin->id,
-        'status'         => LoanStatus::Approved,
+        'borrower_id' => $borrower->id,
+        'loan_type_id' => $type->id,
+        'loan_plan_id' => $plan->id,
+        'created_by' => $admin->id,
+        'status' => LoanStatus::Approved,
         'principal_amount' => 3000,
-        'tenure'         => 6,
+        'tenure' => 6,
     ]);
 }
 
@@ -207,9 +208,9 @@ test('can bulk disburse approved loans', function () {
 
     $this->actingAs($admin)
         ->postJson(route('bulk.loans.disburse'), [
-            'loan_ids'            => [$loan1->id, $loan2->id],
+            'loan_ids' => [$loan1->id, $loan2->id],
             'disbursement_method' => 'bank_transfer',
-            'disbursement_date'   => now()->toDateString(),
+            'disbursement_date' => now()->toDateString(),
         ])
         ->assertOk()
         ->assertJsonPath('disbursed', 2);
@@ -225,9 +226,9 @@ test('bulk disburse skips loans not in approved status', function () {
 
     $response = $this->actingAs($admin)
         ->postJson(route('bulk.loans.disburse'), [
-            'loan_ids'            => [$loan1->id, $loan2->id],
+            'loan_ids' => [$loan1->id, $loan2->id],
             'disbursement_method' => 'cash',
-            'disbursement_date'   => now()->toDateString(),
+            'disbursement_date' => now()->toDateString(),
         ])
         ->assertOk();
 
@@ -236,7 +237,7 @@ test('bulk disburse skips loans not in approved status', function () {
 
 test('bulk disburse requires disbursement_method and date', function () {
     $admin = bulkAdmin();
-    $loan  = approvedLoan($admin);
+    $loan = approvedLoan($admin);
 
     $this->actingAs($admin)
         ->postJson(route('bulk.loans.disburse'), [
@@ -252,18 +253,18 @@ test('can process batch payments from csv', function () {
     $admin = bulkAdmin();
 
     // Use factory active() state which sets all required disbursement fields
-    $type     = LoanType::factory()->create();
-    $plan     = LoanPlan::factory()->create(['loan_type_id' => $type->id]);
+    $type = LoanType::factory()->create();
+    $plan = LoanPlan::factory()->create(['loan_type_id' => $type->id]);
     $borrower = Borrower::factory()->create();
-    $loan     = Loan::factory()->active()->create([
-        'borrower_id'  => $borrower->id,
+    $loan = Loan::factory()->active()->create([
+        'borrower_id' => $borrower->id,
         'loan_type_id' => $type->id,
         'loan_plan_id' => $plan->id,
-        'created_by'   => $admin->id,
+        'created_by' => $admin->id,
     ]);
 
-    $csv  = "loan_number,amount,payment_date,payment_method\n";
-    $csv .= "{$loan->loan_number},500," . now()->toDateString() . ",cash\n";
+    $csv = "loan_number,amount,payment_date,payment_method\n";
+    $csv .= "{$loan->loan_number},500,".now()->toDateString().",cash\n";
 
     $file = csvFile($csv, 'payments.csv');
 
@@ -278,7 +279,7 @@ test('can process batch payments from csv', function () {
 test('batch payments skips unknown loan numbers', function () {
     $admin = bulkAdmin();
 
-    $csv  = "loan_number,amount\n";
+    $csv = "loan_number,amount\n";
     $csv .= "LN-FAKE-99999,500\n";
 
     $file = csvFile($csv, 'payments.csv');
@@ -292,19 +293,19 @@ test('batch payments skips unknown loan numbers', function () {
 })->group('bulk');
 
 test('batch payments skips non-active loans', function () {
-    $admin    = bulkAdmin();
-    $type     = LoanType::factory()->create();
-    $plan     = LoanPlan::factory()->create(['loan_type_id' => $type->id]);
+    $admin = bulkAdmin();
+    $type = LoanType::factory()->create();
+    $plan = LoanPlan::factory()->create(['loan_type_id' => $type->id]);
     $borrower = Borrower::factory()->create();
-    $loan     = Loan::factory()->create([
-        'borrower_id'  => $borrower->id,
+    $loan = Loan::factory()->create([
+        'borrower_id' => $borrower->id,
         'loan_type_id' => $type->id,
         'loan_plan_id' => $plan->id,
-        'created_by'   => $admin->id,
-        'status'       => LoanStatus::Submitted,
+        'created_by' => $admin->id,
+        'status' => LoanStatus::Submitted,
     ]);
 
-    $csv  = "loan_number,amount\n";
+    $csv = "loan_number,amount\n";
     $csv .= "{$loan->loan_number},500\n";
 
     $file = csvFile($csv, 'payments.csv');
@@ -319,7 +320,7 @@ test('batch payments skips non-active loans', function () {
 test('batch payments rejects csv missing loan_number header', function () {
     $admin = bulkAdmin();
 
-    $csv  = "ref,amount\nLN-001,500\n";
+    $csv = "ref,amount\nLN-001,500\n";
     $file = csvFile($csv, 'payments.csv');
 
     $this->actingAs($admin)
@@ -330,7 +331,7 @@ test('batch payments rejects csv missing loan_number header', function () {
 // ─── Authorization ────────────────────────────────────────────────────────────
 
 test('unauthenticated user cannot access bulk import', function () {
-    $csv  = "first_name,phone\nAlice,+260971000099\n";
+    $csv = "first_name,phone\nAlice,+260971000099\n";
     $file = csvFile($csv);
 
     // Bulk routes use web/session auth — JSON requests get 401, browser requests get redirect

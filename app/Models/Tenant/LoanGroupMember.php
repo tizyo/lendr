@@ -19,9 +19,9 @@ class LoanGroupMember extends Model
     protected function casts(): array
     {
         return [
-            'is_active'   => 'boolean',
+            'is_active' => 'boolean',
             'joined_date' => 'date',
-            'left_date'   => 'date',
+            'left_date' => 'date',
         ];
     }
 

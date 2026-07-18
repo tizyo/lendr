@@ -19,23 +19,23 @@ function topupAdmin(): User
 
 function topupLoan(array $attrs = []): Loan
 {
-    $type     = LoanType::factory()->create();
-    $plan     = LoanPlan::factory()->create(['loan_type_id' => $type->id]);
+    $type = LoanType::factory()->create();
+    $plan = LoanPlan::factory()->create(['loan_type_id' => $type->id]);
     $borrower = Borrower::factory()->create();
-    $staff    = User::factory()->create(['role' => UserRole::LoanOfficer, 'is_active' => true]);
+    $staff = User::factory()->create(['role' => UserRole::LoanOfficer, 'is_active' => true]);
 
     return Loan::factory()->create(array_merge([
-        'borrower_id'         => $borrower->id,
-        'loan_type_id'        => $type->id,
-        'loan_plan_id'        => $plan->id,
-        'created_by'          => $staff->id,
-        'status'              => LoanStatus::Active,
+        'borrower_id' => $borrower->id,
+        'loan_type_id' => $type->id,
+        'loan_plan_id' => $plan->id,
+        'created_by' => $staff->id,
+        'status' => LoanStatus::Active,
         'outstanding_balance' => 4000.00,
-        'principal_amount'    => 5000.00,
-        'total_paid'          => 1000.00,
-        'total_payable'       => 6000.00,
-        'interest_amount'     => 1000.00,
-        'tenure'              => 6,
+        'principal_amount' => 5000.00,
+        'total_paid' => 1000.00,
+        'total_payable' => 6000.00,
+        'interest_amount' => 1000.00,
+        'tenure' => 6,
     ], $attrs));
 }
 
@@ -43,15 +43,15 @@ function seedTopupSchedule(Loan $loan, int $count = 4, int $paid = 1): void
 {
     for ($i = 1; $i <= $count; $i++) {
         LoanSchedule::create([
-            'loan_id'           => $loan->id,
+            'loan_id' => $loan->id,
             'instalment_number' => $i,
-            'due_date'          => now()->addMonths($i - $paid),
-            'principal_due'     => 833.33,
-            'interest_due'      => 166.67,
-            'fee_due'           => 0,
-            'total_due'         => 1000.00,
-            'outstanding'       => 4000.00,
-            'is_paid'           => $i <= $paid,
+            'due_date' => now()->addMonths($i - $paid),
+            'principal_due' => 833.33,
+            'interest_due' => 166.67,
+            'fee_due' => 0,
+            'total_due' => 1000.00,
+            'outstanding' => 4000.00,
+            'is_paid' => $i <= $paid,
         ]);
     }
 }
@@ -60,7 +60,7 @@ function seedTopupSchedule(Loan $loan, int $count = 4, int $paid = 1): void
 
 test('can submit a top-up request for an active loan', function () {
     $admin = topupAdmin();
-    $loan  = topupLoan();
+    $loan = topupLoan();
 
     $this->actingAs($admin)
         ->postJson(route('api.v1.loans.topups.store', $loan), [
@@ -73,13 +73,13 @@ test('can submit a top-up request for an active loan', function () {
 
 test('can submit a top-up request for a disbursed loan', function () {
     $admin = topupAdmin();
-    $loan  = topupLoan(['status' => LoanStatus::Disbursed]);
+    $loan = topupLoan(['status' => LoanStatus::Disbursed]);
 
     $this->actingAs($admin)
         ->postJson(route('api.v1.loans.topups.store', $loan), [
             'topup_amount' => 1500,
-            'new_tenure'   => 8,
-            'notes'        => 'Business expansion.',
+            'new_tenure' => 8,
+            'notes' => 'Business expansion.',
         ])
         ->assertCreated()
         ->assertJsonPath('data.new_tenure', 8);
@@ -87,7 +87,7 @@ test('can submit a top-up request for a disbursed loan', function () {
 
 test('cannot submit a top-up for a submitted loan', function () {
     $admin = topupAdmin();
-    $loan  = topupLoan(['status' => LoanStatus::Submitted]);
+    $loan = topupLoan(['status' => LoanStatus::Submitted]);
 
     $this->actingAs($admin)
         ->postJson(route('api.v1.loans.topups.store', $loan), [
@@ -99,13 +99,13 @@ test('cannot submit a top-up for a submitted loan', function () {
 
 test('cannot submit a duplicate pending top-up', function () {
     $admin = topupAdmin();
-    $loan  = topupLoan();
+    $loan = topupLoan();
 
     LoanTopup::create([
-        'loan_id'      => $loan->id,
+        'loan_id' => $loan->id,
         'requested_by' => $admin->id,
         'topup_amount' => 1000,
-        'status'       => 'pending',
+        'status' => 'pending',
     ]);
 
     $this->actingAs($admin)
@@ -118,7 +118,7 @@ test('cannot submit a duplicate pending top-up', function () {
 
 test('top-up store validates topup_amount is required', function () {
     $admin = topupAdmin();
-    $loan  = topupLoan();
+    $loan = topupLoan();
 
     $this->actingAs($admin)
         ->postJson(route('api.v1.loans.topups.store', $loan), [])
@@ -130,7 +130,7 @@ test('top-up store validates topup_amount is required', function () {
 
 test('can list top-ups for a loan', function () {
     $admin = topupAdmin();
-    $loan  = topupLoan();
+    $loan = topupLoan();
 
     LoanTopup::create(['loan_id' => $loan->id, 'requested_by' => $admin->id, 'topup_amount' => 1000, 'status' => 'pending']);
     LoanTopup::create(['loan_id' => $loan->id, 'requested_by' => $admin->id, 'topup_amount' => 500,  'status' => 'approved', 'approved_by' => $admin->id, 'approved_at' => now()]);
@@ -145,14 +145,14 @@ test('can list top-ups for a loan', function () {
 
 test('approving a top-up increases principal and regenerates schedule', function () {
     $admin = topupAdmin();
-    $loan  = topupLoan(['outstanding_balance' => 4000.00, 'principal_amount' => 5000.00]);
+    $loan = topupLoan(['outstanding_balance' => 4000.00, 'principal_amount' => 5000.00]);
     seedTopupSchedule($loan, 4, 1);
 
     $topup = LoanTopup::create([
-        'loan_id'      => $loan->id,
+        'loan_id' => $loan->id,
         'requested_by' => $admin->id,
         'topup_amount' => 2000,
-        'status'       => 'pending',
+        'status' => 'pending',
     ]);
 
     $unpaidBefore = LoanSchedule::where('loan_id', $loan->id)->where('is_paid', false)->count();
@@ -174,14 +174,14 @@ test('approving a top-up increases principal and regenerates schedule', function
 
 test('approving a top-up logs activity', function () {
     $admin = topupAdmin();
-    $loan  = topupLoan();
+    $loan = topupLoan();
     seedTopupSchedule($loan);
 
     $topup = LoanTopup::create([
-        'loan_id'      => $loan->id,
+        'loan_id' => $loan->id,
         'requested_by' => $admin->id,
         'topup_amount' => 1000,
-        'status'       => 'pending',
+        'status' => 'pending',
     ]);
 
     $this->actingAs($admin)
@@ -190,21 +190,21 @@ test('approving a top-up logs activity', function () {
 
     $this->assertDatabaseHas('activity_log', [
         'description' => 'topup_approved',
-        'subject_id'  => $loan->id,
+        'subject_id' => $loan->id,
     ]);
 })->group('topup');
 
 test('cannot approve an already approved top-up', function () {
     $admin = topupAdmin();
-    $loan  = topupLoan();
+    $loan = topupLoan();
 
     $topup = LoanTopup::create([
-        'loan_id'      => $loan->id,
+        'loan_id' => $loan->id,
         'requested_by' => $admin->id,
         'topup_amount' => 1000,
-        'status'       => 'approved',
-        'approved_by'  => $admin->id,
-        'approved_at'  => now(),
+        'status' => 'approved',
+        'approved_by' => $admin->id,
+        'approved_at' => now(),
     ]);
 
     $this->actingAs($admin)
@@ -217,13 +217,13 @@ test('cannot approve an already approved top-up', function () {
 
 test('can reject a pending top-up with a reason', function () {
     $admin = topupAdmin();
-    $loan  = topupLoan();
+    $loan = topupLoan();
 
     $topup = LoanTopup::create([
-        'loan_id'      => $loan->id,
+        'loan_id' => $loan->id,
         'requested_by' => $admin->id,
         'topup_amount' => 3000,
-        'status'       => 'pending',
+        'status' => 'pending',
     ]);
 
     $this->actingAs($admin)
@@ -234,21 +234,21 @@ test('can reject a pending top-up with a reason', function () {
         ->assertJsonPath('data.status', 'rejected');
 
     $this->assertDatabaseHas('loan_topups', [
-        'id'               => $topup->id,
-        'status'           => 'rejected',
+        'id' => $topup->id,
+        'status' => 'rejected',
         'rejection_reason' => 'Insufficient income to support additional debt.',
     ]);
 })->group('topup');
 
 test('reject requires a reason', function () {
     $admin = topupAdmin();
-    $loan  = topupLoan();
+    $loan = topupLoan();
 
     $topup = LoanTopup::create([
-        'loan_id'      => $loan->id,
+        'loan_id' => $loan->id,
         'requested_by' => $admin->id,
         'topup_amount' => 1000,
-        'status'       => 'pending',
+        'status' => 'pending',
     ]);
 
     $this->actingAs($admin)
@@ -259,13 +259,13 @@ test('reject requires a reason', function () {
 
 test('reject logs activity', function () {
     $admin = topupAdmin();
-    $loan  = topupLoan();
+    $loan = topupLoan();
 
     $topup = LoanTopup::create([
-        'loan_id'      => $loan->id,
+        'loan_id' => $loan->id,
         'requested_by' => $admin->id,
         'topup_amount' => 1500,
-        'status'       => 'pending',
+        'status' => 'pending',
     ]);
 
     $this->actingAs($admin)
@@ -276,7 +276,7 @@ test('reject logs activity', function () {
 
     $this->assertDatabaseHas('activity_log', [
         'description' => 'topup_rejected',
-        'subject_id'  => $loan->id,
+        'subject_id' => $loan->id,
     ]);
 })->group('topup');
 
@@ -290,15 +290,15 @@ test('unauthenticated requests are rejected', function () {
 })->group('topup');
 
 test('topup belonging to different loan returns 404', function () {
-    $admin  = topupAdmin();
-    $loan1  = topupLoan();
-    $loan2  = topupLoan();
+    $admin = topupAdmin();
+    $loan1 = topupLoan();
+    $loan2 = topupLoan();
 
     $topup = LoanTopup::create([
-        'loan_id'      => $loan2->id,
+        'loan_id' => $loan2->id,
         'requested_by' => $admin->id,
         'topup_amount' => 1000,
-        'status'       => 'pending',
+        'status' => 'pending',
     ]);
 
     $this->actingAs($admin)

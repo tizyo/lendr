@@ -69,14 +69,16 @@ class SmsService
         }
 
         try {
-            if (! Schema::hasTable('settings')) return null;
+            if (! Schema::hasTable('settings')) {
+                return null;
+            }
 
             $settings = DB::table('settings')
                 ->whereIn('key', ['sms_gateway', 'sms_api_key', 'sms_sender_name', 'sms_username'])
                 ->pluck('value', 'key');
 
             $gateway = $settings->get('sms_gateway');
-            $apiKey  = $settings->get('sms_api_key', '');
+            $apiKey = $settings->get('sms_api_key', '');
 
             if (empty($apiKey) || empty($gateway) || $gateway === 'null') {
                 return null;
@@ -101,9 +103,9 @@ class SmsService
                 $config->provider,
                 $config->api_key,
                 collect([
-                    'sms_username'    => $config->username ?? 'sandbox',
+                    'sms_username' => $config->username ?? 'sandbox',
                     'sms_sender_name' => $config->sender_id ?? 'LENDR',
-                ])
+                ]),
             );
         } catch (\Throwable) {
             return null;
@@ -114,22 +116,22 @@ class SmsService
     {
         return match ($gateway) {
             'africas_talking' => new AfrikasTalkingDriver(
-                apiKey:   $apiKey,
+                apiKey: $apiKey,
                 username: $settings->get('sms_username', 'sandbox'),
                 senderId: $settings->get('sms_sender_name', 'LENDR'),
-                sandbox:  app()->isLocal(),
+                sandbox: app()->isLocal(),
             ),
             'sms_to' => new SmsToDriver(
-                apiKey:   $apiKey,
+                apiKey: $apiKey,
                 senderId: $settings->get('sms_sender_name', 'LENDR'),
             ),
             'twilio' => new TwilioDriver(
-                sid:        $settings->get('sms_twilio_sid', config('services.twilio.sid', '')),
-                authToken:  $apiKey,
+                sid: $settings->get('sms_twilio_sid', config('services.twilio.sid', '')),
+                authToken: $apiKey,
                 fromNumber: $settings->get('sms_sender_name', config('services.twilio.from', '')),
             ),
             'clickatell' => new ClickatellDriver(
-                apiKey:   $apiKey,
+                apiKey: $apiKey,
                 senderId: $settings->get('sms_sender_name', 'LENDR'),
             ),
             default => null,

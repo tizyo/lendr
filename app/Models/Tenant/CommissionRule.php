@@ -16,10 +16,10 @@ class CommissionRule extends Model
     protected function casts(): array
     {
         return [
-            'rate'       => 'decimal:4',
+            'rate' => 'decimal:4',
             'min_amount' => 'decimal:2',
             'max_amount' => 'decimal:2',
-            'is_active'  => 'boolean',
+            'is_active' => 'boolean',
         ];
     }
 

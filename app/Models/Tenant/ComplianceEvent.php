@@ -19,7 +19,7 @@ class ComplianceEvent extends Model
     protected function casts(): array
     {
         return [
-            'due_date'     => 'date',
+            'due_date' => 'date',
             'completed_at' => 'datetime',
             'reminder_sent' => 'boolean',
         ];

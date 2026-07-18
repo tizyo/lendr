@@ -29,7 +29,7 @@ class MarketplaceController extends BaseApiController
             ->paginate(20);
 
         return $this->success([
-            'data'       => $listings->map(fn ($l) => $this->format($l)),
+            'data' => $listings->map(fn ($l) => $this->format($l)),
             'pagination' => ['total' => $listings->total(), 'current_page' => $listings->currentPage(), 'last_page' => $listings->lastPage()],
         ]);
     }
@@ -43,26 +43,26 @@ class MarketplaceController extends BaseApiController
         $borrower = $request->user();
 
         $data = $request->validate([
-            'title'                 => ['required', 'string', 'max:200'],
-            'description'           => ['nullable', 'string', 'max:2000'],
-            'amount_requested'      => ['required', 'numeric', 'min:1'],
+            'title' => ['required', 'string', 'max:200'],
+            'description' => ['nullable', 'string', 'max:2000'],
+            'amount_requested' => ['required', 'numeric', 'min:1'],
             'interest_rate_offered' => ['nullable', 'numeric', 'min:0', 'max:100'],
-            'purpose'               => ['nullable', 'string', 'max:100'],
-            'tenure_months'         => ['nullable', 'integer', 'min:1', 'max:360'],
-            'publish'               => ['boolean'],
+            'purpose' => ['nullable', 'string', 'max:100'],
+            'tenure_months' => ['nullable', 'integer', 'min:1', 'max:360'],
+            'publish' => ['boolean'],
         ]);
 
         $listing = MarketplaceListing::create([
-            'borrower_id'           => $borrower->id,
-            'title'                 => $data['title'],
-            'description'           => $data['description'] ?? null,
-            'amount_requested'      => $data['amount_requested'],
+            'borrower_id' => $borrower->id,
+            'title' => $data['title'],
+            'description' => $data['description'] ?? null,
+            'amount_requested' => $data['amount_requested'],
             'interest_rate_offered' => $data['interest_rate_offered'] ?? null,
-            'purpose'               => $data['purpose'] ?? null,
-            'tenure_months'         => $data['tenure_months'] ?? null,
-            'status'                => ($data['publish'] ?? false) ? 'active' : 'draft',
-            'published_at'          => ($data['publish'] ?? false) ? now() : null,
-            'expires_at'            => ($data['publish'] ?? false) ? now()->addDays(30) : null,
+            'purpose' => $data['purpose'] ?? null,
+            'tenure_months' => $data['tenure_months'] ?? null,
+            'status' => ($data['publish'] ?? false) ? 'active' : 'draft',
+            'published_at' => ($data['publish'] ?? false) ? now() : null,
+            'expires_at' => ($data['publish'] ?? false) ? now()->addDays(30) : null,
         ]);
 
         return $this->success($this->format($listing), 'Listing created.', 201);
@@ -122,16 +122,16 @@ class MarketplaceController extends BaseApiController
     private function format(MarketplaceListing $listing): array
     {
         return [
-            'id'                    => $listing->id,
-            'title'                 => $listing->title,
-            'amount_requested'      => (float) $listing->amount_requested,
+            'id' => $listing->id,
+            'title' => $listing->title,
+            'amount_requested' => (float) $listing->amount_requested,
             'interest_rate_offered' => $listing->interest_rate_offered ? (float) $listing->interest_rate_offered : null,
-            'purpose'               => $listing->purpose,
-            'tenure_months'         => $listing->tenure_months,
-            'status'                => $listing->status,
-            'interests_count'       => $listing->interests_count ?? 0,
-            'published_at'          => $listing->published_at?->toDateTimeString(),
-            'expires_at'            => $listing->expires_at?->toDateTimeString(),
+            'purpose' => $listing->purpose,
+            'tenure_months' => $listing->tenure_months,
+            'status' => $listing->status,
+            'interests_count' => $listing->interests_count ?? 0,
+            'published_at' => $listing->published_at?->toDateTimeString(),
+            'expires_at' => $listing->expires_at?->toDateTimeString(),
         ];
     }
 }

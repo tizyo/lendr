@@ -12,13 +12,14 @@ use Illuminate\Console\Command;
  */
 class ProcessCrmFollowupsCommand extends Command
 {
-    protected $signature   = 'lendr:crm-followups {--dry-run : Preview without sending}';
+    protected $signature = 'lendr:crm-followups {--dry-run : Preview without sending}';
+
     protected $description = 'Notify staff of leads due for follow-up today';
 
     public function handle(): int
     {
         $dryRun = $this->option('dry-run');
-        $today  = now()->toDateString();
+        $today = now()->toDateString();
 
         $leads = Lead::query()
             ->with('assignedTo:id,name,email')
@@ -29,7 +30,7 @@ class ProcessCrmFollowupsCommand extends Command
 
         $this->info($dryRun
             ? "[DRY RUN] Found {$leads->count()} leads due for follow-up."
-            : "Processing {$leads->count()} leads due for follow-up."
+            : "Processing {$leads->count()} leads due for follow-up.",
         );
 
         $notified = 0;
@@ -44,6 +45,7 @@ class ProcessCrmFollowupsCommand extends Command
             if ($dryRun) {
                 $this->line("  [DRY RUN] Would notify {$officer->name} for lead {$lead->lead_number} ({$lead->full_name})");
                 $notified++;
+
                 continue;
             }
 
@@ -53,7 +55,7 @@ class ProcessCrmFollowupsCommand extends Command
                     $officer->id,
                     'lead_followup',
                     "Follow-up due: {$lead->full_name} ({$lead->lead_number})",
-                    ['lead_id' => $lead->id]
+                    ['lead_id' => $lead->id],
                 );
             } catch (\Throwable) {
                 // Notification service may not be bootstrapped in all contexts
@@ -64,7 +66,7 @@ class ProcessCrmFollowupsCommand extends Command
 
         $this->info($dryRun
             ? "[DRY RUN] Would have notified {$notified} officer(s)."
-            : "Sent {$notified} follow-up reminder(s)."
+            : "Sent {$notified} follow-up reminder(s).",
         );
 
         return self::SUCCESS;

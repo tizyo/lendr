@@ -22,15 +22,15 @@ class NotificationTemplateController extends BaseApiController
         $result = [];
         foreach ($events as $event => $label) {
             $result[] = [
-                'event'     => $event,
-                'label'     => $label,
-                'sms'       => $this->formatOrNull($stored["{$event}.sms"] ?? null),
-                'email'     => $this->formatOrNull($stored["{$event}.email"] ?? null),
+                'event' => $event,
+                'label' => $label,
+                'sms' => $this->formatOrNull($stored["{$event}.sms"] ?? null),
+                'email' => $this->formatOrNull($stored["{$event}.email"] ?? null),
             ];
         }
 
         return $this->success([
-            'templates'    => $result,
+            'templates' => $result,
             'placeholders' => NotificationTemplate::placeholders(),
         ]);
     }
@@ -50,15 +50,15 @@ class NotificationTemplateController extends BaseApiController
         }
 
         $data = $request->validate([
-            'name'      => ['nullable', 'string', 'max:150'],
-            'subject'   => ['nullable', 'string', 'max:255'],
-            'body'      => ['required', 'string', 'max:4000'],
+            'name' => ['nullable', 'string', 'max:150'],
+            'subject' => ['nullable', 'string', 'max:255'],
+            'body' => ['required', 'string', 'max:4000'],
             'is_active' => ['sometimes', 'boolean'],
         ]);
 
         $template = NotificationTemplate::updateOrCreate(
             ['event' => $event, 'channel' => $channel],
-            $data
+            $data,
         );
 
         return $this->success($this->formatOrNull($template), 'Template saved.');
@@ -90,30 +90,30 @@ class NotificationTemplateController extends BaseApiController
     public function preview(Request $request, string $event, string $channel): JsonResponse
     {
         $data = $request->validate([
-            'body'    => ['required', 'string'],
+            'body' => ['required', 'string'],
             'subject' => ['nullable', 'string'],
         ]);
 
         $sampleVars = [
-            '{{borrower_name}}'  => 'John Doe',
-            '{{loan_number}}'    => 'LN-202603-00001',
-            '{{amount}}'         => '5,000.00',
-            '{{due_date}}'       => now()->addMonth()->format('d M Y'),
-            '{{outstanding}}'    => '4,500.00',
-            '{{branch_name}}'    => 'Lusaka Branch',
-            '{{company_name}}'   => config('app.name'),
-            '{{otp}}'            => '123456',
+            '{{borrower_name}}' => 'John Doe',
+            '{{loan_number}}' => 'LN-202603-00001',
+            '{{amount}}' => '5,000.00',
+            '{{due_date}}' => now()->addMonth()->format('d M Y'),
+            '{{outstanding}}' => '4,500.00',
+            '{{branch_name}}' => 'Lusaka Branch',
+            '{{company_name}}' => config('app.name'),
+            '{{otp}}' => '123456',
         ];
 
         $replace = fn (string $text) => str_replace(
             array_keys($sampleVars),
             array_values($sampleVars),
-            $text
+            $text,
         );
 
         return $this->success([
             'subject' => isset($data['subject']) ? $replace($data['subject']) : null,
-            'body'    => $replace($data['body']),
+            'body' => $replace($data['body']),
         ]);
     }
 
@@ -126,12 +126,12 @@ class NotificationTemplateController extends BaseApiController
         }
 
         return [
-            'id'        => $t->id,
-            'event'     => $t->event,
-            'channel'   => $t->channel,
-            'name'      => $t->name,
-            'subject'   => $t->subject,
-            'body'      => $t->body,
+            'id' => $t->id,
+            'event' => $t->event,
+            'channel' => $t->channel,
+            'name' => $t->name,
+            'subject' => $t->subject,
+            'body' => $t->body,
             'is_active' => $t->is_active,
             'updated_at' => $t->updated_at->format('d M Y H:i'),
         ];

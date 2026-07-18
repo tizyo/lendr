@@ -15,14 +15,14 @@ class ExchangeRateController extends Controller
     {
         $rates = ExchangeRate::query()
             ->when($request->from, fn ($q, $v) => $q->where('from_currency', strtoupper($v)))
-            ->when($request->to,   fn ($q, $v) => $q->where('to_currency', strtoupper($v)))
+            ->when($request->to, fn ($q, $v) => $q->where('to_currency', strtoupper($v)))
             ->orderByDesc('effective_date')
             ->orderBy('from_currency')
             ->paginate(25)
             ->withQueryString();
 
         return Inertia::render('exchange-rates/Index', [
-            'rates'   => $rates,
+            'rates' => $rates,
             'filters' => $request->only('from', 'to'),
         ]);
     }
@@ -30,22 +30,22 @@ class ExchangeRateController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $data = $request->validate([
-            'from_currency'  => ['required', 'string', 'size:3'],
-            'to_currency'    => ['required', 'string', 'size:3'],
-            'rate'           => ['required', 'numeric', 'min:0.000001'],
+            'from_currency' => ['required', 'string', 'size:3'],
+            'to_currency' => ['required', 'string', 'size:3'],
+            'rate' => ['required', 'numeric', 'min:0.000001'],
             'effective_date' => ['required', 'date'],
         ]);
 
         $data['from_currency'] = strtoupper($data['from_currency']);
-        $data['to_currency']   = strtoupper($data['to_currency']);
+        $data['to_currency'] = strtoupper($data['to_currency']);
 
         ExchangeRate::updateOrCreate(
             [
-                'from_currency'  => $data['from_currency'],
-                'to_currency'    => $data['to_currency'],
+                'from_currency' => $data['from_currency'],
+                'to_currency' => $data['to_currency'],
                 'effective_date' => $data['effective_date'],
             ],
-            ['rate' => $data['rate']]
+            ['rate' => $data['rate']],
         );
 
         return back()->with('success', 'Exchange rate saved.');
@@ -54,7 +54,7 @@ class ExchangeRateController extends Controller
     public function update(Request $request, ExchangeRate $exchangeRate): RedirectResponse
     {
         $data = $request->validate([
-            'rate'           => ['required', 'numeric', 'min:0.000001'],
+            'rate' => ['required', 'numeric', 'min:0.000001'],
             'effective_date' => ['required', 'date'],
         ]);
 

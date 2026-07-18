@@ -24,9 +24,10 @@ function sampleCsv(array $rows = []): string
         ['2026-03-17', 'REF003', 'Bank charges',     '25.00',   'debit'],
     ];
 
-    $lines   = $rows ?: $default;
-    $header  = "date,reference,description,amount,type\n";
-    $content = $header . implode("\n", array_map(fn ($r) => implode(',', $r), $lines));
+    $lines = $rows ?: $default;
+    $header = "date,reference,description,amount,type\n";
+    $content = $header.implode("\n", array_map(fn ($r) => implode(',', $r), $lines));
+
     return $content;
 }
 
@@ -40,7 +41,7 @@ test('can import a bank statement CSV', function () {
 
     $response = $this->actingAs($admin)
         ->postJson(route('api.v1.reconciliation.import'), [
-            'file'      => $file,
+            'file' => $file,
             'bank_name' => 'Zanaco',
         ]);
 
@@ -53,7 +54,7 @@ test('can import a bank statement CSV', function () {
 
 test('import rejects non-csv files', function () {
     $admin = reconAdmin();
-    $file  = UploadedFile::fake()->image('photo.jpg');
+    $file = UploadedFile::fake()->image('photo.jpg');
 
     $response = $this->actingAs($admin)
         ->postJson(route('api.v1.reconciliation.import'), ['file' => $file]);
@@ -64,48 +65,48 @@ test('import rejects non-csv files', function () {
 // ─── Reconciliation ───────────────────────────────────────────────────────────
 
 test('reconcile auto-matches transactions by reference', function () {
-    $admin    = reconAdmin();
+    $admin = reconAdmin();
     $borrower = Borrower::factory()->create();
-    $loan     = Loan::factory()->active()->create(['borrower_id' => $borrower->id]);
+    $loan = Loan::factory()->active()->create(['borrower_id' => $borrower->id]);
 
     // Create a payment with matching reference
     $payment = Payment::factory()->create([
-        'loan_id'   => $loan->id,
+        'loan_id' => $loan->id,
         'reference' => 'REF001',
-        'amount'    => 1000.00,
+        'amount' => 1000.00,
         'payment_date' => '2026-03-15',
     ]);
 
-    $service   = app(ReconciliationService::class);
+    $service = app(ReconciliationService::class);
     $statement = $service->importCsv(sampleCsv(), 'test.csv', $admin->id);
-    $result    = $service->reconcile($statement);
+    $result = $service->reconcile($statement);
 
     expect($result['matched'])->toBe(1); // REF001 matched
     expect(BankTransaction::where('match_status', 'matched')->count())->toBe(1);
 });
 
 test('reconcile auto-matches transactions by date and amount', function () {
-    $admin    = reconAdmin();
+    $admin = reconAdmin();
     $borrower = Borrower::factory()->create();
-    $loan     = Loan::factory()->active()->create(['borrower_id' => $borrower->id]);
+    $loan = Loan::factory()->active()->create(['borrower_id' => $borrower->id]);
 
     Payment::factory()->create([
-        'loan_id'   => $loan->id,
+        'loan_id' => $loan->id,
         'reference' => 'DIFFERENT_REF',
-        'amount'    => 500.00,
+        'amount' => 500.00,
         'payment_date' => '2026-03-16',
     ]);
 
-    $service   = app(ReconciliationService::class);
+    $service = app(ReconciliationService::class);
     $statement = $service->importCsv(sampleCsv(), 'test.csv', $admin->id);
-    $result    = $service->reconcile($statement);
+    $result = $service->reconcile($statement);
 
     // REF002: 500.00 on 2026-03-16 matches the payment
     expect($result['matched'])->toBeGreaterThanOrEqual(1);
 });
 
 test('can list statements via API', function () {
-    $admin   = reconAdmin();
+    $admin = reconAdmin();
     $service = app(ReconciliationService::class);
     $service->importCsv(sampleCsv(), 'test.csv', $admin->id);
 
@@ -117,8 +118,8 @@ test('can list statements via API', function () {
 });
 
 test('can trigger reconcile via API', function () {
-    $admin     = reconAdmin();
-    $service   = app(ReconciliationService::class);
+    $admin = reconAdmin();
+    $service = app(ReconciliationService::class);
     $statement = $service->importCsv(sampleCsv(), 'test.csv', $admin->id);
 
     $response = $this->actingAs($admin)
@@ -129,8 +130,8 @@ test('can trigger reconcile via API', function () {
 });
 
 test('can view unmatched transaction queue', function () {
-    $admin     = reconAdmin();
-    $service   = app(ReconciliationService::class);
+    $admin = reconAdmin();
+    $service = app(ReconciliationService::class);
     $statement = $service->importCsv(sampleCsv(), 'test.csv', $admin->id);
 
     $response = $this->actingAs($admin)
@@ -144,19 +145,19 @@ test('can view unmatched transaction queue', function () {
 // ─── Manual Match / Ignore ────────────────────────────────────────────────────
 
 test('can manually match a bank transaction to a payment', function () {
-    $admin    = reconAdmin();
+    $admin = reconAdmin();
     $borrower = Borrower::factory()->create();
-    $loan     = Loan::factory()->active()->create(['borrower_id' => $borrower->id]);
-    $payment  = Payment::factory()->create(['loan_id' => $loan->id, 'amount' => 1000]);
+    $loan = Loan::factory()->active()->create(['borrower_id' => $borrower->id]);
+    $payment = Payment::factory()->create(['loan_id' => $loan->id, 'amount' => 1000]);
 
-    $service   = app(ReconciliationService::class);
+    $service = app(ReconciliationService::class);
     $statement = $service->importCsv(sampleCsv(), 'test.csv', $admin->id);
-    $tx        = $statement->transactions()->where('reference', 'REF001')->first();
+    $tx = $statement->transactions()->where('reference', 'REF001')->first();
 
     $response = $this->actingAs($admin)
         ->postJson(route('api.v1.reconciliation.match', $tx), [
             'payment_id' => $payment->id,
-            'notes'      => 'Manually verified',
+            'notes' => 'Manually verified',
         ]);
 
     $response->assertOk();
@@ -165,10 +166,10 @@ test('can manually match a bank transaction to a payment', function () {
 });
 
 test('can ignore a bank transaction', function () {
-    $admin     = reconAdmin();
-    $service   = app(ReconciliationService::class);
+    $admin = reconAdmin();
+    $service = app(ReconciliationService::class);
     $statement = $service->importCsv(sampleCsv(), 'test.csv', $admin->id);
-    $tx        = $statement->transactions()->first();
+    $tx = $statement->transactions()->first();
 
     $response = $this->actingAs($admin)
         ->postJson(route('api.v1.reconciliation.ignore', $tx), [
@@ -180,8 +181,8 @@ test('can ignore a bank transaction', function () {
 });
 
 test('reconciliation report shows match rate', function () {
-    $admin     = reconAdmin();
-    $service   = app(ReconciliationService::class);
+    $admin = reconAdmin();
+    $service = app(ReconciliationService::class);
     $statement = $service->importCsv(sampleCsv(), 'test.csv', $admin->id);
 
     $report = $service->report($statement);

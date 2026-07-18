@@ -59,10 +59,10 @@ test('a deposit can be created as pending', function () {
     $response = $this->actingAs($user)
         ->withHeaders(['Accept' => 'application/json'])
         ->postJson(route('api.v1.funds.deposits.store'), [
-            'amount'         => 50000,
-            'source'         => 'ABC Investors Ltd',
+            'amount' => 50000,
+            'source' => 'ABC Investors Ltd',
             'payment_method' => 'bank_transfer',
-            'deposit_date'   => now()->toDateString(),
+            'deposit_date' => now()->toDateString(),
         ]);
 
     $response->assertStatus(201)
@@ -77,10 +77,10 @@ test('deposit reference follows DEP-YYYYMM-XXXXX format', function () {
     $response = $this->actingAs($user)
         ->withHeaders(['Accept' => 'application/json'])
         ->postJson(route('api.v1.funds.deposits.store'), [
-            'amount'         => 10000,
-            'source'         => 'Test Source',
+            'amount' => 10000,
+            'source' => 'Test Source',
             'payment_method' => 'cash',
-            'deposit_date'   => now()->toDateString(),
+            'deposit_date' => now()->toDateString(),
         ]);
 
     expect($response->json('data.reference'))->toMatch('/^DEP-\d{6}-\d{5}$/');
@@ -89,13 +89,13 @@ test('deposit reference follows DEP-YYYYMM-XXXXX format', function () {
 test('a pending deposit can be updated', function () {
     $user = fundUser();
     $deposit = FundDeposit::create([
-        'reference'      => 'DEP-'.now()->format('Ym').'-00001',
-        'amount'         => 5000,
-        'source'         => 'Old Source',
+        'reference' => 'DEP-'.now()->format('Ym').'-00001',
+        'amount' => 5000,
+        'source' => 'Old Source',
         'payment_method' => 'cash',
-        'deposit_date'   => now()->toDateString(),
-        'deposited_by'   => $user->id,
-        'status'         => 'pending',
+        'deposit_date' => now()->toDateString(),
+        'deposited_by' => $user->id,
+        'status' => 'pending',
     ]);
 
     $this->actingAs($user)
@@ -111,13 +111,13 @@ test('a pending deposit can be updated', function () {
 test('an approved deposit cannot be edited', function () {
     $user = fundUser();
     $deposit = FundDeposit::create([
-        'reference'      => 'DEP-'.now()->format('Ym').'-00002',
-        'amount'         => 5000,
-        'source'         => 'Some Source',
+        'reference' => 'DEP-'.now()->format('Ym').'-00002',
+        'amount' => 5000,
+        'source' => 'Some Source',
         'payment_method' => 'cash',
-        'deposit_date'   => now()->toDateString(),
-        'deposited_by'   => $user->id,
-        'status'         => 'approved',
+        'deposit_date' => now()->toDateString(),
+        'deposited_by' => $user->id,
+        'status' => 'approved',
     ]);
 
     $this->actingAs($user)
@@ -132,13 +132,13 @@ test('approving a deposit credits the fund balance', function () {
     $user = fundUser(['funds.approve']);
 
     $deposit = FundDeposit::create([
-        'reference'      => 'DEP-'.now()->format('Ym').'-00003',
-        'amount'         => 25000,
-        'source'         => 'Capital Partner',
+        'reference' => 'DEP-'.now()->format('Ym').'-00003',
+        'amount' => 25000,
+        'source' => 'Capital Partner',
         'payment_method' => 'bank_transfer',
-        'deposit_date'   => now()->toDateString(),
-        'deposited_by'   => $user->id,
-        'status'         => 'pending',
+        'deposit_date' => now()->toDateString(),
+        'deposited_by' => $user->id,
+        'status' => 'pending',
     ]);
 
     $balanceBefore = (float) FundBalance::current()->available_balance;
@@ -157,13 +157,13 @@ test('approving a deposit creates a fund transaction record', function () {
     $user = fundUser(['funds.approve']);
 
     $deposit = FundDeposit::create([
-        'reference'      => 'DEP-'.now()->format('Ym').'-00004',
-        'amount'         => 10000,
-        'source'         => 'Investor X',
+        'reference' => 'DEP-'.now()->format('Ym').'-00004',
+        'amount' => 10000,
+        'source' => 'Investor X',
         'payment_method' => 'bank_transfer',
-        'deposit_date'   => now()->toDateString(),
-        'deposited_by'   => $user->id,
-        'status'         => 'pending',
+        'deposit_date' => now()->toDateString(),
+        'deposited_by' => $user->id,
+        'status' => 'pending',
     ]);
 
     $this->actingAs($user)
@@ -171,10 +171,10 @@ test('approving a deposit creates a fund transaction record', function () {
         ->postJson(route('api.v1.funds.deposits.approve', $deposit));
 
     $this->assertDatabaseHas('fund_transactions', [
-        'type'        => 'deposit',
-        'amount'      => 10000,
+        'type' => 'deposit',
+        'amount' => 10000,
         'source_type' => 'App\\Models\\Tenant\\FundDeposit',
-        'source_id'   => $deposit->id,
+        'source_id' => $deposit->id,
     ]);
 });
 
@@ -182,13 +182,13 @@ test('approving requires funds.approve permission', function () {
     $user = fundUser(); // no permission
 
     $deposit = FundDeposit::create([
-        'reference'      => 'DEP-'.now()->format('Ym').'-00005',
-        'amount'         => 1000,
-        'source'         => 'Someone',
+        'reference' => 'DEP-'.now()->format('Ym').'-00005',
+        'amount' => 1000,
+        'source' => 'Someone',
         'payment_method' => 'cash',
-        'deposit_date'   => now()->toDateString(),
-        'deposited_by'   => $user->id,
-        'status'         => 'pending',
+        'deposit_date' => now()->toDateString(),
+        'deposited_by' => $user->id,
+        'status' => 'pending',
     ]);
 
     $this->actingAs($user)
@@ -201,13 +201,13 @@ test('a deposit can be rejected with a reason', function () {
     $user = fundUser(['funds.approve']);
 
     $deposit = FundDeposit::create([
-        'reference'      => 'DEP-'.now()->format('Ym').'-00006',
-        'amount'         => 5000,
-        'source'         => 'Dubious Source',
+        'reference' => 'DEP-'.now()->format('Ym').'-00006',
+        'amount' => 5000,
+        'source' => 'Dubious Source',
         'payment_method' => 'cash',
-        'deposit_date'   => now()->toDateString(),
-        'deposited_by'   => $user->id,
-        'status'         => 'pending',
+        'deposit_date' => now()->toDateString(),
+        'deposited_by' => $user->id,
+        'status' => 'pending',
     ]);
 
     $this->actingAs($user)
@@ -225,26 +225,26 @@ test('a deposit can be rejected with a reason', function () {
 // ─── Fund Integration ─────────────────────────────────────────────────────────
 
 test('disbursing a loan debits the fund balance', function () {
-    $user    = fundUser(['loans.disburse', 'funds.approve']);
-    $type    = LoanType::factory()->create();
-    $plan    = LoanPlan::factory()->create(['loan_type_id' => $type->id]);
-    $loan    = Loan::factory()->approved()->create([
-        'loan_plan_id'    => $plan->id,
-        'loan_type_id'    => $type->id,
+    $user = fundUser(['loans.disburse', 'funds.approve']);
+    $type = LoanType::factory()->create();
+    $plan = LoanPlan::factory()->create(['loan_type_id' => $type->id]);
+    $loan = Loan::factory()->approved()->create([
+        'loan_plan_id' => $plan->id,
+        'loan_type_id' => $type->id,
         'principal_amount' => 5000,
-        'interest_amount'  => 1500,
-        'tenure'           => 6,
+        'interest_amount' => 1500,
+        'tenure' => 6,
     ]);
 
     // First fund the pool
     $deposit = FundDeposit::create([
-        'reference'      => 'DEP-'.now()->format('Ym').'-00010',
-        'amount'         => 20000,
-        'source'         => 'Capital Pool',
+        'reference' => 'DEP-'.now()->format('Ym').'-00010',
+        'amount' => 20000,
+        'source' => 'Capital Pool',
         'payment_method' => 'bank_transfer',
-        'deposit_date'   => now()->toDateString(),
-        'deposited_by'   => $user->id,
-        'status'         => 'pending',
+        'deposit_date' => now()->toDateString(),
+        'deposited_by' => $user->id,
+        'status' => 'pending',
     ]);
 
     $this->actingAs($user)
@@ -257,7 +257,7 @@ test('disbursing a loan debits the fund balance', function () {
         ->withHeaders(['Accept' => 'application/json'])
         ->postJson(route('api.v1.loans.disburse', $loan), [
             'disbursement_method' => 'cash',
-            'disbursement_date'   => now()->toDateString(),
+            'disbursement_date' => now()->toDateString(),
         ]);
 
     $balanceAfter = (float) FundBalance::current()->available_balance;
@@ -269,12 +269,12 @@ test('recording a payment credits the fund balance', function () {
     $type = LoanType::factory()->create();
     $plan = LoanPlan::factory()->create(['loan_type_id' => $type->id]);
     $loan = Loan::factory()->active()->create([
-        'loan_plan_id'        => $plan->id,
-        'loan_type_id'        => $type->id,
-        'principal_amount'    => 5000,
-        'interest_amount'     => 0,
+        'loan_plan_id' => $plan->id,
+        'loan_type_id' => $type->id,
+        'principal_amount' => 5000,
+        'interest_amount' => 0,
         'outstanding_balance' => 5000,
-        'penalty_balance'     => 0,
+        'penalty_balance' => 0,
     ]);
 
     $balanceBefore = (float) FundBalance::current()->available_balance;
@@ -282,10 +282,10 @@ test('recording a payment credits the fund balance', function () {
     $this->actingAs($user)
         ->withHeaders(['Accept' => 'application/json'])
         ->postJson(route('api.v1.payments.store'), [
-            'loan_id'        => $loan->id,
-            'amount'         => 1000,
+            'loan_id' => $loan->id,
+            'amount' => 1000,
             'payment_method' => 'cash',
-            'payment_date'   => now()->toDateString(),
+            'payment_date' => now()->toDateString(),
         ]);
 
     $balanceAfter = (float) FundBalance::current()->available_balance;
@@ -300,13 +300,13 @@ test('transaction ledger is paginated and filterable by type', function () {
     // Approve two deposits to generate transactions
     foreach (['00020', '00021'] as $seq) {
         $dep = FundDeposit::create([
-            'reference'      => 'DEP-'.now()->format('Ym')."-{$seq}",
-            'amount'         => 1000,
-            'source'         => 'Test',
+            'reference' => 'DEP-'.now()->format('Ym')."-{$seq}",
+            'amount' => 1000,
+            'source' => 'Test',
             'payment_method' => 'cash',
-            'deposit_date'   => now()->toDateString(),
-            'deposited_by'   => $user->id,
-            'status'         => 'pending',
+            'deposit_date' => now()->toDateString(),
+            'deposited_by' => $user->id,
+            'status' => 'pending',
         ]);
 
         $this->actingAs($user)

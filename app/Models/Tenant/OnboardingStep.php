@@ -15,9 +15,9 @@ class OnboardingStep extends Model
     protected function casts(): array
     {
         return [
-            'is_required'  => 'boolean',
+            'is_required' => 'boolean',
             'completed_at' => 'datetime',
-            'metadata'     => 'array',
+            'metadata' => 'array',
         ];
     }
 

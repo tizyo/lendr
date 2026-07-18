@@ -25,7 +25,7 @@ class DashboardController extends BaseApiController
         $cacheKey = "dashboard_kpis_{$tenantId}";
 
         $payload = Cache::remember($cacheKey, 300, function () {
-            $activeLoans  = Loan::active()->get();
+            $activeLoans = Loan::active()->get();
             $overdueLoans = Loan::overdue()->get();
 
             return $this->buildKpiPayload($activeLoans, $overdueLoans);
@@ -43,49 +43,49 @@ class DashboardController extends BaseApiController
             : 0;
 
         $monthStart = now()->startOfMonth()->toDateString();
-        $monthEnd   = now()->endOfMonth()->toDateString();
+        $monthEnd = now()->endOfMonth()->toDateString();
 
-        $disbursedMonth  = (float) Loan::whereBetween('disbursement_date', [$monthStart, $monthEnd])->sum('principal_amount');
-        $collectedMonth  = (float) Payment::whereBetween('payment_date', [$monthStart, $monthEnd])->sum('amount');
-        $expensesMonth   = (float) Expense::where('status', 'approved')
+        $disbursedMonth = (float) Loan::whereBetween('disbursement_date', [$monthStart, $monthEnd])->sum('principal_amount');
+        $collectedMonth = (float) Payment::whereBetween('payment_date', [$monthStart, $monthEnd])->sum('amount');
+        $expensesMonth = (float) Expense::where('status', 'approved')
             ->whereBetween('expense_date', [$monthStart, $monthEnd])
             ->sum('amount');
 
         $fund = FundBalance::current();
 
-        $totalCapital  = (float) $fund->total_deposits + (float) $fund->opening_balance;
-        $utilization   = $totalCapital > 0
+        $totalCapital = (float) $fund->total_deposits + (float) $fund->opening_balance;
+        $utilization = $totalCapital > 0
             ? round(((float) $fund->total_disbursed / $totalCapital) * 100, 2)
             : 0;
 
         return [
-            'active_loans'      => $activeLoans->count(),
-            'overdue_loans'     => $overdueLoans->count(),
-            'total_borrowers'   => Borrower::where('is_active', true)->count(),
+            'active_loans' => $activeLoans->count(),
+            'overdue_loans' => $overdueLoans->count(),
+            'total_borrowers' => Borrower::where('is_active', true)->count(),
             'total_outstanding' => $totalOutstanding,
-            'disbursed_month'   => $disbursedMonth,
-            'collected_month'   => $collectedMonth,
-            'expenses_month'    => $expensesMonth,
-            'par_30'            => $par,
-            'currency'          => $fund->currency ?? 'ZMW',
+            'disbursed_month' => $disbursedMonth,
+            'collected_month' => $collectedMonth,
+            'expenses_month' => $expensesMonth,
+            'par_30' => $par,
+            'currency' => $fund->currency ?? 'ZMW',
             // Kept at top-level for backward compat
             'available_balance' => (float) $fund->available_balance,
             // Full fund breakdown
             'fund' => [
                 'available_balance' => (float) $fund->available_balance,
-                'total_deposits'    => (float) $fund->total_deposits,
-                'opening_balance'   => (float) $fund->opening_balance,
-                'total_disbursed'   => (float) $fund->total_disbursed,
-                'total_repaid'      => (float) $fund->total_repaid,
-                'total_penalties'   => (float) $fund->total_penalties,
-                'total_expenses'    => (float) $fund->total_expenses,
-                'net_position'      => round(
+                'total_deposits' => (float) $fund->total_deposits,
+                'opening_balance' => (float) $fund->opening_balance,
+                'total_disbursed' => (float) $fund->total_disbursed,
+                'total_repaid' => (float) $fund->total_repaid,
+                'total_penalties' => (float) $fund->total_penalties,
+                'total_expenses' => (float) $fund->total_expenses,
+                'net_position' => round(
                     (float) $fund->available_balance
                     - (float) $fund->total_disbursed
                     + (float) $fund->total_repaid,
-                    2
+                    2,
                 ),
-                'utilization_rate'  => $utilization,
+                'utilization_rate' => $utilization,
                 'last_reconciled_at' => $fund->last_reconciled_at?->toDateTimeString(),
             ],
         ];
@@ -101,10 +101,10 @@ class DashboardController extends BaseApiController
 
         $data = match ($type) {
             'disbursements' => $this->disbursementsChart($months),
-            'repayments'    => $this->repaymentsChart($months),
-            'expenses'      => $this->expensesChart($months),
-            'par'           => $this->parChart($months),
-            default         => null,
+            'repayments' => $this->repaymentsChart($months),
+            'expenses' => $this->expensesChart($months),
+            'par' => $this->parChart($months),
+            default => null,
         };
 
         if ($data === null) {
@@ -176,7 +176,7 @@ class DashboardController extends BaseApiController
             ->groupBy(fn ($l) => Carbon::parse($l->disbursement_date)->format('Y-m'));
 
         return $this->fillMonths($months, $rows, fn ($group) => [
-            'total'   => $group->count(),
+            'total' => $group->count(),
             'overdue' => $group->filter(fn ($l) => $l->status === LoanStatus::Active)->count(),
         ]);
     }
@@ -190,13 +190,13 @@ class DashboardController extends BaseApiController
     {
         $series = [];
         for ($i = $months - 1; $i >= 0; $i--) {
-            $key   = now()->subMonths($i)->format('Y-m');
+            $key = now()->subMonths($i)->format('Y-m');
             $label = now()->subMonths($i)->format('M Y');
             $group = $grouped->get($key);
 
             $series[] = array_merge(
                 ['month' => $key, 'label' => $label],
-                $group ? $reducer($group) : ['total' => 0, 'count' => 0]
+                $group ? $reducer($group) : ['total' => 0, 'count' => 0],
             );
         }
 

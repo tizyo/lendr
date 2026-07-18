@@ -24,12 +24,12 @@ class MigrateExpensesCommand extends BaseMigrationCommand
 
     public function handle(): int
     {
-        $svc      = $this->makeService();
-        $dryRun   = $this->isDryRun();
-        $batch    = $this->batchSize();
-        $errors   = [];
+        $svc = $this->makeService();
+        $dryRun = $this->isDryRun();
+        $batch = $this->batchSize();
+        $errors = [];
         $migrated = 0;
-        $skipped  = 0;
+        $skipped = 0;
 
         // ── Expenses ───────────────────────────────────────────────────────────
         $this->info('→ Migrating expenses…');
@@ -41,6 +41,7 @@ class MigrateExpensesCommand extends BaseMigrationCommand
                 foreach ($rows as $row) {
                     if ($svc->alreadyMigrated('expenses', $row->id)) {
                         $skipped++;
+
                         continue;
                     }
 
@@ -50,14 +51,14 @@ class MigrateExpensesCommand extends BaseMigrationCommand
                         if (! $dryRun) {
                             $newId = DB::table('expenses')->insertGetId([
                                 'expense_category_id' => $categoryNewId,
-                                'title'               => $row->title ?? $row->description ?? 'Migrated Expense',
-                                'amount'              => $row->amount,
-                                'expense_date'        => $row->expense_date ?? $row->date ?? $row->created_at,
-                                'status'              => $row->status ?? 'approved',
-                                'description'         => $row->description ?? $row->note ?? null,
-                                'reference'           => $row->reference ?? null,
-                                'created_at'          => $row->created_at ?? now(),
-                                'updated_at'          => $row->updated_at ?? now(),
+                                'title' => $row->title ?? $row->description ?? 'Migrated Expense',
+                                'amount' => $row->amount,
+                                'expense_date' => $row->expense_date ?? $row->date ?? $row->created_at,
+                                'status' => $row->status ?? 'approved',
+                                'description' => $row->description ?? $row->note ?? null,
+                                'reference' => $row->reference ?? null,
+                                'created_at' => $row->created_at ?? now(),
+                                'updated_at' => $row->updated_at ?? now(),
                             ]);
                             $svc->logSuccess('expenses', $row->id, $newId);
                         }
@@ -69,7 +70,7 @@ class MigrateExpensesCommand extends BaseMigrationCommand
                 }
             });
         } catch (\Throwable $e) {
-            $errors[] = 'expenses table: ' . $e->getMessage();
+            $errors[] = 'expenses table: '.$e->getMessage();
         }
 
         // ── Budgets (merge budgets + expense_budgets) ──────────────────────────
@@ -77,7 +78,7 @@ class MigrateExpensesCommand extends BaseMigrationCommand
 
         $budgetTables = array_filter(
             ['budgets', 'expense_budgets'],
-            fn ($t) => $svc->legacy()->getSchemaBuilder()->hasTable($t)
+            fn ($t) => $svc->legacy()->getSchemaBuilder()->hasTable($t),
         );
 
         foreach ($budgetTables as $table) {
@@ -88,11 +89,12 @@ class MigrateExpensesCommand extends BaseMigrationCommand
                     foreach ($rows as $row) {
                         if ($svc->alreadyMigrated($table, $row->id)) {
                             $skipped++;
+
                             continue;
                         }
 
                         $categoryNewId = $svc->newId('expense_categories', (int) ($row->category_id ?? 0));
-                        $period        = $row->period ?? $row->month ?? now()->format('Y-m');
+                        $period = $row->period ?? $row->month ?? now()->format('Y-m');
 
                         // Dedup: skip if budget for same category+period already exists
                         $existing = DB::table('expense_budgets')
@@ -103,6 +105,7 @@ class MigrateExpensesCommand extends BaseMigrationCommand
                         if ($existing) {
                             $svc->logSkipped($table, $row->id, 'duplicate budget for category+period');
                             $skipped++;
+
                             continue;
                         }
 
@@ -110,10 +113,10 @@ class MigrateExpensesCommand extends BaseMigrationCommand
                             if (! $dryRun) {
                                 $newId = DB::table('expense_budgets')->insertGetId([
                                     'expense_category_id' => $categoryNewId,
-                                    'period'              => $period,
-                                    'amount'              => $row->amount ?? $row->budget_amount ?? 0,
-                                    'created_at'          => $row->created_at ?? now(),
-                                    'updated_at'          => $row->updated_at ?? now(),
+                                    'period' => $period,
+                                    'amount' => $row->amount ?? $row->budget_amount ?? 0,
+                                    'created_at' => $row->created_at ?? now(),
+                                    'updated_at' => $row->updated_at ?? now(),
                                 ]);
                                 $svc->logSuccess($table, $row->id, $newId);
                             }
@@ -139,23 +142,23 @@ class MigrateExpensesCommand extends BaseMigrationCommand
                     if (! $dryRun) {
                         DB::table('expense_settings')->updateOrInsert(
                             ['key' => $setting->setting_key ?? $setting->key],
-                            ['value' => $setting->setting_value ?? $setting->value]
+                            ['value' => $setting->setting_value ?? $setting->value],
                         );
                     }
                     $migrated++;
                 }
             }
         } catch (\Throwable $e) {
-            $errors[] = 'expense_approval_settings: ' . $e->getMessage();
+            $errors[] = 'expense_approval_settings: '.$e->getMessage();
         }
 
         $result = new MigrationResult(
-            step:     'expenses',
+            step: 'expenses',
             migrated: $migrated,
-            skipped:  $skipped,
-            failed:   count($errors),
-            dryRun:   $dryRun,
-            errors:   $errors,
+            skipped: $skipped,
+            failed: count($errors),
+            dryRun: $dryRun,
+            errors: $errors,
         );
 
         $this->printResult($result);

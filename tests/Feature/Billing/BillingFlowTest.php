@@ -22,11 +22,11 @@ function createActiveTenant(string $plan = 'starter', string $status = 'active')
 {
     // Billing tests only operate on the central DB — no tenant DB needed.
     return Tenant::create([
-        'id'       => (string) \Illuminate\Support\Str::uuid(),
-        'name'     => 'Test MFI',
-        'slug'     => 'test-mfi-' . uniqid(),
-        'plan'     => $plan,
-        'status'   => $status,
+        'id' => (string) \Illuminate\Support\Str::uuid(),
+        'name' => 'Test MFI',
+        'slug' => 'test-mfi-'.uniqid(),
+        'plan' => $plan,
+        'status' => $status,
         'currency' => 'ZMW',
         'timezone' => 'Africa/Lusaka',
     ]);
@@ -35,10 +35,10 @@ function createActiveTenant(string $plan = 'starter', string $status = 'active')
 function createGatewayConfig(bool $active = true): BillingGatewayConfig
 {
     return BillingGatewayConfig::create([
-        'gateway'        => 'flutterwave',
-        'is_active'      => $active,
-        'public_key'     => 'FLWPUBK_TEST-test',
-        'secret_key'     => 'FLWSECK_TEST-test',
+        'gateway' => 'flutterwave',
+        'is_active' => $active,
+        'public_key' => 'FLWPUBK_TEST-test',
+        'secret_key' => 'FLWSECK_TEST-test',
         'webhook_secret' => 'test-webhook-secret',
     ]);
 }
@@ -48,21 +48,21 @@ function createGatewayConfig(bool $active = true): BillingGatewayConfig
 it('resolves the active gateway', function () {
     createGatewayConfig(active: true);
 
-    $manager = new BillingGatewayManager();
+    $manager = new BillingGatewayManager;
     $gateway = $manager->active();
 
     expect($gateway->getName())->toBe('flutterwave');
 });
 
 it('throws when no active gateway is configured', function () {
-    expect(fn () => (new BillingGatewayManager())->active())
+    expect(fn () => (new BillingGatewayManager)->active())
         ->toThrow(\RuntimeException::class, 'No active billing gateway');
 });
 
 it('resolves a gateway by name for webhook processing', function () {
     createGatewayConfig(active: false);
 
-    $gateway = (new BillingGatewayManager())->driver('flutterwave');
+    $gateway = (new BillingGatewayManager)->driver('flutterwave');
     expect($gateway->getName())->toBe('flutterwave');
 });
 
@@ -72,13 +72,13 @@ it('creates a pending invoice and returns the gateway URL', function () {
     Http::fake([
         'api.flutterwave.com/v3/payments' => Http::response([
             'status' => 'success',
-            'data'   => ['link' => 'https://checkout.flutterwave.com/v3/hosted/pay/test123'],
+            'data' => ['link' => 'https://checkout.flutterwave.com/v3/hosted/pay/test123'],
         ], 200),
     ]);
 
     createGatewayConfig();
-    $tenant  = createActiveTenant();
-    $service = new BillingService(new BillingGatewayManager());
+    $tenant = createActiveTenant();
+    $service = new BillingService(new BillingGatewayManager);
 
     $url = $service->initiateCheckout($tenant, 'growth', 'monthly');
 
@@ -98,7 +98,7 @@ it('activates tenant on successful callback', function () {
     Http::fake([
         'api.flutterwave.com/v3/transactions/*/verify' => Http::response([
             'status' => 'success',
-            'data'   => ['status' => 'successful', 'amount' => 1499, 'currency' => 'ZMW', 'tx_ref' => 'LENDR-SUB-test'],
+            'data' => ['status' => 'successful', 'amount' => 1499, 'currency' => 'ZMW', 'tx_ref' => 'LENDR-SUB-test'],
         ], 200),
     ]);
 
@@ -106,18 +106,18 @@ it('activates tenant on successful callback', function () {
     $tenant = createActiveTenant(plan: 'starter', status: 'trial');
 
     $invoice = SubscriptionInvoice::create([
-        'tenant_id'      => $tenant->id,
-        'gateway'        => 'flutterwave',
+        'tenant_id' => $tenant->id,
+        'gateway' => 'flutterwave',
         'gateway_tx_ref' => 'LENDR-SUB-test',
-        'plan'           => 'growth',
-        'amount'         => 1499,
-        'currency'       => 'ZMW',
-        'billing_cycle'  => 'monthly',
-        'status'         => 'pending',
+        'plan' => 'growth',
+        'amount' => 1499,
+        'currency' => 'ZMW',
+        'billing_cycle' => 'monthly',
+        'status' => 'pending',
     ]);
 
-    $service = new BillingService(new BillingGatewayManager());
-    $result  = $service->handleCallback('txid-123', 'LENDR-SUB-test', 'successful');
+    $service = new BillingService(new BillingGatewayManager);
+    $result = $service->handleCallback('txid-123', 'LENDR-SUB-test', 'successful');
 
     expect($result['success'])->toBeTrue();
     expect($result['plan'])->toBe('growth');
@@ -143,18 +143,18 @@ it('marks invoice failed on non-success callback status', function () {
     $tenant = createActiveTenant(status: 'trial');
 
     $invoice = SubscriptionInvoice::create([
-        'tenant_id'      => $tenant->id,
-        'gateway'        => 'flutterwave',
+        'tenant_id' => $tenant->id,
+        'gateway' => 'flutterwave',
         'gateway_tx_ref' => 'LENDR-SUB-failed',
-        'plan'           => 'growth',
-        'amount'         => 1499,
-        'currency'       => 'ZMW',
-        'billing_cycle'  => 'monthly',
-        'status'         => 'pending',
+        'plan' => 'growth',
+        'amount' => 1499,
+        'currency' => 'ZMW',
+        'billing_cycle' => 'monthly',
+        'status' => 'pending',
     ]);
 
-    $service = new BillingService(new BillingGatewayManager());
-    $result  = $service->handleCallback('', 'LENDR-SUB-failed', 'cancelled');
+    $service = new BillingService(new BillingGatewayManager);
+    $result = $service->handleCallback('', 'LENDR-SUB-failed', 'cancelled');
 
     expect($result['success'])->toBeFalse();
     $invoice->refresh();
@@ -168,19 +168,19 @@ it('returns success immediately if invoice already paid (idempotent)', function 
     $tenant = createActiveTenant();
 
     SubscriptionInvoice::create([
-        'tenant_id'      => $tenant->id,
-        'gateway'        => 'flutterwave',
+        'tenant_id' => $tenant->id,
+        'gateway' => 'flutterwave',
         'gateway_tx_ref' => 'LENDR-SUB-already-paid',
-        'plan'           => 'growth',
-        'amount'         => 1499,
-        'currency'       => 'ZMW',
-        'billing_cycle'  => 'monthly',
-        'status'         => 'paid',
-        'paid_at'        => now(),
+        'plan' => 'growth',
+        'amount' => 1499,
+        'currency' => 'ZMW',
+        'billing_cycle' => 'monthly',
+        'status' => 'paid',
+        'paid_at' => now(),
     ]);
 
-    $service = new BillingService(new BillingGatewayManager());
-    $result  = $service->handleCallback('txid-999', 'LENDR-SUB-already-paid', 'successful');
+    $service = new BillingService(new BillingGatewayManager);
+    $result = $service->handleCallback('txid-999', 'LENDR-SUB-already-paid', 'successful');
 
     expect($result['success'])->toBeTrue();
     Http::assertNothingSent(); // no verify call made for already-paid invoice
@@ -193,18 +193,18 @@ it('activates tenant via webhook', function () {
     $tenant = createActiveTenant(plan: 'starter', status: 'trial');
 
     $invoice = SubscriptionInvoice::create([
-        'tenant_id'      => $tenant->id,
-        'gateway'        => 'flutterwave',
+        'tenant_id' => $tenant->id,
+        'gateway' => 'flutterwave',
         'gateway_tx_ref' => 'LENDR-SUB-webhook',
-        'plan'           => 'growth',
-        'amount'         => 1499,
-        'currency'       => 'ZMW',
-        'billing_cycle'  => 'monthly',
-        'status'         => 'pending',
+        'plan' => 'growth',
+        'amount' => 1499,
+        'currency' => 'ZMW',
+        'billing_cycle' => 'monthly',
+        'status' => 'pending',
     ]);
 
-    $service = new BillingService(new BillingGatewayManager());
-    $result  = $service->handleWebhook('LENDR-SUB-webhook', 'txid-wh', 'success', 1499);
+    $service = new BillingService(new BillingGatewayManager);
+    $result = $service->handleWebhook('LENDR-SUB-webhook', 'txid-wh', 'success', 1499);
 
     expect($result['handled'])->toBeTrue();
     expect($result['success'])->toBeTrue();
@@ -231,20 +231,20 @@ it('returns 204 and processes valid subscription webhook', function () {
     $tenant = createActiveTenant(status: 'trial');
 
     SubscriptionInvoice::create([
-        'tenant_id'      => $tenant->id,
-        'gateway'        => 'flutterwave',
+        'tenant_id' => $tenant->id,
+        'gateway' => 'flutterwave',
         'gateway_tx_ref' => 'LENDR-SUB-wh-valid',
-        'plan'           => 'growth',
-        'amount'         => 1499,
-        'currency'       => 'ZMW',
-        'billing_cycle'  => 'monthly',
-        'status'         => 'pending',
+        'plan' => 'growth',
+        'amount' => 1499,
+        'currency' => 'ZMW',
+        'billing_cycle' => 'monthly',
+        'status' => 'pending',
     ]);
 
     $response = $this->postJson('/api/v1/webhooks/subscription/flutterwave', [
         'event' => 'charge.completed',
-        'data'  => [
-            'id'     => 12345,
+        'data' => [
+            'id' => 12345,
             'status' => 'successful',
             'amount' => 1499,
             'tx_ref' => 'LENDR-SUB-wh-valid',
@@ -265,8 +265,8 @@ it('ignores non-subscription tx_refs in webhook', function () {
 
     $response = $this->postJson('/api/v1/webhooks/subscription/flutterwave', [
         'event' => 'charge.completed',
-        'data'  => [
-            'id'     => 99,
+        'data' => [
+            'id' => 99,
             'status' => 'successful',
             'amount' => 500,
             'tx_ref' => 'LENDR-LOAN-abc123', // not a subscription ref
@@ -312,7 +312,7 @@ it('landlord can update gateway credentials', function () {
 
     $response = $this->actingAs($landlord, 'sanctum')
         ->putJson('/api/v1/landlord/billing-settings/flutterwave', [
-            'secret_key'     => 'FLWSECK_TEST-newsecret',
+            'secret_key' => 'FLWSECK_TEST-newsecret',
             'webhook_secret' => 'new-webhook-hash',
         ]);
 

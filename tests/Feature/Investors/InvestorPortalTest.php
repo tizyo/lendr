@@ -21,24 +21,24 @@ function makeInvestor(array $attrs = []): Investor
 {
     return Investor::create(array_merge([
         'investor_number' => Investor::generateInvestorNumber(),
-        'name'            => 'Acme Capital '.rand(1, 999),
-        'email'           => 'investor'.rand(1000, 9999).'@example.com',
-        'type'            => 'institution',
-        'status'          => 'active',
+        'name' => 'Acme Capital '.rand(1, 999),
+        'email' => 'investor'.rand(1000, 9999).'@example.com',
+        'type' => 'institution',
+        'status' => 'active',
     ], $attrs));
 }
 
 function investorLoan(): Loan
 {
-    $type     = LoanType::first() ?? LoanType::factory()->create();
-    $plan     = LoanPlan::first() ?? LoanPlan::factory()->create(['loan_type_id' => $type->id]);
+    $type = LoanType::first() ?? LoanType::factory()->create();
+    $plan = LoanPlan::first() ?? LoanPlan::factory()->create(['loan_type_id' => $type->id]);
     $borrower = Borrower::factory()->create();
 
     return Loan::factory()->create([
-        'borrower_id'      => $borrower->id,
-        'loan_type_id'     => $type->id,
-        'loan_plan_id'     => $plan->id,
-        'status'           => LoanStatus::Active,
+        'borrower_id' => $borrower->id,
+        'loan_type_id' => $type->id,
+        'loan_plan_id' => $plan->id,
+        'status' => LoanStatus::Active,
         'principal_amount' => 20000,
     ]);
 }
@@ -46,13 +46,13 @@ function investorLoan(): Loan
 function makeAllocation(Investor $investor, Loan $loan, User $admin, array $attrs = []): InvestorAllocation
 {
     return $investor->allocations()->create(array_merge([
-        'loan_id'          => $loan->id,
-        'recorded_by'      => $admin->id,
+        'loan_id' => $loan->id,
+        'recorded_by' => $admin->id,
         'allocated_amount' => 10000,
-        'expected_return'  => 1500,
-        'actual_return'    => 0,
-        'allocation_date'  => now()->toDateString(),
-        'status'           => 'active',
+        'expected_return' => 1500,
+        'actual_return' => 0,
+        'allocation_date' => now()->toDateString(),
+        'status' => 'active',
     ], $attrs));
 }
 
@@ -75,9 +75,9 @@ test('can create an investor', function () {
 
     $resp = $this->actingAs($admin)
         ->postJson(route('api.v1.investors.store'), [
-            'name'  => 'Beta Fund Ltd',
+            'name' => 'Beta Fund Ltd',
             'email' => 'beta@fund.com',
-            'type'  => 'institution',
+            'type' => 'institution',
         ])
         ->assertCreated();
 
@@ -89,8 +89,8 @@ test('can create an investor', function () {
 
 test('investor number is auto-generated sequentially', function () {
     $admin = investorAdmin();
-    $inv1  = makeInvestor();
-    $inv2  = makeInvestor();
+    $inv1 = makeInvestor();
+    $inv2 = makeInvestor();
 
     $num1 = (int) substr($inv1->investor_number, 4);
     $num2 = (int) substr($inv2->investor_number, 4);
@@ -104,18 +104,18 @@ test('email must be unique', function () {
 
     $this->actingAs($admin)
         ->postJson(route('api.v1.investors.store'), [
-            'name'  => 'Another',
+            'name' => 'Another',
             'email' => 'dup@test.com',
-            'type'  => 'individual',
+            'type' => 'individual',
         ])
         ->assertUnprocessable()
         ->assertJsonValidationErrors(['email']);
 });
 
 test('can show investor with totals', function () {
-    $admin    = investorAdmin();
+    $admin = investorAdmin();
     $investor = makeInvestor();
-    $loan     = investorLoan();
+    $loan = investorLoan();
     makeAllocation($investor, $loan, $admin, ['allocated_amount' => 5000, 'actual_return' => 300]);
 
     $resp = $this->actingAs($admin)
@@ -127,7 +127,7 @@ test('can show investor with totals', function () {
 });
 
 test('can update investor status', function () {
-    $admin    = investorAdmin();
+    $admin = investorAdmin();
     $investor = makeInvestor();
 
     $resp = $this->actingAs($admin)
@@ -140,7 +140,7 @@ test('can update investor status', function () {
 });
 
 test('can delete an investor', function () {
-    $admin    = investorAdmin();
+    $admin = investorAdmin();
     $investor = makeInvestor();
 
     $this->actingAs($admin)
@@ -153,16 +153,16 @@ test('can delete an investor', function () {
 // ─── Allocation Tests ─────────────────────────────────────────────────────────
 
 test('can allocate capital to a loan', function () {
-    $admin    = investorAdmin();
+    $admin = investorAdmin();
     $investor = makeInvestor();
-    $loan     = investorLoan();
+    $loan = investorLoan();
 
     $resp = $this->actingAs($admin)
         ->postJson(route('api.v1.investors.allocate', $investor), [
-            'loan_id'          => $loan->id,
+            'loan_id' => $loan->id,
             'allocated_amount' => 15000,
-            'expected_return'  => 2250,
-            'allocation_date'  => now()->toDateString(),
+            'expected_return' => 2250,
+            'allocation_date' => now()->toDateString(),
         ])
         ->assertCreated();
 
@@ -170,17 +170,17 @@ test('can allocate capital to a loan', function () {
         ->and($resp->json('data.allocation.status'))->toBe('active');
 
     $this->assertDatabaseHas('investor_allocations', [
-        'investor_id'      => $investor->id,
-        'loan_id'          => $loan->id,
+        'investor_id' => $investor->id,
+        'loan_id' => $loan->id,
         'allocated_amount' => 15000,
     ]);
 });
 
 test('can list allocations for an investor', function () {
-    $admin    = investorAdmin();
+    $admin = investorAdmin();
     $investor = makeInvestor();
-    $loan1    = investorLoan();
-    $loan2    = investorLoan();
+    $loan1 = investorLoan();
+    $loan2 = investorLoan();
 
     makeAllocation($investor, $loan1, $admin);
     makeAllocation($investor, $loan2, $admin);
@@ -193,16 +193,16 @@ test('can list allocations for an investor', function () {
 });
 
 test('can settle an allocation', function () {
-    $admin      = investorAdmin();
-    $investor   = makeInvestor();
-    $loan       = investorLoan();
+    $admin = investorAdmin();
+    $investor = makeInvestor();
+    $loan = investorLoan();
     $allocation = makeAllocation($investor, $loan, $admin);
 
     $resp = $this->actingAs($admin)
         ->putJson(route('api.v1.investor-allocations.update', $allocation), [
-            'status'        => 'settled',
+            'status' => 'settled',
             'actual_return' => 1200,
-            'settled_date'  => now()->toDateString(),
+            'settled_date' => now()->toDateString(),
         ])
         ->assertOk();
 
@@ -214,9 +214,9 @@ test('can settle an allocation', function () {
 
 test('portfolio returns aggregate metrics', function () {
     $admin = investorAdmin();
-    $inv1  = makeInvestor();
-    $inv2  = makeInvestor();
-    $loan  = investorLoan();
+    $inv1 = makeInvestor();
+    $inv2 = makeInvestor();
+    $loan = investorLoan();
 
     makeAllocation($inv1, $loan, $admin, ['allocated_amount' => 10000, 'actual_return' => 500]);
     makeAllocation($inv2, $loan, $admin, ['allocated_amount' => 5000,  'actual_return' => 200]);

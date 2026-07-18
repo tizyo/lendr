@@ -85,23 +85,23 @@ class Loan extends Model
     protected function casts(): array
     {
         return [
-            'status'             => LoanStatus::class,
+            'status' => LoanStatus::class,
             'disbursement_method' => PaymentMethod::class,
-            'fx_rate'            => 'decimal:6',
-            'principal_amount'   => 'decimal:2',
-            'interest_amount'    => 'decimal:2',
-            'processing_fee'     => 'decimal:2',
-            'insurance_fee'      => 'decimal:2',
-            'total_payable'      => 'decimal:2',
-            'total_paid'         => 'decimal:2',
+            'fx_rate' => 'decimal:6',
+            'principal_amount' => 'decimal:2',
+            'interest_amount' => 'decimal:2',
+            'processing_fee' => 'decimal:2',
+            'insurance_fee' => 'decimal:2',
+            'total_payable' => 'decimal:2',
+            'total_paid' => 'decimal:2',
             'outstanding_balance' => 'decimal:2',
-            'penalty_balance'    => 'decimal:2',
-            'application_date'   => 'date',
-            'approval_date'      => 'date',
-            'disbursement_date'  => 'date',
+            'penalty_balance' => 'decimal:2',
+            'application_date' => 'date',
+            'approval_date' => 'date',
+            'disbursement_date' => 'date',
             'first_repayment_date' => 'date',
-            'maturity_date'      => 'date',
-            'closed_date'        => 'date',
+            'maturity_date' => 'date',
+            'closed_date' => 'date',
         ];
     }
 

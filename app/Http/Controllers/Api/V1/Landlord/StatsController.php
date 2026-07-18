@@ -18,10 +18,10 @@ class StatsController extends BaseApiController
         $tenants = Tenant::all();
 
         return $this->success([
-            'tenants'          => $this->tenantStats($tenants),
-            'revenue'          => $this->revenueStats(),
-            'growth'           => $this->growthStats($tenants),
-            'recent_invoices'  => $this->recentInvoices(),
+            'tenants' => $this->tenantStats($tenants),
+            'revenue' => $this->revenueStats(),
+            'growth' => $this->growthStats($tenants),
+            'recent_invoices' => $this->recentInvoices(),
         ]);
     }
 
@@ -29,39 +29,39 @@ class StatsController extends BaseApiController
 
     private function tenantStats($tenants): array
     {
-        $byPlan   = $tenants->groupBy('plan')->map->count();
+        $byPlan = $tenants->groupBy('plan')->map->count();
         $byStatus = $tenants->groupBy('status')->map->count();
-        $total    = $tenants->count();
+        $total = $tenants->count();
 
         // Trial conversion rate — 90-day cohort
-        $cohortCutoff     = now()->subDays(90);
-        $cohortTenants    = $tenants->where('created_at', '>=', $cohortCutoff);
-        $cohortTotal      = $cohortTenants->count();
-        $cohortConverted  = $cohortTenants->where('status', 'active')->count();
-        $conversionRate   = $cohortTotal > 0
+        $cohortCutoff = now()->subDays(90);
+        $cohortTenants = $tenants->where('created_at', '>=', $cohortCutoff);
+        $cohortTotal = $cohortTenants->count();
+        $cohortConverted = $cohortTenants->where('status', 'active')->count();
+        $conversionRate = $cohortTotal > 0
             ? round($cohortConverted / $cohortTotal * 100, 1)
             : 0.0;
 
         // Monthly churn rate — tenants that churned (expired/cancelled) this calendar month
-        $monthStart      = now()->startOfMonth();
-        $churned         = $tenants
+        $monthStart = now()->startOfMonth();
+        $churned = $tenants
             ->whereIn('status', ['expired', 'cancelled'])
             ->where('updated_at', '>=', $monthStart)
             ->count();
         $activeAtMonthStart = $tenants->where('created_at', '<', $monthStart)->count();
-        $churnRate       = $activeAtMonthStart > 0
+        $churnRate = $activeAtMonthStart > 0
             ? round($churned / $activeAtMonthStart * 100, 1)
             : 0.0;
 
         return [
-            'total'                => $total,
-            'by_plan'              => $byPlan,
-            'by_status'            => $byStatus,
-            'new_this_month'       => $tenants
+            'total' => $total,
+            'by_plan' => $byPlan,
+            'by_status' => $byStatus,
+            'new_this_month' => $tenants
                 ->where('created_at', '>=', $monthStart)
                 ->count(),
             'trial_conversion_rate' => $conversionRate,   // % — 90-day cohort
-            'monthly_churn_rate'    => $churnRate,         // % — this month
+            'monthly_churn_rate' => $churnRate,         // % — this month
         ];
     }
 
@@ -84,7 +84,7 @@ class StatsController extends BaseApiController
 
         // Revenue trend — last 6 full calendar months + current partial month
         $trendFrom = now()->subMonths(5)->startOfMonth();
-        $invoices  = SubscriptionInvoice::where('status', 'paid')
+        $invoices = SubscriptionInvoice::where('status', 'paid')
             ->where('paid_at', '>=', $trendFrom)
             ->whereNotNull('paid_at')
             ->get();
@@ -107,11 +107,11 @@ class StatsController extends BaseApiController
         $totalRevenue = SubscriptionInvoice::where('status', 'paid')->sum('amount');
 
         return [
-            'mrr'           => round($mrr, 2),
-            'arr'           => round($arr, 2),
+            'mrr' => round($mrr, 2),
+            'arr' => round($arr, 2),
             'total_revenue' => round((float) $totalRevenue, 2),
-            'trend'         => $trend,          // { "2026-01": 2998.00, ... }
-            'by_plan'       => $byPlan,         // { "growth": 1499.00, ... }
+            'trend' => $trend,          // { "2026-01": 2998.00, ... }
+            'by_plan' => $byPlan,         // { "growth": 1499.00, ... }
         ];
     }
 
@@ -120,7 +120,7 @@ class StatsController extends BaseApiController
     private function growthStats($tenants): array
     {
         // New tenant signups by month — last 6 months
-        $from  = now()->subMonths(5)->startOfMonth();
+        $from = now()->subMonths(5)->startOfMonth();
         $trend = $tenants
             ->where('created_at', '>=', $from)
             ->groupBy(fn ($t) => $t->created_at->format('Y-m'))
@@ -143,14 +143,14 @@ class StatsController extends BaseApiController
             ->limit(5)
             ->get()
             ->map(fn ($inv) => [
-                'id'            => $inv->id,
-                'tenant_name'   => $inv->tenant?->name,
-                'plan'          => $inv->plan,
-                'amount'        => (float) $inv->amount,
-                'currency'      => $inv->currency,
+                'id' => $inv->id,
+                'tenant_name' => $inv->tenant?->name,
+                'plan' => $inv->plan,
+                'amount' => (float) $inv->amount,
+                'currency' => $inv->currency,
                 'billing_cycle' => $inv->billing_cycle,
-                'gateway'       => $inv->gateway,
-                'paid_at'       => $inv->paid_at?->toDateString(),
+                'gateway' => $inv->gateway,
+                'paid_at' => $inv->paid_at?->toDateString(),
             ])
             ->toArray();
     }

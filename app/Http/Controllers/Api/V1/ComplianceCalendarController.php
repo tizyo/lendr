@@ -19,15 +19,15 @@ class ComplianceCalendarController extends BaseApiController
             ->update(['status' => 'overdue']);
 
         $query = ComplianceEvent::with('assignee')
-            ->when($request->status,   fn ($q, $v) => $q->where('status', $v))
+            ->when($request->status, fn ($q, $v) => $q->where('status', $v))
             ->when($request->category, fn ($q, $v) => $q->where('category', $v))
-            ->when($request->from,     fn ($q, $v) => $q->whereDate('due_date', '>=', $v))
-            ->when($request->to,       fn ($q, $v) => $q->whereDate('due_date', '<=', $v))
+            ->when($request->from, fn ($q, $v) => $q->whereDate('due_date', '>=', $v))
+            ->when($request->to, fn ($q, $v) => $q->whereDate('due_date', '<=', $v))
             ->orderBy('due_date');
 
         return $this->paginated(
             $query->paginate($request->integer('per_page', 20)),
-            fn ($e) => $this->formatEvent($e)
+            fn ($e) => $this->formatEvent($e),
         );
     }
 
@@ -37,13 +37,13 @@ class ComplianceCalendarController extends BaseApiController
     public function store(Request $request): JsonResponse
     {
         $data = $request->validate([
-            'title'       => ['required', 'string', 'max:200'],
-            'category'    => ['nullable', 'in:regulatory,audit,tax,internal'],
+            'title' => ['required', 'string', 'max:200'],
+            'category' => ['nullable', 'in:regulatory,audit,tax,internal'],
             'description' => ['nullable', 'string'],
-            'due_date'    => ['required', 'date'],
-            'frequency'   => ['nullable', 'in:once,monthly,quarterly,annually'],
+            'due_date' => ['required', 'date'],
+            'frequency' => ['nullable', 'in:once,monthly,quarterly,annually'],
             'assigned_to' => ['nullable', 'exists:users,id'],
-            'notes'       => ['nullable', 'string'],
+            'notes' => ['nullable', 'string'],
         ]);
 
         $event = ComplianceEvent::create(array_merge(['status' => 'pending'], $data));
@@ -65,13 +65,13 @@ class ComplianceCalendarController extends BaseApiController
     public function update(Request $request, ComplianceEvent $complianceEvent): JsonResponse
     {
         $data = $request->validate([
-            'title'       => ['sometimes', 'string', 'max:200'],
-            'category'    => ['sometimes', 'in:regulatory,audit,tax,internal'],
+            'title' => ['sometimes', 'string', 'max:200'],
+            'category' => ['sometimes', 'in:regulatory,audit,tax,internal'],
             'description' => ['sometimes', 'nullable', 'string'],
-            'due_date'    => ['sometimes', 'date'],
-            'frequency'   => ['sometimes', 'in:once,monthly,quarterly,annually'],
+            'due_date' => ['sometimes', 'date'],
+            'frequency' => ['sometimes', 'in:once,monthly,quarterly,annually'],
             'assigned_to' => ['sometimes', 'nullable', 'exists:users,id'],
-            'notes'       => ['sometimes', 'nullable', 'string'],
+            'notes' => ['sometimes', 'nullable', 'string'],
         ]);
 
         $complianceEvent->update($data);
@@ -99,28 +99,28 @@ class ComplianceCalendarController extends BaseApiController
         }
 
         $complianceEvent->update([
-            'status'       => 'completed',
+            'status' => 'completed',
             'completed_by' => auth()->id(),
             'completed_at' => now(),
-            'notes'        => $request->notes ?? $complianceEvent->notes,
+            'notes' => $request->notes ?? $complianceEvent->notes,
         ]);
 
         // If recurring, spawn the next event
         if ($complianceEvent->frequency !== 'once') {
             $nextDue = match ($complianceEvent->frequency) {
-                'monthly'   => $complianceEvent->due_date->addMonth(),
+                'monthly' => $complianceEvent->due_date->addMonth(),
                 'quarterly' => $complianceEvent->due_date->addMonths(3),
-                'annually'  => $complianceEvent->due_date->addYear(),
-                default     => null,
+                'annually' => $complianceEvent->due_date->addYear(),
+                default => null,
             };
 
             if ($nextDue) {
                 ComplianceEvent::create([
-                    'title'       => $complianceEvent->title,
-                    'category'    => $complianceEvent->category,
+                    'title' => $complianceEvent->title,
+                    'category' => $complianceEvent->category,
                     'description' => $complianceEvent->description,
-                    'due_date'    => $nextDue->toDateString(),
-                    'frequency'   => $complianceEvent->frequency,
+                    'due_date' => $nextDue->toDateString(),
+                    'frequency' => $complianceEvent->frequency,
                     'assigned_to' => $complianceEvent->assigned_to,
                 ]);
             }
@@ -134,7 +134,7 @@ class ComplianceCalendarController extends BaseApiController
      */
     public function upcoming(Request $request): JsonResponse
     {
-        $days   = $request->integer('days', 30);
+        $days = $request->integer('days', 30);
         $events = ComplianceEvent::where('status', 'pending')
             ->whereDate('due_date', '>=', now()->toDateString())
             ->whereDate('due_date', '<=', now()->addDays($days)->toDateString())
@@ -149,18 +149,18 @@ class ComplianceCalendarController extends BaseApiController
     private function formatEvent(ComplianceEvent $e): array
     {
         return [
-            'id'            => $e->id,
-            'title'         => $e->title,
-            'category'      => $e->category,
-            'description'   => $e->description,
-            'due_date'      => $e->due_date->toDateString(),
-            'frequency'     => $e->frequency,
-            'status'        => $e->status,
-            'is_overdue'    => $e->isOverdue(),
-            'assigned_to'   => $e->assigned_to,
-            'completed_by'  => $e->completed_by,
-            'completed_at'  => $e->completed_at?->toDateTimeString(),
-            'notes'         => $e->notes,
+            'id' => $e->id,
+            'title' => $e->title,
+            'category' => $e->category,
+            'description' => $e->description,
+            'due_date' => $e->due_date->toDateString(),
+            'frequency' => $e->frequency,
+            'status' => $e->status,
+            'is_overdue' => $e->isOverdue(),
+            'assigned_to' => $e->assigned_to,
+            'completed_by' => $e->completed_by,
+            'completed_at' => $e->completed_at?->toDateTimeString(),
+            'notes' => $e->notes,
             'reminder_sent' => $e->reminder_sent,
         ];
     }

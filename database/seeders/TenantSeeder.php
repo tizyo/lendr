@@ -18,14 +18,14 @@ class TenantSeeder extends Seeder
         $admin = User::firstOrCreate(
             ['email' => 'admin@vozara.lendr.app'],
             [
-                'name'     => 'System Admin',
-                'email'    => 'admin@vozara.lendr.app',
+                'name' => 'System Admin',
+                'email' => 'admin@vozara.lendr.app',
                 'username' => 'admin',
                 'password' => Hash::make('Admin@12345!'),
-                'role'     => UserRole::SuperAdmin,
+                'role' => UserRole::SuperAdmin,
                 'is_active' => true,
                 'force_password_reset' => true,
-            ]
+            ],
         );
 
         $admin->assignRole(UserRole::SuperAdmin->value);

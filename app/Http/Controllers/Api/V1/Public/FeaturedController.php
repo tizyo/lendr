@@ -6,7 +6,6 @@ use App\Http\Controllers\Api\V1\BaseApiController;
 use App\Models\FeaturedRepoItem;
 use App\Models\HotDeal;
 use App\Models\HotDealLead;
-use App\Models\Landlord\RepoItem;
 use App\Models\Landlord\Tenant;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -40,18 +39,18 @@ class FeaturedController extends BaseApiController
             $primary = $item->images->firstWhere('is_primary', true) ?? $item->images->first();
 
             return [
-                'id'               => $item->id,
-                'title'            => $item->title,
-                'price'            => (float) $item->price,
-                'category'         => $item->category,
-                'condition'        => $item->condition,
-                'location'         => $item->location,
-                'image_url'        => $primary?->image_url,
-                'tenant_name'      => $item->tenant_name,
-                'tenant_badge'     => $tenant?->verificationBadge(),
-                'featured_type'    => $slot->type,
-                'days_remaining'   => $slot->daysRemaining(),
-                'featured_since'   => $slot->starts_at?->toDateString(),
+                'id' => $item->id,
+                'title' => $item->title,
+                'price' => (float) $item->price,
+                'category' => $item->category,
+                'condition' => $item->condition,
+                'location' => $item->location,
+                'image_url' => $primary?->image_url,
+                'tenant_name' => $item->tenant_name,
+                'tenant_badge' => $tenant?->verificationBadge(),
+                'featured_type' => $slot->type,
+                'days_remaining' => $slot->daysRemaining(),
+                'featured_since' => $slot->starts_at?->toDateString(),
             ];
         })->filter()->values();
 
@@ -87,10 +86,10 @@ class FeaturedController extends BaseApiController
 
         return $this->success([
             ...$this->formatDeal($deal),
-            'tenant_badge'   => $tenant?->verificationBadge(),
-            'requirements'   => $deal->requirements,
-            'contact_phone'  => $deal->contact_phone,
-            'contact_email'  => $deal->contact_email,
+            'tenant_badge' => $tenant?->verificationBadge(),
+            'requirements' => $deal->requirements,
+            'contact_phone' => $deal->contact_phone,
+            'contact_email' => $deal->contact_email,
         ]);
     }
 
@@ -104,15 +103,15 @@ class FeaturedController extends BaseApiController
 
         $data = $request->validate([
             'full_name' => ['required', 'string', 'max:100'],
-            'phone'     => ['required', 'string', 'max:20'],
-            'email'     => ['nullable', 'email', 'max:100'],
-            'message'   => ['nullable', 'string', 'max:500'],
+            'phone' => ['required', 'string', 'max:20'],
+            'email' => ['nullable', 'email', 'max:100'],
+            'message' => ['nullable', 'string', 'max:500'],
         ]);
 
         HotDealLead::create([
             ...$data,
             'hot_deal_id' => $deal->id,
-            'ip_address'  => $request->ip(),
+            'ip_address' => $request->ip(),
         ]);
 
         $deal->increment('leads_count');
@@ -125,22 +124,22 @@ class FeaturedController extends BaseApiController
     private function formatDeal(HotDeal $d): array
     {
         return [
-            'id'            => $d->id,
-            'title'         => $d->title,
-            'description'   => $d->description,
-            'loan_product'  => $d->loan_product,
+            'id' => $d->id,
+            'title' => $d->title,
+            'description' => $d->description,
+            'loan_product' => $d->loan_product,
             'interest_rate' => $d->interest_rate,
-            'min_amount'    => $d->min_amount,
-            'max_amount'    => $d->max_amount,
-            'tenure'        => $d->tenure,
-            'badge_label'   => $d->badge_label,
-            'image_url'     => $d->image_url,
-            'tenant_id'     => $d->tenant_id,
-            'tenant_name'   => $d->tenant_name,
-            'expires_at'    => $d->expires_at?->toDateString(),
-            'views_count'   => $d->views_count,
-            'leads_count'   => $d->leads_count,
-            'created_at'    => $d->created_at->toDateString(),
+            'min_amount' => $d->min_amount,
+            'max_amount' => $d->max_amount,
+            'tenure' => $d->tenure,
+            'badge_label' => $d->badge_label,
+            'image_url' => $d->image_url,
+            'tenant_id' => $d->tenant_id,
+            'tenant_name' => $d->tenant_name,
+            'expires_at' => $d->expires_at?->toDateString(),
+            'views_count' => $d->views_count,
+            'leads_count' => $d->leads_count,
+            'created_at' => $d->created_at->toDateString(),
         ];
     }
 }

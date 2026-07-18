@@ -27,10 +27,10 @@ class LoanOffer extends Model
     {
         return [
             'offered_amount' => 'float',
-            'interest_rate'  => 'float',
-            'expires_at'     => 'datetime',
-            'accepted_at'    => 'datetime',
-            'declined_at'    => 'datetime',
+            'interest_rate' => 'float',
+            'expires_at' => 'datetime',
+            'accepted_at' => 'datetime',
+            'declined_at' => 'datetime',
         ];
     }
 

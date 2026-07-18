@@ -30,11 +30,11 @@ class SavingsAccount extends Model
     protected function casts(): array
     {
         return [
-            'balance'       => 'decimal:2',
+            'balance' => 'decimal:2',
             'interest_rate' => 'decimal:4',
             'target_amount' => 'decimal:2',
             'maturity_date' => 'date',
-            'opened_date'   => 'date',
+            'opened_date' => 'date',
         ];
     }
 
@@ -88,12 +88,12 @@ class SavingsAccount extends Model
         $this->update(['balance' => $newBalance]);
 
         return $this->transactions()->create([
-            'recorded_by'      => null,
-            'type'             => 'interest',
-            'amount'           => $interest,
-            'balance_after'    => $newBalance,
+            'recorded_by' => null,
+            'type' => 'interest',
+            'amount' => $interest,
+            'balance_after' => $newBalance,
             'transaction_date' => now()->toDateString(),
-            'notes'            => 'Monthly interest accrual',
+            'notes' => 'Monthly interest accrual',
         ]);
     }
 }

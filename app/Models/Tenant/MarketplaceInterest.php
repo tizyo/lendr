@@ -21,8 +21,8 @@ class MarketplaceInterest extends Model
     {
         return [
             'amount_offered' => 'decimal:2',
-            'interest_rate'  => 'decimal:2',
-            'responded_at'   => 'datetime',
+            'interest_rate' => 'decimal:2',
+            'responded_at' => 'datetime',
         ];
     }
 

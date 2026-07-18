@@ -25,7 +25,7 @@ class NewNotificationEvent implements ShouldBroadcast
     public function broadcastOn(): array
     {
         return [
-            new PrivateChannel('staff.' . $this->notification->user_id),
+            new PrivateChannel('staff.'.$this->notification->user_id),
         ];
     }
 
@@ -37,12 +37,12 @@ class NewNotificationEvent implements ShouldBroadcast
     public function broadcastWith(): array
     {
         return [
-            'id'         => $this->notification->id,
-            'type'       => $this->notification->type,
-            'title'      => $this->notification->title,
-            'body'       => $this->notification->body,
-            'icon'       => $this->notification->icon,
-            'data'       => $this->notification->data,
+            'id' => $this->notification->id,
+            'type' => $this->notification->type,
+            'title' => $this->notification->title,
+            'body' => $this->notification->body,
+            'icon' => $this->notification->icon,
+            'data' => $this->notification->data,
             'created_at' => $this->notification->created_at->toDateTimeString(),
         ];
     }

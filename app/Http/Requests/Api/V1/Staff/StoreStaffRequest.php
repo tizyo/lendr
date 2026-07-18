@@ -24,11 +24,11 @@ class StoreStaffRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name'       => ['required', 'string', 'max:255'],
-            'email'      => ['required', 'email', 'unique:users,email'],
-            'username'   => ['nullable', 'string', 'max:50', 'unique:users,username'],
-            'phone'      => ['nullable', 'string', 'max:20'],
-            'role'       => ['required', Rule::enum(UserRole::class)],
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'email', 'unique:users,email'],
+            'username' => ['nullable', 'string', 'max:50', 'unique:users,username'],
+            'phone' => ['nullable', 'string', 'max:20'],
+            'role' => ['required', Rule::enum(UserRole::class)],
             'department' => ['nullable', 'string', 'max:100'],
         ];
     }

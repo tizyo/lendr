@@ -22,9 +22,9 @@ use Illuminate\Support\Str;
 class PaymentService
 {
     public function __construct(
-        private FundService         $fund,
+        private FundService $fund,
         private NotificationService $notifications,
-        private CrbService          $crb,
+        private CrbService $crb,
     ) {}
 
     /**
@@ -57,28 +57,28 @@ class PaymentService
             [$principalAllocated, $interestAllocated, $penaltyAllocated] = $this->allocate($loan, $amount);
 
             $payment = Payment::create([
-                'receipt_number'       => $this->generateReceiptNumber(),
-                'loan_id'              => $loan->id,
-                'recorded_by'          => $attributes['recorded_by'] ?? null,
-                'amount'               => $amount,
-                'principal_allocated'  => $principalAllocated,
-                'interest_allocated'   => $interestAllocated,
-                'penalty_allocated'    => $penaltyAllocated,
-                'fee_allocated'        => 0,
-                'payment_method'       => $attributes['payment_method'],
-                'payment_date'         => $attributes['payment_date'],
-                'reference'            => $attributes['reference']            ?? null,
-                'momo_transaction_id'  => $attributes['momo_transaction_id'] ?? null,
-                'momo_provider'        => $attributes['momo_provider']        ?? null,
-                'source'               => $attributes['source'],
-                'notes'                => $attributes['notes']                ?? null,
-                'is_overdue_payment'   => $loan->isOverdue(),
+                'receipt_number' => $this->generateReceiptNumber(),
+                'loan_id' => $loan->id,
+                'recorded_by' => $attributes['recorded_by'] ?? null,
+                'amount' => $amount,
+                'principal_allocated' => $principalAllocated,
+                'interest_allocated' => $interestAllocated,
+                'penalty_allocated' => $penaltyAllocated,
+                'fee_allocated' => 0,
+                'payment_method' => $attributes['payment_method'],
+                'payment_date' => $attributes['payment_date'],
+                'reference' => $attributes['reference'] ?? null,
+                'momo_transaction_id' => $attributes['momo_transaction_id'] ?? null,
+                'momo_provider' => $attributes['momo_provider'] ?? null,
+                'source' => $attributes['source'],
+                'notes' => $attributes['notes'] ?? null,
+                'is_overdue_payment' => $loan->isOverdue(),
             ]);
 
             // Update loan balances
-            $newTotalPaid   = (float) $loan->total_paid + $amount;
+            $newTotalPaid = (float) $loan->total_paid + $amount;
             $newOutstanding = max(0, (float) $loan->outstanding_balance - ($principalAllocated + $interestAllocated));
-            $newPenalty     = max(0, (float) $loan->penalty_balance - $penaltyAllocated);
+            $newPenalty = max(0, (float) $loan->penalty_balance - $penaltyAllocated);
 
             $newStatus = $loan->status;
             if ($newOutstanding <= 0 && $newPenalty <= 0) {
@@ -87,10 +87,10 @@ class PaymentService
             }
 
             $loan->update([
-                'total_paid'          => $newTotalPaid,
+                'total_paid' => $newTotalPaid,
                 'outstanding_balance' => $newOutstanding,
-                'penalty_balance'     => $newPenalty,
-                'status'              => $newStatus->value,
+                'penalty_balance' => $newPenalty,
+                'status' => $newStatus->value,
             ]);
 
             $this->applyToSchedule($loan, $principalAllocated, $interestAllocated, $attributes['payment_date']);
@@ -120,21 +120,21 @@ class PaymentService
                     $loan->created_by,
                     'payment_received',
                     "Payment received on {$loan->loan_number}",
-                    "ZMW ".number_format($amount, 2)." received. Remaining: ZMW ".number_format(max(0, (float) $loan->outstanding_balance - ($principalAllocated + $interestAllocated)), 2),
+                    'ZMW '.number_format($amount, 2).' received. Remaining: ZMW '.number_format(max(0, (float) $loan->outstanding_balance - ($principalAllocated + $interestAllocated)), 2),
                     ['loan_id' => $loan->id, 'payment_id' => $payment->id],
                 );
             }
 
             // CRB score event — fire outside transaction to avoid deadlock; catch all errors
             try {
-                $borrower   = $loan->borrower;
+                $borrower = $loan->borrower;
                 $identifier = $borrower->crbIdentifier();
                 if ($identifier) {
-                    $hash      = $this->crb->hash($identifier['value'], $identifier['type']);
-                    $tenantId  = (string) (tenant('id') ?? 'local');
+                    $hash = $this->crb->hash($identifier['value'], $identifier['type']);
+                    $tenantId = (string) (tenant('id') ?? 'local');
                     $loanCompleted = ($newStatus === LoanStatus::Completed);
-                    $dpd       = $this->computeDpd($loan, $attributes['payment_date']);
-                    $isEarly   = $dpd === 0 && ! $loan->isOverdue();
+                    $dpd = $this->computeDpd($loan, $attributes['payment_date']);
+                    $isEarly = $dpd === 0 && ! $loan->isOverdue();
 
                     $this->crb->recordPayment(
                         $hash,
@@ -162,14 +162,14 @@ class PaymentService
         $remaining = $amount;
 
         $penaltyAllocated = min($remaining, (float) $loan->penalty_balance);
-        $remaining       -= $penaltyAllocated;
+        $remaining -= $penaltyAllocated;
 
         $unpaidInterest = (float) $loan->schedule()
             ->where('is_paid', false)->sum('interest_due')
             - (float) $loan->schedule()->where('is_paid', false)->sum('interest_paid');
 
         $interestAllocated = min($remaining, max(0, $unpaidInterest));
-        $remaining        -= $interestAllocated;
+        $remaining -= $interestAllocated;
 
         $principalAllocated = max(0, min($remaining, (float) $loan->outstanding_balance - $interestAllocated));
 
@@ -181,23 +181,25 @@ class PaymentService
         $remaining = $principalPaid + $interestPaid;
 
         foreach ($loan->schedule()->where('is_paid', false)->orderBy('due_date')->get() as $inst) {
-            if ($remaining <= 0) break;
+            if ($remaining <= 0) {
+                break;
+            }
 
             $due = (float) $inst->outstanding;
 
             if ($remaining >= $due) {
                 $inst->update([
-                    'total_paid'     => (float) $inst->total_paid + $due,
+                    'total_paid' => (float) $inst->total_paid + $due,
                     'principal_paid' => (float) $inst->principal_due,
-                    'interest_paid'  => (float) $inst->interest_due,
-                    'outstanding'    => 0,
-                    'is_paid'        => true,
-                    'paid_date'      => $paymentDate,
+                    'interest_paid' => (float) $inst->interest_due,
+                    'outstanding' => 0,
+                    'is_paid' => true,
+                    'paid_date' => $paymentDate,
                 ]);
                 $remaining -= $due;
             } else {
                 $inst->update([
-                    'total_paid'  => (float) $inst->total_paid + $remaining,
+                    'total_paid' => (float) $inst->total_paid + $remaining,
                     'outstanding' => max(0, $due - $remaining),
                 ]);
                 $remaining = 0;
@@ -226,10 +228,10 @@ class PaymentService
 
     private function generateReceiptNumber(): string
     {
-        $prefix = 'REC-' . now()->format('Ym') . '-';
-        $last   = Payment::withTrashed()->where('receipt_number', 'like', $prefix . '%')->max('receipt_number');
-        $seq    = $last ? ((int) Str::afterLast($last, '-')) + 1 : 1;
+        $prefix = 'REC-'.now()->format('Ym').'-';
+        $last = Payment::withTrashed()->where('receipt_number', 'like', $prefix.'%')->max('receipt_number');
+        $seq = $last ? ((int) Str::afterLast($last, '-')) + 1 : 1;
 
-        return $prefix . str_pad($seq, 5, '0', STR_PAD_LEFT);
+        return $prefix.str_pad($seq, 5, '0', STR_PAD_LEFT);
     }
 }

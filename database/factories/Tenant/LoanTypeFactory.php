@@ -14,14 +14,14 @@ class LoanTypeFactory extends Factory
         static $seq = 1;
 
         return [
-            'name'                => fake()->randomElement(['Personal Loan', 'Business Loan', 'Salary Loan', 'Emergency Loan', 'Agricultural Loan']).'-'.fake()->unique()->numerify('###'),
-            'code'                => 'LT'.str_pad($seq++, 3, '0', STR_PAD_LEFT),
-            'description'         => fake()->sentence(),
+            'name' => fake()->randomElement(['Personal Loan', 'Business Loan', 'Salary Loan', 'Emergency Loan', 'Agricultural Loan']).'-'.fake()->unique()->numerify('###'),
+            'code' => 'LT'.str_pad($seq++, 3, '0', STR_PAD_LEFT),
+            'description' => fake()->sentence(),
             'requires_collateral' => false,
-            'requires_guarantor'  => false,
-            'required_documents'  => [],
-            'is_active'           => true,
-            'sort_order'          => 0,
+            'requires_guarantor' => false,
+            'required_documents' => [],
+            'is_active' => true,
+            'sort_order' => 0,
         ];
     }
 

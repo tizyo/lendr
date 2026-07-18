@@ -20,7 +20,7 @@ class AgreementAuditEvent extends Model
     protected function casts(): array
     {
         return [
-            'context'     => 'array',
+            'context' => 'array',
             'occurred_at' => 'datetime',
         ];
     }

@@ -7,9 +7,11 @@ namespace App\Services\Migration;
  */
 final class ValidationReport
 {
-    public const STATUS_PASSED  = 'PASSED';
+    public const STATUS_PASSED = 'PASSED';
+
     public const STATUS_WARNING = 'WARNING';
-    public const STATUS_FAILED  = 'FAILED';
+
+    public const STATUS_FAILED = 'FAILED';
 
     /** @var array<string, array{status: string, detail: string}> */
     private array $checks = [];
@@ -18,6 +20,7 @@ final class ValidationReport
     {
         $clone = clone $this;
         $clone->checks[$name] = ['status' => $status, 'detail' => $detail];
+
         return $clone;
     }
 
@@ -48,6 +51,7 @@ final class ValidationReport
                 return false;
             }
         }
+
         return true;
     }
 
@@ -60,7 +64,7 @@ final class ValidationReport
     {
         return count(array_filter(
             $this->checks,
-            fn ($c) => $c['status'] === $status
+            fn ($c) => $c['status'] === $status,
         ));
     }
 }

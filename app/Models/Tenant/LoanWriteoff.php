@@ -22,7 +22,7 @@ class LoanWriteoff extends Model
     {
         return [
             'written_off_amount' => 'decimal:2',
-            'total_recovered'    => 'decimal:2',
+            'total_recovered' => 'decimal:2',
         ];
     }
 

@@ -12,7 +12,10 @@ use Illuminate\Support\Facades\Log;
  */
 class FlutterwaveWebhookController extends BaseWebhookController
 {
-    protected function providerName(): string { return 'flutterwave'; }
+    protected function providerName(): string
+    {
+        return 'flutterwave';
+    }
 
     protected function verifySignature(Request $request): bool
     {
@@ -35,22 +38,22 @@ class FlutterwaveWebhookController extends BaseWebhookController
         $rawStatus = strtolower($data['status'] ?? '');
         $status = match ($rawStatus) {
             'successful', 'success' => 'success',
-            'failed'                => 'failed',
-            default                 => 'pending',
+            'failed' => 'failed',
+            default => 'pending',
         };
 
         // LENDR reference set as tx_ref during initiation
         $internalRef = $data['tx_ref'] ?? $data['meta']['internal_ref'] ?? null;
 
         return [
-            'event_id'       => (string) ($data['id']     ?? ''),
-            'event_type'     => $body['event']             ?? 'payment.' . $status,
-            'internal_ref'   => $internalRef,
-            'transaction_id' => (string) ($data['id']     ?? ''),
-            'amount'         => (float) ($data['amount']  ?? 0),
-            'phone'          => $data['customer']['phone_number'] ?? '',
-            'status'         => $status,
-            'raw'            => $body,
+            'event_id' => (string) ($data['id'] ?? ''),
+            'event_type' => $body['event'] ?? 'payment.'.$status,
+            'internal_ref' => $internalRef,
+            'transaction_id' => (string) ($data['id'] ?? ''),
+            'amount' => (float) ($data['amount'] ?? 0),
+            'phone' => $data['customer']['phone_number'] ?? '',
+            'status' => $status,
+            'raw' => $body,
         ];
     }
 }

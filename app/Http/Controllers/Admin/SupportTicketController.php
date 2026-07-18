@@ -48,23 +48,23 @@ class SupportTicketController extends Controller
     public function store(Request $request)
     {
         $data = $request->validate([
-            'subject'  => ['required', 'string', 'max:255'],
-            'message'  => ['required', 'string', 'max:5000'],
-            'type'     => ['required', 'in:support,bug,feature'],
+            'subject' => ['required', 'string', 'max:255'],
+            'message' => ['required', 'string', 'max:5000'],
+            'type' => ['required', 'in:support,bug,feature'],
             'priority' => ['required', 'in:low,medium,high,critical'],
         ]);
 
         $tenant = tenancy()->tenant;
-        $user   = $request->user();
+        $user = $request->user();
 
         $ticket = SupportTicket::create([
-            'tenant_id'          => $tenant->id,
-            'subject'            => $data['subject'],
-            'message'            => $data['message'],
-            'type'               => $data['type'],
-            'priority'           => $data['priority'],
-            'status'             => 'open',
-            'submitted_by'       => $user?->name,
+            'tenant_id' => $tenant->id,
+            'subject' => $data['subject'],
+            'message' => $data['message'],
+            'type' => $data['type'],
+            'priority' => $data['priority'],
+            'status' => 'open',
+            'submitted_by' => $user?->name,
             'submitted_by_email' => $user?->email,
         ]);
 
@@ -85,10 +85,10 @@ class SupportTicketController extends Controller
         ]);
 
         SupportTicketReply::create([
-            'ticket_id'   => $ticket->id,
+            'ticket_id' => $ticket->id,
             'author_type' => 'tenant',
             'author_name' => $request->user()?->name ?? 'Tenant',
-            'message'     => $data['message'],
+            'message' => $data['message'],
         ]);
 
         // Re-open if it was resolved
@@ -104,35 +104,35 @@ class SupportTicketController extends Controller
     private function format(SupportTicket $t): array
     {
         return [
-            'id'           => $t->id,
-            'subject'      => $t->subject,
-            'type'         => $t->type,
-            'status'       => $t->status,
-            'priority'     => $t->priority,
+            'id' => $t->id,
+            'subject' => $t->subject,
+            'type' => $t->type,
+            'status' => $t->status,
+            'priority' => $t->priority,
             'replies_count' => $t->replies_count,
-            'created_at'   => $t->created_at->toDateString(),
+            'created_at' => $t->created_at->toDateString(),
         ];
     }
 
     private function formatFull(SupportTicket $t): array
     {
         return [
-            'id'                 => $t->id,
-            'subject'            => $t->subject,
-            'message'            => $t->message,
-            'type'               => $t->type,
-            'status'             => $t->status,
-            'priority'           => $t->priority,
-            'submitted_by'       => $t->submitted_by,
+            'id' => $t->id,
+            'subject' => $t->subject,
+            'message' => $t->message,
+            'type' => $t->type,
+            'status' => $t->status,
+            'priority' => $t->priority,
+            'submitted_by' => $t->submitted_by,
             'submitted_by_email' => $t->submitted_by_email,
-            'created_at'         => $t->created_at->toDateString(),
-            'resolved_at'        => $t->resolved_at?->toDateString(),
-            'replies'            => $t->replies->map(fn ($r) => [
-                'id'          => $r->id,
+            'created_at' => $t->created_at->toDateString(),
+            'resolved_at' => $t->resolved_at?->toDateString(),
+            'replies' => $t->replies->map(fn ($r) => [
+                'id' => $r->id,
                 'author_type' => $r->author_type,
                 'author_name' => $r->author_name,
-                'message'     => $r->message,
-                'created_at'  => $r->created_at->format('d M Y, H:i'),
+                'message' => $r->message,
+                'created_at' => $r->created_at->format('d M Y, H:i'),
             ])->all(),
         ];
     }

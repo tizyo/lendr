@@ -27,12 +27,12 @@ class ExpenseCategoryController extends BaseApiController
     public function store(Request $request): JsonResponse
     {
         $request->validate([
-            'name'        => ['required', 'string', 'max:100'],
-            'code'        => ['required', 'string', 'alpha_dash', 'max:20', 'unique:expense_categories,code'],
-            'icon'        => ['nullable', 'string', 'max:50'],
-            'colour'      => ['nullable', 'string', 'max:20'],
+            'name' => ['required', 'string', 'max:100'],
+            'code' => ['required', 'string', 'alpha_dash', 'max:20', 'unique:expense_categories,code'],
+            'icon' => ['nullable', 'string', 'max:50'],
+            'colour' => ['nullable', 'string', 'max:20'],
             'description' => ['nullable', 'string', 'max:500'],
-            'is_active'   => ['boolean'],
+            'is_active' => ['boolean'],
         ]);
 
         $category = ExpenseCategory::create($request->only(['name', 'code', 'icon', 'colour', 'description', 'is_active']));
@@ -50,12 +50,12 @@ class ExpenseCategoryController extends BaseApiController
     public function update(Request $request, ExpenseCategory $expenseCategory): JsonResponse
     {
         $request->validate([
-            'name'        => ['sometimes', 'string', 'max:100'],
-            'code'        => ['sometimes', 'string', 'alpha_dash', 'max:20', 'unique:expense_categories,code,'.$expenseCategory->id],
-            'icon'        => ['nullable', 'string', 'max:50'],
-            'colour'      => ['nullable', 'string', 'max:20'],
+            'name' => ['sometimes', 'string', 'max:100'],
+            'code' => ['sometimes', 'string', 'alpha_dash', 'max:20', 'unique:expense_categories,code,'.$expenseCategory->id],
+            'icon' => ['nullable', 'string', 'max:50'],
+            'colour' => ['nullable', 'string', 'max:20'],
             'description' => ['nullable', 'string', 'max:500'],
-            'is_active'   => ['boolean'],
+            'is_active' => ['boolean'],
         ]);
 
         $expenseCategory->update($request->only(['name', 'code', 'icon', 'colour', 'description', 'is_active']));
@@ -91,13 +91,13 @@ class ExpenseCategoryController extends BaseApiController
             ->when($request->period, fn ($q, $p) => $q->where('period', $p))
             ->get()
             ->map(fn ($b) => [
-                'id'          => $b->id,
-                'category'    => ['id' => $b->category->id, 'name' => $b->category->name, 'colour' => $b->category->colour],
-                'amount'      => (float) $b->amount,
-                'period'      => $b->period,
+                'id' => $b->id,
+                'category' => ['id' => $b->category->id, 'name' => $b->category->name, 'colour' => $b->category->colour],
+                'amount' => (float) $b->amount,
+                'period' => $b->period,
                 'period_year' => $b->period_year,
                 'period_month' => $b->period_month,
-                'notes'       => $b->notes,
+                'notes' => $b->notes,
             ]);
 
         return $this->success($budgets);
@@ -111,35 +111,35 @@ class ExpenseCategoryController extends BaseApiController
     {
         $request->validate([
             'expense_category_id' => ['required', 'exists:expense_categories,id'],
-            'amount'              => ['required', 'numeric', 'min:0'],
-            'period'              => ['required', 'in:monthly,annual'],
-            'period_year'         => ['required', 'integer', 'min:2000', 'max:2100'],
-            'period_month'        => ['nullable', 'integer', 'min:1', 'max:12'],
-            'notes'               => ['nullable', 'string', 'max:500'],
+            'amount' => ['required', 'numeric', 'min:0'],
+            'period' => ['required', 'in:monthly,annual'],
+            'period_year' => ['required', 'integer', 'min:2000', 'max:2100'],
+            'period_month' => ['nullable', 'integer', 'min:1', 'max:12'],
+            'notes' => ['nullable', 'string', 'max:500'],
         ]);
 
         $budget = ExpenseBudget::updateOrCreate(
             [
                 'expense_category_id' => $request->expense_category_id,
-                'period'              => $request->period,
-                'period_year'         => $request->period_year,
-                'period_month'        => $request->period === 'monthly' ? $request->period_month : null,
+                'period' => $request->period,
+                'period_year' => $request->period_year,
+                'period_month' => $request->period === 'monthly' ? $request->period_month : null,
             ],
             [
                 'amount' => $request->amount,
-                'notes'  => $request->notes,
-            ]
+                'notes' => $request->notes,
+            ],
         );
 
         $budget->load('category:id,name,code,colour');
 
         return $this->success([
-            'id'           => $budget->id,
-            'category_id'  => $budget->expense_category_id,
-            'category'     => $budget->category?->name,
-            'amount'       => (float) $budget->amount,
-            'period'       => $budget->period,
-            'period_year'  => $budget->period_year,
+            'id' => $budget->id,
+            'category_id' => $budget->expense_category_id,
+            'category' => $budget->category?->name,
+            'amount' => (float) $budget->amount,
+            'period' => $budget->period,
+            'period_year' => $budget->period_year,
             'period_month' => $budget->period_month,
         ], 'Budget saved.', 201);
     }
@@ -156,10 +156,10 @@ class ExpenseCategoryController extends BaseApiController
             ->with('category:id,name')
             ->get()
             ->map(fn ($s) => [
-                'id'               => $s->id,
-                'category'         => $s->category ? ['id' => $s->category->id, 'name' => $s->category->name] : null,
+                'id' => $s->id,
+                'category' => $s->category ? ['id' => $s->category->id, 'name' => $s->category->name] : null,
                 'threshold_amount' => (float) $s->threshold_amount,
-                'approver_role'    => $s->approver_role,
+                'approver_role' => $s->approver_role,
                 'requires_receipt' => $s->requires_receipt,
             ]);
 
@@ -173,10 +173,10 @@ class ExpenseCategoryController extends BaseApiController
     public function updateSettings(Request $request): JsonResponse
     {
         $request->validate([
-            'settings'                    => ['required', 'array'],
-            'settings.*.category_id'      => ['nullable', 'exists:expense_categories,id'],
+            'settings' => ['required', 'array'],
+            'settings.*.category_id' => ['nullable', 'exists:expense_categories,id'],
             'settings.*.threshold_amount' => ['required', 'numeric', 'min:0'],
-            'settings.*.approver_role'    => ['required', 'string'],
+            'settings.*.approver_role' => ['required', 'string'],
             'settings.*.requires_receipt' => ['boolean'],
         ]);
 
@@ -185,9 +185,9 @@ class ExpenseCategoryController extends BaseApiController
                 ['expense_category_id' => $item['category_id'] ?? null],
                 [
                     'threshold_amount' => $item['threshold_amount'],
-                    'approver_role'    => $item['approver_role'],
+                    'approver_role' => $item['approver_role'],
                     'requires_receipt' => $item['requires_receipt'] ?? false,
-                ]
+                ],
             );
         }
 
@@ -199,22 +199,22 @@ class ExpenseCategoryController extends BaseApiController
     private function formatCategory(ExpenseCategory $c, bool $full = false): array
     {
         $data = [
-            'id'             => $c->id,
-            'name'           => $c->name,
-            'code'           => $c->code,
-            'icon'           => $c->icon,
-            'colour'         => $c->colour,
-            'description'    => $c->description,
-            'is_active'      => $c->is_active,
+            'id' => $c->id,
+            'name' => $c->name,
+            'code' => $c->code,
+            'icon' => $c->icon,
+            'colour' => $c->colour,
+            'description' => $c->description,
+            'is_active' => $c->is_active,
             'expenses_count' => $c->expenses_count ?? null,
         ];
 
         if ($full && $c->relationLoaded('budgets')) {
             $data['budgets'] = $c->budgets->map(fn ($b) => [
-                'id'           => $b->id,
-                'amount'       => (float) $b->amount,
-                'period'       => $b->period,
-                'period_year'  => $b->period_year,
+                'id' => $b->id,
+                'amount' => (float) $b->amount,
+                'period' => $b->period,
+                'period_year' => $b->period_year,
                 'period_month' => $b->period_month,
             ])->values();
         }

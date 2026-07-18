@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Models\Tenant\Borrower;
 use App\Models\Tenant\Loan;
 use App\Models\Tenant\Payment;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -47,14 +46,14 @@ class DashboardController extends Controller
             : 0;
 
         return [
-            'active_loans'       => $activeLoans->count(),
-            'total_borrowers'    => $totalBorrowers,
-            'total_outstanding'  => number_format((float) $totalOutstanding, 2),
-            'overdue_loans'      => $overdueLoans->count(),
-            'disbursed_month'    => number_format((float) $totalDisbursedMonth, 2),
-            'collected_month'    => number_format((float) $totalCollectedMonth, 2),
-            'par_30'             => $par,
-            'currency'           => tenancy()->tenant?->currency ?? 'ZMW',
+            'active_loans' => $activeLoans->count(),
+            'total_borrowers' => $totalBorrowers,
+            'total_outstanding' => number_format((float) $totalOutstanding, 2),
+            'overdue_loans' => $overdueLoans->count(),
+            'disbursed_month' => number_format((float) $totalDisbursedMonth, 2),
+            'collected_month' => number_format((float) $totalCollectedMonth, 2),
+            'par_30' => $par,
+            'currency' => tenancy()->tenant?->currency ?? 'ZMW',
         ];
     }
 
@@ -65,15 +64,15 @@ class DashboardController extends Controller
             ->limit(8)
             ->get()
             ->map(fn ($loan) => [
-                'id'          => $loan->id,
+                'id' => $loan->id,
                 'loan_number' => $loan->loan_number,
-                'borrower'    => $loan->borrower->full_name,
-                'type'        => $loan->loanType->name,
-                'amount'      => number_format((float) $loan->principal_amount, 2),
-                'status'      => $loan->status->value,
+                'borrower' => $loan->borrower->full_name,
+                'type' => $loan->loanType->name,
+                'amount' => number_format((float) $loan->principal_amount, 2),
+                'status' => $loan->status->value,
                 'status_label' => $loan->status->label(),
                 'status_color' => $loan->status->color(),
-                'date'        => $loan->application_date->format('d M Y'),
+                'date' => $loan->application_date->format('d M Y'),
             ])
             ->toArray();
     }
@@ -85,12 +84,12 @@ class DashboardController extends Controller
             ->limit(8)
             ->get()
             ->map(fn ($p) => [
-                'id'             => $p->id,
+                'id' => $p->id,
                 'receipt_number' => $p->receipt_number,
-                'borrower'       => $p->loan->borrower->full_name,
-                'amount'         => number_format((float) $p->amount, 2),
-                'method'         => $p->payment_method->label(),
-                'date'           => $p->payment_date->format('d M Y'),
+                'borrower' => $p->loan->borrower->full_name,
+                'amount' => number_format((float) $p->amount, 2),
+                'method' => $p->payment_method->label(),
+                'date' => $p->payment_date->format('d M Y'),
             ])
             ->toArray();
     }
@@ -101,7 +100,7 @@ class DashboardController extends Controller
             DB::raw('YEAR(disbursement_date) as year'),
             DB::raw('MONTH(disbursement_date) as month'),
             DB::raw('SUM(principal_amount) as total'),
-            DB::raw('COUNT(*) as count')
+            DB::raw('COUNT(*) as count'),
         )
             ->whereNotNull('disbursement_date')
             ->where('disbursement_date', '>=', now()->subMonths(11)->startOfMonth())

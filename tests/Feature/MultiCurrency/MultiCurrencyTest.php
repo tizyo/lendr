@@ -19,17 +19,17 @@ function fxAdmin(): User
 
 function fxLoan(string $currency = 'USD', float $outstanding = 5000): Loan
 {
-    $type     = LoanType::factory()->create();
-    $plan     = LoanPlan::factory()->create(['loan_type_id' => $type->id]);
+    $type = LoanType::factory()->create();
+    $plan = LoanPlan::factory()->create(['loan_type_id' => $type->id]);
     $borrower = Borrower::factory()->create();
 
     return Loan::factory()->create([
-        'borrower_id'       => $borrower->id,
-        'loan_type_id'      => $type->id,
-        'loan_plan_id'      => $plan->id,
-        'status'            => LoanStatus::Active,
-        'currency'          => $currency,
-        'base_currency'     => 'ZMW',
+        'borrower_id' => $borrower->id,
+        'loan_type_id' => $type->id,
+        'loan_plan_id' => $plan->id,
+        'status' => LoanStatus::Active,
+        'currency' => $currency,
+        'base_currency' => 'ZMW',
         'outstanding_balance' => $outstanding,
     ]);
 }
@@ -37,9 +37,9 @@ function fxLoan(string $currency = 'USD', float $outstanding = 5000): Loan
 function seedRate(string $from, string $to, float $rate): ExchangeRate
 {
     return ExchangeRate::create([
-        'from_currency'  => $from,
-        'to_currency'    => $to,
-        'rate'           => $rate,
+        'from_currency' => $from,
+        'to_currency' => $to,
+        'rate' => $rate,
         'effective_date' => now()->toDateString(),
     ]);
 }
@@ -70,13 +70,13 @@ test('falls back to inverse rate when direct rate missing', function () {
 
 test('returns rate 1 when no exchange rate found', function () {
     $service = app(MultiCurrencyService::class);
-    $rate    = $service->rateFor('GBP', 'ZMW');
+    $rate = $service->rateFor('GBP', 'ZMW');
     expect($rate)->toBe(1.0);
 });
 
 test('lockRateForLoan stores fx_rate on loan', function () {
     seedRate('USD', 'ZMW', 26.0);
-    $loan    = fxLoan('USD');
+    $loan = fxLoan('USD');
     $service = app(MultiCurrencyService::class);
 
     $service->lockRateForLoan($loan);
@@ -86,15 +86,15 @@ test('lockRateForLoan stores fx_rate on loan', function () {
 });
 
 test('lockRateForLoan sets fx_rate to 1 for same currency', function () {
-    $type     = LoanType::factory()->create();
-    $plan     = LoanPlan::factory()->create(['loan_type_id' => $type->id]);
+    $type = LoanType::factory()->create();
+    $plan = LoanPlan::factory()->create(['loan_type_id' => $type->id]);
     $borrower = Borrower::factory()->create();
-    $loan     = Loan::factory()->create([
-        'borrower_id'   => $borrower->id,
-        'loan_type_id'  => $type->id,
-        'loan_plan_id'  => $plan->id,
-        'status'        => LoanStatus::Active,
-        'currency'      => 'ZMW',
+    $loan = Loan::factory()->create([
+        'borrower_id' => $borrower->id,
+        'loan_type_id' => $type->id,
+        'loan_plan_id' => $plan->id,
+        'status' => LoanStatus::Active,
+        'currency' => 'ZMW',
         'base_currency' => 'ZMW',
     ]);
 
@@ -121,8 +121,8 @@ test('can convert currency via API', function () {
     $resp = $this->actingAs($admin)
         ->postJson(route('api.v1.multi-currency.convert'), [
             'amount' => 100,
-            'from'   => 'USD',
-            'to'     => 'ZMW',
+            'from' => 'USD',
+            'to' => 'ZMW',
         ])
         ->assertOk();
 
@@ -142,7 +142,7 @@ test('convert validates required fields', function () {
 test('can get loan currency info', function () {
     $admin = fxAdmin();
     seedRate('USD', 'ZMW', 27.0);
-    $loan  = fxLoan('USD', 2000);
+    $loan = fxLoan('USD', 2000);
     $loan->update(['fx_rate' => 27.0]);
 
     $resp = $this->actingAs($admin)

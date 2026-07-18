@@ -18,48 +18,48 @@ function returnsAdmin(): User
 function returnsInvestor(array $attrs = []): Investor
 {
     return Investor::create(array_merge([
-        'investor_number' => 'INV-' . rand(10000, 99999),
-        'name'            => 'Test Investor ' . rand(100, 999),
-        'email'           => 'inv' . rand(100, 999) . '@test.com',
-        'type'            => 'individual',
-        'status'          => 'active',
+        'investor_number' => 'INV-'.rand(10000, 99999),
+        'name' => 'Test Investor '.rand(100, 999),
+        'email' => 'inv'.rand(100, 999).'@test.com',
+        'type' => 'individual',
+        'status' => 'active',
     ], $attrs));
 }
 
 function withActiveAllocation(Investor $investor, float $amount = 10000): InvestorAllocation
 {
     $borrower = Borrower::factory()->create();
-    $loan     = Loan::factory()->create(['borrower_id' => $borrower->id, 'principal_amount' => $amount]);
-    $staff    = User::factory()->create(['role' => \App\Enums\UserRole::SuperAdmin, 'is_active' => true]);
+    $loan = Loan::factory()->create(['borrower_id' => $borrower->id, 'principal_amount' => $amount]);
+    $staff = User::factory()->create(['role' => \App\Enums\UserRole::SuperAdmin, 'is_active' => true]);
 
     return InvestorAllocation::create([
-        'investor_id'      => $investor->id,
-        'loan_id'          => $loan->id,
-        'recorded_by'      => $staff->id,
+        'investor_id' => $investor->id,
+        'loan_id' => $loan->id,
+        'recorded_by' => $staff->id,
         'allocated_amount' => $amount,
-        'expected_return'  => $amount * 0.12,
-        'actual_return'    => 0,
-        'status'           => 'active',
-        'allocation_date'  => now()->toDateString(),
+        'expected_return' => $amount * 0.12,
+        'actual_return' => 0,
+        'status' => 'active',
+        'allocation_date' => now()->toDateString(),
     ]);
 }
 
 // ─── List Dividends ───────────────────────────────────────────────────────────
 
 test('can list dividends and summary for an investor', function () {
-    $admin    = returnsAdmin();
+    $admin = returnsAdmin();
     $investor = returnsInvestor();
     withActiveAllocation($investor);
 
     InvestorDividend::create([
-        'investor_id'    => $investor->id,
-        'period'         => '2026-02',
-        'principal'      => 10000,
-        'return_rate'    => 12.0,
+        'investor_id' => $investor->id,
+        'period' => '2026-02',
+        'principal' => 10000,
+        'return_rate' => 12.0,
         'gross_dividend' => 100,
-        'tax_withheld'   => 15,
-        'net_dividend'   => 85,
-        'status'         => 'paid',
+        'tax_withheld' => 15,
+        'net_dividend' => 85,
+        'status' => 'paid',
     ]);
 
     $resp = $this->actingAs($admin)
@@ -73,13 +73,13 @@ test('can list dividends and summary for an investor', function () {
 // ─── Calculate Dividend ───────────────────────────────────────────────────────
 
 test('can calculate a dividend for an investor', function () {
-    $admin    = returnsAdmin();
+    $admin = returnsAdmin();
     $investor = returnsInvestor();
     withActiveAllocation($investor, 12000);
 
     $resp = $this->actingAs($admin)
         ->postJson(route('api.v1.investors.dividends.calculate', $investor), [
-            'period'          => '2026-03',
+            'period' => '2026-03',
             'annual_rate_pct' => 12.0,
         ])
         ->assertCreated();
@@ -91,13 +91,13 @@ test('can calculate a dividend for an investor', function () {
 });
 
 test('dividend calculation uses provided annual rate', function () {
-    $admin    = returnsAdmin();
+    $admin = returnsAdmin();
     $investor = returnsInvestor();
     withActiveAllocation($investor, 6000);
 
     $resp = $this->actingAs($admin)
         ->postJson(route('api.v1.investors.dividends.calculate', $investor), [
-            'period'          => '2026-03',
+            'period' => '2026-03',
             'annual_rate_pct' => 24.0,
         ])
         ->assertCreated();
@@ -107,7 +107,7 @@ test('dividend calculation uses provided annual rate', function () {
 });
 
 test('dividend calculation validates period format', function () {
-    $admin    = returnsAdmin();
+    $admin = returnsAdmin();
     $investor = returnsInvestor();
 
     $this->actingAs($admin)
@@ -120,19 +120,19 @@ test('dividend calculation validates period format', function () {
 // ─── Pay Dividend ─────────────────────────────────────────────────────────────
 
 test('can mark a dividend as paid', function () {
-    $admin    = returnsAdmin();
+    $admin = returnsAdmin();
     $investor = returnsInvestor();
     withActiveAllocation($investor, 10000);
 
     $dividend = InvestorDividend::create([
-        'investor_id'    => $investor->id,
-        'period'         => '2026-03',
-        'principal'      => 10000,
-        'return_rate'    => 12,
+        'investor_id' => $investor->id,
+        'period' => '2026-03',
+        'principal' => 10000,
+        'return_rate' => 12,
         'gross_dividend' => 100,
-        'tax_withheld'   => 15,
-        'net_dividend'   => 85,
-        'status'         => 'pending',
+        'tax_withheld' => 15,
+        'net_dividend' => 85,
+        'status' => 'pending',
     ]);
 
     $resp = $this->actingAs($admin)
@@ -144,18 +144,18 @@ test('can mark a dividend as paid', function () {
 });
 
 test('cannot pay an already paid dividend', function () {
-    $admin    = returnsAdmin();
+    $admin = returnsAdmin();
     $investor = returnsInvestor();
 
     $dividend = InvestorDividend::create([
-        'investor_id'    => $investor->id,
-        'period'         => '2026-03',
-        'principal'      => 10000,
-        'return_rate'    => 12,
+        'investor_id' => $investor->id,
+        'period' => '2026-03',
+        'principal' => 10000,
+        'return_rate' => 12,
         'gross_dividend' => 100,
-        'tax_withheld'   => 15,
-        'net_dividend'   => 85,
-        'status'         => 'paid',
+        'tax_withheld' => 15,
+        'net_dividend' => 85,
+        'status' => 'paid',
     ]);
 
     $this->actingAs($admin)
@@ -166,18 +166,18 @@ test('cannot pay an already paid dividend', function () {
 // ─── Cancel Dividend ──────────────────────────────────────────────────────────
 
 test('can cancel a pending dividend', function () {
-    $admin    = returnsAdmin();
+    $admin = returnsAdmin();
     $investor = returnsInvestor();
 
     $dividend = InvestorDividend::create([
-        'investor_id'    => $investor->id,
-        'period'         => '2026-03',
-        'principal'      => 10000,
-        'return_rate'    => 12,
+        'investor_id' => $investor->id,
+        'period' => '2026-03',
+        'principal' => 10000,
+        'return_rate' => 12,
         'gross_dividend' => 100,
-        'tax_withheld'   => 15,
-        'net_dividend'   => 85,
-        'status'         => 'pending',
+        'tax_withheld' => 15,
+        'net_dividend' => 85,
+        'status' => 'pending',
     ]);
 
     $resp = $this->actingAs($admin)
@@ -188,18 +188,18 @@ test('can cancel a pending dividend', function () {
 });
 
 test('cannot cancel a paid dividend', function () {
-    $admin    = returnsAdmin();
+    $admin = returnsAdmin();
     $investor = returnsInvestor();
 
     $dividend = InvestorDividend::create([
-        'investor_id'    => $investor->id,
-        'period'         => '2026-02',
-        'principal'      => 10000,
-        'return_rate'    => 12,
+        'investor_id' => $investor->id,
+        'period' => '2026-02',
+        'principal' => 10000,
+        'return_rate' => 12,
         'gross_dividend' => 100,
-        'tax_withheld'   => 15,
-        'net_dividend'   => 85,
-        'status'         => 'paid',
+        'tax_withheld' => 15,
+        'net_dividend' => 85,
+        'status' => 'paid',
     ]);
 
     $this->actingAs($admin)

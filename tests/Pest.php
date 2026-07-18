@@ -35,7 +35,7 @@ function actingAsAdmin(): \App\Models\Tenant\User
     // role=SuperAdmin triggers User::booted()'s save hook, which syncs the
     // matching (now-seeded, fully-permissioned) spatie role automatically.
     return \App\Models\Tenant\User::factory()->create([
-        'role'      => \App\Enums\UserRole::SuperAdmin,
+        'role' => \App\Enums\UserRole::SuperAdmin,
         'is_active' => true,
     ]);
 }
@@ -45,12 +45,12 @@ function makePlan(array $overrides = []): \App\Models\Tenant\LoanPlan
     $type = \App\Models\Tenant\LoanType::factory()->create();
 
     return \App\Models\Tenant\LoanPlan::factory()->create(array_merge([
-        'loan_type_id'        => $type->id,
-        'interest_rate'       => 10,          // 10%
-        'interest_type'       => 'flat',
-        'repayment_schedule'  => 'monthly',
-        'processing_fee'      => 2,           // 2%
-        'insurance_fee'       => 0,
-        'grace_period_days'   => 0,
+        'loan_type_id' => $type->id,
+        'interest_rate' => 10,          // 10%
+        'interest_type' => 'flat',
+        'repayment_schedule' => 'monthly',
+        'processing_fee' => 2,           // 2%
+        'insurance_fee' => 0,
+        'grace_period_days' => 0,
     ], $overrides));
 }

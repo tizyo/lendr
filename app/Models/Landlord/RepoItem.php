@@ -20,10 +20,10 @@ class RepoItem extends Model
     protected function casts(): array
     {
         return [
-            'price'          => 'decimal:2',
+            'price' => 'decimal:2',
             'original_value' => 'decimal:2',
-            'is_sold'        => 'boolean',
-            'is_active'      => 'boolean',
+            'is_sold' => 'boolean',
+            'is_active' => 'boolean',
         ];
     }
 

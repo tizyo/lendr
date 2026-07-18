@@ -14,9 +14,9 @@ class AutoDecisionService
      */
     public function evaluate(Loan $loan): AutoDecision
     {
-        $borrower    = $loan->borrower;
+        $borrower = $loan->borrower;
         $creditScore = (float) ($borrower->credit_score ?? 0);
-        $principal   = (float) $loan->principal_amount;
+        $principal = (float) $loan->principal_amount;
 
         // Simplified DTI: we don't store income, so treat DTI as null
         $dti = null;
@@ -28,7 +28,7 @@ class AutoDecisionService
             ->orderBy('priority')
             ->get();
 
-        $matchedRule   = null;
+        $matchedRule = null;
         $decidedAction = 'manual'; // fallback
 
         foreach ($rules as $rule) {
@@ -36,7 +36,7 @@ class AutoDecisionService
                 continue;
             }
 
-            $matchedRule   = $rule;
+            $matchedRule = $rule;
             $decidedAction = $rule->action;
             break;
         }
@@ -55,12 +55,12 @@ class AutoDecisionService
         }
 
         return AutoDecision::create([
-            'loan_id'      => $loan->id,
-            'rule_id'      => $matchedRule?->id,
-            'action'       => $decidedAction,
+            'loan_id' => $loan->id,
+            'rule_id' => $matchedRule?->id,
+            'action' => $decidedAction,
             'credit_score' => $creditScore > 0 ? $creditScore : null,
-            'dti_pct'      => $dti,
-            'factors'      => $factors,
+            'dti_pct' => $dti,
+            'factors' => $factors,
         ]);
     }
 

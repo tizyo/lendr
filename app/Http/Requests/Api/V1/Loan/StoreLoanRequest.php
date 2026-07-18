@@ -28,18 +28,18 @@ class StoreLoanRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'borrower_id'            => ['required', 'exists:borrowers,id'],
-            'loan_type_id'           => ['required', 'exists:loan_types,id'],
-            'loan_plan_id'           => ['required', 'exists:loan_plans,id'],
-            'principal_amount'       => ['required', 'numeric', 'min:0.01'],
-            'tenure'                 => ['required', 'integer', 'min:1'],
-            'loan_purpose'           => ['nullable', 'string', 'max:1000'],
-            'application_date'       => ['required', 'date'],
+            'borrower_id' => ['required', 'exists:borrowers,id'],
+            'loan_type_id' => ['required', 'exists:loan_types,id'],
+            'loan_plan_id' => ['required', 'exists:loan_plans,id'],
+            'principal_amount' => ['required', 'numeric', 'min:0.01'],
+            'tenure' => ['required', 'integer', 'min:1'],
+            'loan_purpose' => ['nullable', 'string', 'max:1000'],
+            'application_date' => ['required', 'date'],
             'collateral_description' => ['nullable', 'string', 'max:1000'],
-            'guarantor_name'         => ['nullable', 'string', 'max:150'],
-            'guarantor_phone'        => ['nullable', 'string', 'max:20'],
+            'guarantor_name' => ['nullable', 'string', 'max:150'],
+            'guarantor_phone' => ['nullable', 'string', 'max:20'],
             'guarantor_relationship' => ['nullable', 'string', 'max:100'],
-            'notes'                  => ['nullable', 'string', 'max:2000'],
+            'notes' => ['nullable', 'string', 'max:2000'],
         ];
     }
 }

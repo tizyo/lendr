@@ -25,14 +25,15 @@ class FeaturedRepoItem extends Model
 
     protected $casts = [
         'amount_paid' => 'float',
-        'days_paid'   => 'integer',
-        'starts_at'   => 'datetime',
-        'expires_at'  => 'datetime',
-        'is_active'   => 'boolean',
+        'days_paid' => 'integer',
+        'starts_at' => 'datetime',
+        'expires_at' => 'datetime',
+        'is_active' => 'boolean',
     ];
 
     // ─── Rate constants ────────────────────────────────────────────────────
     public const RATE_PER_DAY = 50.00;      // K50/day
+
     public const MAX_ACTIVE_PER_TENANT = 10;
 
     // ─── Relationships ─────────────────────────────────────────────────────
@@ -69,6 +70,7 @@ class FeaturedRepoItem extends Model
         if ($this->expires_at === null) {
             return -1; // indefinite
         }
+
         return max(0, (int) now()->diffInDays($this->expires_at, false));
     }
 

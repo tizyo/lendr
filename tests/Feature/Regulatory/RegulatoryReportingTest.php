@@ -24,41 +24,41 @@ function regAdmin(): User
 
 function regLoan(float $outstanding = 5000): Loan
 {
-    $type     = LoanType::factory()->create();
-    $plan     = LoanPlan::factory()->create(['loan_type_id' => $type->id]);
+    $type = LoanType::factory()->create();
+    $plan = LoanPlan::factory()->create(['loan_type_id' => $type->id]);
     $borrower = Borrower::factory()->create();
 
     return Loan::factory()->create([
-        'borrower_id'       => $borrower->id,
-        'loan_type_id'      => $type->id,
-        'loan_plan_id'      => $plan->id,
-        'status'            => LoanStatus::Active,
+        'borrower_id' => $borrower->id,
+        'loan_type_id' => $type->id,
+        'loan_plan_id' => $plan->id,
+        'status' => LoanStatus::Active,
         'outstanding_balance' => $outstanding,
-        'principal_amount'  => $outstanding,
+        'principal_amount' => $outstanding,
     ]);
 }
 
 function seedGlEquity(float $amount): void
 {
     $account = GlAccount::create([
-        'code'      => '3001',
-        'name'      => 'Capital Fund',
-        'type'      => 'equity',
+        'code' => '3001',
+        'name' => 'Capital Fund',
+        'type' => 'equity',
         'is_active' => true,
     ]);
 
     $entry = GlJournalEntry::create([
-        'reference'   => 'SEED-EQUITY',
+        'reference' => 'SEED-EQUITY',
         'description' => 'Test equity seed',
-        'entry_date'  => now()->toDateString(),
-        'posted_at'   => now(),
+        'entry_date' => now()->toDateString(),
+        'posted_at' => now(),
     ]);
 
     GlJournalLine::create([
         'journal_entry_id' => $entry->id,
-        'account_id'       => $account->id,
-        'side'             => 'credit',
-        'amount'           => $amount,
+        'account_id' => $account->id,
+        'side' => 'credit',
+        'amount' => $amount,
     ]);
 }
 
@@ -71,7 +71,7 @@ test('can generate a CAR report', function () {
     $resp = $this->actingAs($admin)
         ->postJson(route('api.v1.regulatory.generate'), [
             'report_type' => 'car',
-            'period'      => '2026-03',
+            'period' => '2026-03',
         ])
         ->assertCreated();
 
@@ -86,7 +86,7 @@ test('CAR report shows compliant when capital exceeds threshold', function () {
     regLoan(10000);       // small loan portfolio
 
     $service = app(RegulatoryReportingService::class);
-    $report  = $service->generate('car', '2026-03');
+    $report = $service->generate('car', '2026-03');
 
     // 50000 / 10000 = 500% CAR — well above 10% minimum
     expect($report->data['compliant'])->toBeTrue()
@@ -98,7 +98,7 @@ test('CAR report shows non-compliant when capital is zero', function () {
     regLoan(10000); // no equity seeded
 
     $service = app(RegulatoryReportingService::class);
-    $report  = $service->generate('car', '2026-03');
+    $report = $service->generate('car', '2026-03');
 
     expect($report->data['compliant'])->toBeFalse();
 });
@@ -111,7 +111,7 @@ test('can generate a liquidity ratio report', function () {
     $resp = $this->actingAs($admin)
         ->postJson(route('api.v1.regulatory.generate'), [
             'report_type' => 'liquidity',
-            'period'      => '2026-03',
+            'period' => '2026-03',
         ])
         ->assertCreated();
 
@@ -127,7 +127,7 @@ test('can generate a large exposure report', function () {
     regLoan(8000);       // 80% of capital — breaches 25% limit
 
     $service = app(RegulatoryReportingService::class);
-    $report  = $service->generate('large_exposure', '2026-03');
+    $report = $service->generate('large_exposure', '2026-03');
 
     expect($report->data['exposures'])->not->toBeEmpty();
     expect($report->data['exposures'][0]['breached'])->toBeTrue();
@@ -139,7 +139,7 @@ test('no large exposure when loans are within limit', function () {
     regLoan(5000);         // 5% — within limit
 
     $service = app(RegulatoryReportingService::class);
-    $report  = $service->generate('large_exposure', '2026-03');
+    $report = $service->generate('large_exposure', '2026-03');
 
     expect($report->data['exposures'])->toBeEmpty();
 });
@@ -153,7 +153,7 @@ test('can generate a PAR report', function () {
     $resp = $this->actingAs($admin)
         ->postJson(route('api.v1.regulatory.generate'), [
             'report_type' => 'par',
-            'period'      => '2026-03',
+            'period' => '2026-03',
         ])
         ->assertCreated();
 
@@ -166,7 +166,7 @@ test('can generate a PAR report', function () {
 // ─── Listing & retrieval ──────────────────────────────────────────────────────
 
 test('can list generated reports', function () {
-    $admin   = regAdmin();
+    $admin = regAdmin();
     $service = app(RegulatoryReportingService::class);
     $service->generate('car', '2026-03');
     $service->generate('par', '2026-03');
@@ -179,13 +179,13 @@ test('can list generated reports', function () {
 });
 
 test('can filter reports by type', function () {
-    $admin   = regAdmin();
+    $admin = regAdmin();
     $service = app(RegulatoryReportingService::class);
     $service->generate('car', '2026-03');
     $service->generate('par', '2026-03');
 
     $resp = $this->actingAs($admin)
-        ->getJson(route('api.v1.regulatory.reports') . '?report_type=car')
+        ->getJson(route('api.v1.regulatory.reports').'?report_type=car')
         ->assertOk();
 
     $types = collect($resp->json('data'))->pluck('report_type')->unique()->values()->toArray();
@@ -193,9 +193,9 @@ test('can filter reports by type', function () {
 });
 
 test('can retrieve a single report', function () {
-    $admin   = regAdmin();
+    $admin = regAdmin();
     $service = app(RegulatoryReportingService::class);
-    $report  = $service->generate('liquidity', '2026-03');
+    $report = $service->generate('liquidity', '2026-03');
 
     $resp = $this->actingAs($admin)
         ->getJson(route('api.v1.regulatory.reports.show', $report))
@@ -207,9 +207,9 @@ test('can retrieve a single report', function () {
 // ─── Email delivery ───────────────────────────────────────────────────────────
 
 test('can email a report to recipients', function () {
-    $admin   = regAdmin();
+    $admin = regAdmin();
     $service = app(RegulatoryReportingService::class);
-    $report  = $service->generate('car', '2026-03');
+    $report = $service->generate('car', '2026-03');
 
     $mail = Mockery::mock(TenantMailService::class);
     $mail->shouldReceive('raw')->once();
@@ -232,9 +232,9 @@ test('can create a report schedule config', function () {
 
     $resp = $this->actingAs($admin)
         ->postJson(route('api.v1.regulatory.configs.upsert'), [
-            'report_type'      => 'car',
-            'name'             => 'Monthly CAR Report',
-            'frequency'        => 'monthly',
+            'report_type' => 'car',
+            'name' => 'Monthly CAR Report',
+            'frequency' => 'monthly',
             'recipient_emails' => 'cfo@bank.zm,compliance@bank.zm',
         ])
         ->assertCreated();
@@ -246,11 +246,11 @@ test('can create a report schedule config', function () {
 test('can list report configs', function () {
     $admin = regAdmin();
     RegulatoryReportConfig::create([
-        'report_type'      => 'par',
-        'name'             => 'Quarterly PAR',
-        'frequency'        => 'quarterly',
+        'report_type' => 'par',
+        'name' => 'Quarterly PAR',
+        'frequency' => 'quarterly',
         'recipient_emails' => 'risk@bank.zm',
-        'is_active'        => true,
+        'is_active' => true,
     ]);
 
     $resp = $this->actingAs($admin)
@@ -266,7 +266,7 @@ test('generate rejects invalid report type', function () {
     $this->actingAs($admin)
         ->postJson(route('api.v1.regulatory.generate'), [
             'report_type' => 'unknown_type',
-            'period'      => '2026-03',
+            'period' => '2026-03',
         ])
         ->assertUnprocessable();
 });

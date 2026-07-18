@@ -29,17 +29,17 @@ class AutoDecisionController extends BaseApiController
     public function storeRule(Request $request): JsonResponse
     {
         $data = $request->validate([
-            'name'               => ['required', 'string', 'max:100'],
-            'product_type'       => ['nullable', 'string'],
-            'min_credit_score'   => ['nullable', 'numeric', 'min:0', 'max:850'],
-            'max_dti_pct'        => ['nullable', 'numeric', 'min:0', 'max:100'],
-            'min_income'         => ['nullable', 'numeric', 'min:0'],
-            'max_loan_amount'    => ['nullable', 'numeric', 'min:0'],
-            'min_tenure_months'  => ['nullable', 'integer', 'min:1'],
-            'max_tenure_months'  => ['nullable', 'integer', 'min:1'],
-            'action'             => ['required', 'in:approve,decline,manual'],
-            'priority'           => ['nullable', 'integer', 'min:1'],
-            'is_active'          => ['nullable', 'boolean'],
+            'name' => ['required', 'string', 'max:100'],
+            'product_type' => ['nullable', 'string'],
+            'min_credit_score' => ['nullable', 'numeric', 'min:0', 'max:850'],
+            'max_dti_pct' => ['nullable', 'numeric', 'min:0', 'max:100'],
+            'min_income' => ['nullable', 'numeric', 'min:0'],
+            'max_loan_amount' => ['nullable', 'numeric', 'min:0'],
+            'min_tenure_months' => ['nullable', 'integer', 'min:1'],
+            'max_tenure_months' => ['nullable', 'integer', 'min:1'],
+            'action' => ['required', 'in:approve,decline,manual'],
+            'priority' => ['nullable', 'integer', 'min:1'],
+            'is_active' => ['nullable', 'boolean'],
         ]);
 
         $rule = AutoDecisionRule::create($data);
@@ -53,15 +53,15 @@ class AutoDecisionController extends BaseApiController
     public function updateRule(Request $request, AutoDecisionRule $rule): JsonResponse
     {
         $data = $request->validate([
-            'name'               => ['sometimes', 'string', 'max:100'],
-            'min_credit_score'   => ['sometimes', 'numeric', 'min:0', 'max:850'],
-            'max_dti_pct'        => ['sometimes', 'nullable', 'numeric', 'min:0', 'max:100'],
-            'max_loan_amount'    => ['sometimes', 'nullable', 'numeric', 'min:0'],
-            'min_tenure_months'  => ['sometimes', 'nullable', 'integer', 'min:1'],
-            'max_tenure_months'  => ['sometimes', 'nullable', 'integer', 'min:1'],
-            'action'             => ['sometimes', 'in:approve,decline,manual'],
-            'priority'           => ['sometimes', 'integer', 'min:1'],
-            'is_active'          => ['sometimes', 'boolean'],
+            'name' => ['sometimes', 'string', 'max:100'],
+            'min_credit_score' => ['sometimes', 'numeric', 'min:0', 'max:850'],
+            'max_dti_pct' => ['sometimes', 'nullable', 'numeric', 'min:0', 'max:100'],
+            'max_loan_amount' => ['sometimes', 'nullable', 'numeric', 'min:0'],
+            'min_tenure_months' => ['sometimes', 'nullable', 'integer', 'min:1'],
+            'max_tenure_months' => ['sometimes', 'nullable', 'integer', 'min:1'],
+            'action' => ['sometimes', 'in:approve,decline,manual'],
+            'priority' => ['sometimes', 'integer', 'min:1'],
+            'is_active' => ['sometimes', 'boolean'],
         ]);
 
         $rule->update($data);
@@ -113,12 +113,12 @@ class AutoDecisionController extends BaseApiController
     {
         $data = $request->validate([
             'action' => ['required', 'in:approve,decline,manual'],
-            'notes'  => ['nullable', 'string'],
+            'notes' => ['nullable', 'string'],
         ]);
 
         $decision->update([
-            'action'      => $data['action'],
-            'notes'       => $data['notes'] ?? $decision->notes,
+            'action' => $data['action'],
+            'notes' => $data['notes'] ?? $decision->notes,
             'reviewed_by' => auth()->id(),
             'reviewed_at' => now(),
         ]);
@@ -131,34 +131,34 @@ class AutoDecisionController extends BaseApiController
     private function formatRule(AutoDecisionRule $r): array
     {
         return [
-            'id'                 => $r->id,
-            'name'               => $r->name,
-            'product_type'       => $r->product_type,
-            'min_credit_score'   => (float) $r->min_credit_score,
-            'max_dti_pct'        => $r->max_dti_pct ? (float) $r->max_dti_pct : null,
-            'min_income'         => $r->min_income ? (float) $r->min_income : null,
-            'max_loan_amount'    => $r->max_loan_amount ? (float) $r->max_loan_amount : null,
-            'min_tenure_months'  => $r->min_tenure_months,
-            'max_tenure_months'  => $r->max_tenure_months,
-            'action'             => $r->action,
-            'priority'           => $r->priority,
-            'is_active'          => $r->is_active,
+            'id' => $r->id,
+            'name' => $r->name,
+            'product_type' => $r->product_type,
+            'min_credit_score' => (float) $r->min_credit_score,
+            'max_dti_pct' => $r->max_dti_pct ? (float) $r->max_dti_pct : null,
+            'min_income' => $r->min_income ? (float) $r->min_income : null,
+            'max_loan_amount' => $r->max_loan_amount ? (float) $r->max_loan_amount : null,
+            'min_tenure_months' => $r->min_tenure_months,
+            'max_tenure_months' => $r->max_tenure_months,
+            'action' => $r->action,
+            'priority' => $r->priority,
+            'is_active' => $r->is_active,
         ];
     }
 
     private function formatDecision(AutoDecision $d): array
     {
         return [
-            'id'           => $d->id,
-            'loan_id'      => $d->loan_id,
-            'rule_id'      => $d->rule_id,
-            'action'       => $d->action,
+            'id' => $d->id,
+            'loan_id' => $d->loan_id,
+            'rule_id' => $d->rule_id,
+            'action' => $d->action,
             'credit_score' => $d->credit_score ? (float) $d->credit_score : null,
-            'dti_pct'      => $d->dti_pct ? (float) $d->dti_pct : null,
-            'factors'      => $d->factors ?? [],
-            'notes'        => $d->notes,
-            'reviewed_by'  => $d->reviewed_by,
-            'reviewed_at'  => $d->reviewed_at?->toDateTimeString(),
+            'dti_pct' => $d->dti_pct ? (float) $d->dti_pct : null,
+            'factors' => $d->factors ?? [],
+            'notes' => $d->notes,
+            'reviewed_by' => $d->reviewed_by,
+            'reviewed_at' => $d->reviewed_at?->toDateTimeString(),
         ];
     }
 }

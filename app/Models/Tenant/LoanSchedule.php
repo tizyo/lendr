@@ -30,19 +30,19 @@ class LoanSchedule extends Model
     protected function casts(): array
     {
         return [
-            'due_date'  => 'date',
+            'due_date' => 'date',
             'paid_date' => 'date',
-            'is_paid'   => 'boolean',
-            'principal_due'  => 'decimal:2',
-            'interest_due'   => 'decimal:2',
-            'fee_due'        => 'decimal:2',
-            'total_due'      => 'decimal:2',
+            'is_paid' => 'boolean',
+            'principal_due' => 'decimal:2',
+            'interest_due' => 'decimal:2',
+            'fee_due' => 'decimal:2',
+            'total_due' => 'decimal:2',
             'principal_paid' => 'decimal:2',
-            'interest_paid'  => 'decimal:2',
-            'fee_paid'       => 'decimal:2',
-            'penalty_paid'   => 'decimal:2',
-            'total_paid'     => 'decimal:2',
-            'outstanding'    => 'decimal:2',
+            'interest_paid' => 'decimal:2',
+            'fee_paid' => 'decimal:2',
+            'penalty_paid' => 'decimal:2',
+            'total_paid' => 'decimal:2',
+            'outstanding' => 'decimal:2',
             'penalty_accrued' => 'decimal:2',
         ];
     }

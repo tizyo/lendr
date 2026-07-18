@@ -22,11 +22,11 @@ class MigrateReferenceDataCommand extends BaseMigrationCommand
 
     public function handle(): int
     {
-        $svc     = $this->makeService();
-        $dryRun  = $this->isDryRun();
-        $errors  = [];
+        $svc = $this->makeService();
+        $dryRun = $this->isDryRun();
+        $errors = [];
         $migrated = 0;
-        $skipped  = 0;
+        $skipped = 0;
 
         // ── Loan types ────────────────────────────────────────────────────────
         $this->info('→ Migrating loan types…');
@@ -37,23 +37,24 @@ class MigrateReferenceDataCommand extends BaseMigrationCommand
             foreach ($rows as $row) {
                 if ($svc->alreadyMigrated('loan_types', $row->id)) {
                     $skipped++;
+
                     continue;
                 }
 
                 if (! $dryRun) {
                     $newId = DB::table('loan_types')->insertGetId([
-                        'name'            => $row->name,
-                        'description'     => $row->description ?? null,
-                        'is_active'       => (bool) ($row->status ?? 1),
-                        'created_at'      => $row->created_at ?? now(),
-                        'updated_at'      => $row->updated_at ?? now(),
+                        'name' => $row->name,
+                        'description' => $row->description ?? null,
+                        'is_active' => (bool) ($row->status ?? 1),
+                        'created_at' => $row->created_at ?? now(),
+                        'updated_at' => $row->updated_at ?? now(),
                     ]);
                     $svc->logSuccess('loan_types', $row->id, $newId);
                 }
                 $migrated++;
             }
         } catch (\Throwable $e) {
-            $errors[] = 'loan_types: ' . $e->getMessage();
+            $errors[] = 'loan_types: '.$e->getMessage();
         }
 
         // ── Loan plans ────────────────────────────────────────────────────────
@@ -65,6 +66,7 @@ class MigrateReferenceDataCommand extends BaseMigrationCommand
             foreach ($rows as $row) {
                 if ($svc->alreadyMigrated('loan_plans', $row->id)) {
                     $skipped++;
+
                     continue;
                 }
 
@@ -72,33 +74,34 @@ class MigrateReferenceDataCommand extends BaseMigrationCommand
 
                 if (! $loanTypeNewId) {
                     $errors[] = "loan_plans: no mapped loan_type for legacy id={$row->loan_type_id}";
+
                     continue;
                 }
 
                 if (! $dryRun) {
                     $newId = DB::table('loan_plans')->insertGetId([
-                        'loan_type_id'           => $loanTypeNewId,
-                        'name'                   => $row->name,
-                        'interest_rate'          => $row->interest_rate,
-                        'interest_type'          => $row->interest_type ?? 'flat',
-                        'repayment_frequency'    => $row->repayment_period ?? 'monthly',
-                        'max_amount'             => $row->max_amount ?? null,
-                        'min_amount'             => $row->min_amount ?? null,
-                        'max_duration_months'    => $row->max_duration ?? null,
-                        'min_duration_months'    => $row->min_duration ?? null,
-                        'processing_fee_rate'    => $row->processing_fee ?? 0,
-                        'penalty_rate'           => $row->penalty_rate ?? 0,
-                        'grace_period_days'      => $row->grace_period ?? 0,
-                        'is_active'              => (bool) ($row->status ?? 1),
-                        'created_at'             => $row->created_at ?? now(),
-                        'updated_at'             => $row->updated_at ?? now(),
+                        'loan_type_id' => $loanTypeNewId,
+                        'name' => $row->name,
+                        'interest_rate' => $row->interest_rate,
+                        'interest_type' => $row->interest_type ?? 'flat',
+                        'repayment_frequency' => $row->repayment_period ?? 'monthly',
+                        'max_amount' => $row->max_amount ?? null,
+                        'min_amount' => $row->min_amount ?? null,
+                        'max_duration_months' => $row->max_duration ?? null,
+                        'min_duration_months' => $row->min_duration ?? null,
+                        'processing_fee_rate' => $row->processing_fee ?? 0,
+                        'penalty_rate' => $row->penalty_rate ?? 0,
+                        'grace_period_days' => $row->grace_period ?? 0,
+                        'is_active' => (bool) ($row->status ?? 1),
+                        'created_at' => $row->created_at ?? now(),
+                        'updated_at' => $row->updated_at ?? now(),
                     ]);
                     $svc->logSuccess('loan_plans', $row->id, $newId);
                 }
                 $migrated++;
             }
         } catch (\Throwable $e) {
-            $errors[] = 'loan_plans: ' . $e->getMessage();
+            $errors[] = 'loan_plans: '.$e->getMessage();
         }
 
         // ── Expense categories ─────────────────────────────────────────────────
@@ -110,14 +113,15 @@ class MigrateReferenceDataCommand extends BaseMigrationCommand
             foreach ($rows as $row) {
                 if ($svc->alreadyMigrated('expense_categories', $row->id)) {
                     $skipped++;
+
                     continue;
                 }
 
                 if (! $dryRun) {
                     $newId = DB::table('expense_categories')->insertGetId([
-                        'name'       => $row->name,
-                        'code'       => $row->code ?? strtoupper(substr(preg_replace('/\s+/', '_', $row->name), 0, 20)),
-                        'is_active'  => true,
+                        'name' => $row->name,
+                        'code' => $row->code ?? strtoupper(substr(preg_replace('/\s+/', '_', $row->name), 0, 20)),
+                        'is_active' => true,
                         'created_at' => $row->created_at ?? now(),
                         'updated_at' => $row->updated_at ?? now(),
                     ]);
@@ -126,7 +130,7 @@ class MigrateReferenceDataCommand extends BaseMigrationCommand
                 $migrated++;
             }
         } catch (\Throwable $e) {
-            $errors[] = 'expense_categories: ' . $e->getMessage();
+            $errors[] = 'expense_categories: '.$e->getMessage();
         }
 
         // ── System settings ────────────────────────────────────────────────────
@@ -139,22 +143,22 @@ class MigrateReferenceDataCommand extends BaseMigrationCommand
                 if (! $dryRun) {
                     DB::table('settings')->updateOrInsert(
                         ['key' => $row->setting_key ?? $row->key],
-                        ['value' => $row->setting_value ?? $row->value]
+                        ['value' => $row->setting_value ?? $row->value],
                     );
                 }
                 $migrated++;
             }
         } catch (\Throwable $e) {
-            $errors[] = 'settings: ' . $e->getMessage();
+            $errors[] = 'settings: '.$e->getMessage();
         }
 
         $result = new MigrationResult(
-            step:     'reference-data',
+            step: 'reference-data',
             migrated: $migrated,
-            skipped:  $skipped,
-            failed:   count($errors),
-            dryRun:   $dryRun,
-            errors:   $errors,
+            skipped: $skipped,
+            failed: count($errors),
+            dryRun: $dryRun,
+            errors: $errors,
         );
 
         $this->printResult($result);

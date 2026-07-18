@@ -24,10 +24,10 @@ class InvestorAllocation extends Model
     {
         return [
             'allocated_amount' => 'decimal:2',
-            'expected_return'  => 'decimal:2',
-            'actual_return'    => 'decimal:2',
-            'allocation_date'  => 'date',
-            'settled_date'     => 'date',
+            'expected_return' => 'decimal:2',
+            'actual_return' => 'decimal:2',
+            'allocation_date' => 'date',
+            'settled_date' => 'date',
         ];
     }
 

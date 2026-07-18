@@ -8,7 +8,7 @@ use Spatie\Permission\Models\Permission;
 function loanOfficer(): User
 {
     $user = User::factory()->create([
-        'role'      => UserRole::LoanOfficer,
+        'role' => UserRole::LoanOfficer,
         'is_active' => true,
     ]);
 
@@ -41,8 +41,7 @@ test('borrower list is paginated', function () {
 
     $response = $this->actingAs($user)->get(route('borrowers.index'));
 
-    $response->assertInertia(fn ($page) =>
-        $page->has('borrowers.data', 20) // 20 per page
+    $response->assertInertia(fn ($page) => $page->has('borrowers.data', 20), // 20 per page
     );
 });
 
@@ -54,9 +53,8 @@ test('borrower list can be searched by phone', function () {
     $response = $this->actingAs($user)
         ->get(route('borrowers.index', ['search' => '0971234567']));
 
-    $response->assertInertia(fn ($page) =>
-        $page->has('borrowers.data', 1)
-             ->where('borrowers.data.0.phone', '0971234567')
+    $response->assertInertia(fn ($page) => $page->has('borrowers.data', 1)
+        ->where('borrowers.data.0.phone', '0971234567'),
     );
 });
 
@@ -65,9 +63,9 @@ test('loan officer can create a borrower', function () {
 
     $response = $this->actingAs($user)->post(route('borrowers.store'), [
         'first_name' => 'John',
-        'last_name'  => 'Banda',
-        'phone'      => '0971234567',
-        'country'    => 'ZM',
+        'last_name' => 'Banda',
+        'phone' => '0971234567',
+        'country' => 'ZM',
     ]);
 
     $response->assertRedirect();
@@ -79,9 +77,9 @@ test('borrower number is auto-generated on create', function () {
 
     $this->actingAs($user)->post(route('borrowers.store'), [
         'first_name' => 'Alice',
-        'last_name'  => 'Phiri',
-        'phone'      => '0961234567',
-        'country'    => 'ZM',
+        'last_name' => 'Phiri',
+        'phone' => '0961234567',
+        'country' => 'ZM',
     ]);
 
     $borrower = Borrower::where('phone', '0961234567')->first();
@@ -95,9 +93,9 @@ test('duplicate phone number is rejected', function () {
 
     $response = $this->actingAs($user)->post(route('borrowers.store'), [
         'first_name' => 'Another',
-        'last_name'  => 'Person',
-        'phone'      => '0971111111',
-        'country'    => 'ZM',
+        'last_name' => 'Person',
+        'phone' => '0971111111',
+        'country' => 'ZM',
     ]);
 
     $response->assertSessionHasErrors('phone');
@@ -110,9 +108,8 @@ test('loan officer can view borrower profile', function () {
     $this->actingAs($user)
         ->get(route('borrowers.show', $borrower))
         ->assertStatus(200)
-        ->assertInertia(fn ($page) =>
-            $page->component('borrowers/Show')
-                 ->where('borrower.id', $borrower->id)
+        ->assertInertia(fn ($page) => $page->component('borrowers/Show')
+            ->where('borrower.id', $borrower->id),
         );
 });
 

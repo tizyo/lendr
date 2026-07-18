@@ -50,13 +50,13 @@ class User extends Authenticatable
     protected function casts(): array
     {
         return [
-            'email_verified_at'      => 'datetime',
+            'email_verified_at' => 'datetime',
             'two_factor_confirmed_at' => 'datetime',
-            'invited_at'             => 'datetime',
-            'password'               => 'hashed',
-            'is_active'              => 'boolean',
-            'force_password_reset'   => 'boolean',
-            'role'                   => UserRole::class,
+            'invited_at' => 'datetime',
+            'password' => 'hashed',
+            'is_active' => 'boolean',
+            'force_password_reset' => 'boolean',
+            'role' => UserRole::class,
         ];
     }
 

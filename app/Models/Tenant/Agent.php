@@ -30,8 +30,8 @@ class Agent extends Model
     protected function casts(): array
     {
         return [
-            'commission_rate'   => 'decimal:2',
-            'fixed_commission'  => 'decimal:2',
+            'commission_rate' => 'decimal:2',
+            'fixed_commission' => 'decimal:2',
         ];
     }
 

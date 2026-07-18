@@ -24,30 +24,30 @@ function seedProvisionRates(): void
 
 function provisionLoan(int $dpdDays = 0): Loan
 {
-    $type     = LoanType::first() ?? LoanType::factory()->create();
-    $plan     = LoanPlan::first() ?? LoanPlan::factory()->create(['loan_type_id' => $type->id]);
+    $type = LoanType::first() ?? LoanType::factory()->create();
+    $plan = LoanPlan::first() ?? LoanPlan::factory()->create(['loan_type_id' => $type->id]);
     $borrower = Borrower::factory()->create();
 
     $loan = Loan::factory()->create([
-        'borrower_id'       => $borrower->id,
-        'loan_type_id'      => $type->id,
-        'loan_plan_id'      => $plan->id,
-        'status'            => LoanStatus::Active,
-        'principal_amount'  => 10000,
+        'borrower_id' => $borrower->id,
+        'loan_type_id' => $type->id,
+        'loan_plan_id' => $plan->id,
+        'status' => LoanStatus::Active,
+        'principal_amount' => 10000,
         'outstanding_balance' => 10000,
     ]);
 
     // Create an overdue installment if dpdDays > 0
     if ($dpdDays > 0) {
         LoanSchedule::create([
-            'loan_id'           => $loan->id,
+            'loan_id' => $loan->id,
             'instalment_number' => 1,
-            'due_date'          => now()->subDays($dpdDays)->toDateString(),
-            'principal_due'     => 1000,
-            'interest_due'      => 100,
-            'total_due'         => 1100,
-            'outstanding'       => 1100,
-            'is_paid'           => false,
+            'due_date' => now()->subDays($dpdDays)->toDateString(),
+            'principal_due' => 1000,
+            'interest_due' => 100,
+            'total_due' => 1100,
+            'outstanding' => 1100,
+            'is_paid' => false,
         ]);
     }
 
@@ -85,10 +85,10 @@ test('can create a custom provision rate', function () {
 
     $resp = $this->actingAs($admin)
         ->postJson(route('api.v1.provisioning.rates.store'), [
-            'stage_label'    => 'Stage 2 — Special',
-            'stage'          => 2,
-            'dpd_from'       => 45,
-            'dpd_to'         => 60,
+            'stage_label' => 'Stage 2 — Special',
+            'stage' => 2,
+            'dpd_from' => 45,
+            'dpd_to' => 60,
             'provision_rate' => 15.00,
         ])
         ->assertCreated();
@@ -211,4 +211,3 @@ test('unauthenticated cannot access provisioning endpoints', function () {
     $this->postJson(route('api.v1.provisioning.run'))
         ->assertUnauthorized();
 });
-

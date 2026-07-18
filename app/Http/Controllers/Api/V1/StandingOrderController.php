@@ -38,23 +38,23 @@ class StandingOrderController extends BaseApiController
     private function format(StandingOrder $o): array
     {
         return [
-            'id'                 => $o->id,
-            'loan_schedule_id'   => $o->loan_schedule_id,
-            'due_date'           => $o->due_date?->format('d M Y'),
-            'amount'             => (float) $o->amount,
-            'phone'              => $o->phone,
-            'gateway'            => $o->gateway,
-            'status'             => $o->status,
-            'retry_count'        => $o->retry_count,
-            'max_retries'        => $o->max_retries,
-            'next_attempt_at'    => $o->next_attempt_at?->format('d M Y H:i'),
-            'processed_at'       => $o->processed_at?->format('d M Y H:i'),
-            'failure_reason'     => $o->failure_reason,
+            'id' => $o->id,
+            'loan_schedule_id' => $o->loan_schedule_id,
+            'due_date' => $o->due_date?->format('d M Y'),
+            'amount' => (float) $o->amount,
+            'phone' => $o->phone,
+            'gateway' => $o->gateway,
+            'status' => $o->status,
+            'retry_count' => $o->retry_count,
+            'max_retries' => $o->max_retries,
+            'next_attempt_at' => $o->next_attempt_at?->format('d M Y H:i'),
+            'processed_at' => $o->processed_at?->format('d M Y H:i'),
+            'failure_reason' => $o->failure_reason,
             'provider_reference' => $o->provider_reference,
-            'payment'            => $o->payment ? [
+            'payment' => $o->payment ? [
                 'receipt_number' => $o->payment->receipt_number,
-                'amount'         => (float) $o->payment->amount,
-                'payment_date'   => $o->payment->payment_date,
+                'amount' => (float) $o->payment->amount,
+                'payment_date' => $o->payment->payment_date,
             ] : null,
         ];
     }
