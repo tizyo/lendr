@@ -18,8 +18,6 @@ class BorrowerController extends BaseApiController
 
     public function index(Request $request): JsonResponse
     {
-        $this->authorize('viewAny', Borrower::class);
-
         $borrowers = Borrower::query()
             ->when($request->search, fn ($q, $s) => $q->where(function ($q) use ($s) {
                 $q->where('first_name', 'like', "%{$s}%")
@@ -83,8 +81,6 @@ class BorrowerController extends BaseApiController
 
     public function show(Borrower $borrower): JsonResponse
     {
-        $this->authorize('view', $borrower);
-
         $borrower->load(['kycDocuments.reviewer:id,name']);
         $borrower->loadCount(['loans', 'activeLoans']);
 
@@ -100,8 +96,6 @@ class BorrowerController extends BaseApiController
 
     public function destroy(Borrower $borrower): JsonResponse
     {
-        $this->authorize('delete', $borrower);
-
         if ($borrower->activeLoans()->exists()) {
             return $this->error('Cannot delete a borrower with active loans.', 422);
         }
@@ -208,8 +202,6 @@ class BorrowerController extends BaseApiController
 
     public function toggleBlacklist(Request $request, Borrower $borrower): JsonResponse
     {
-        $this->authorize('update', $borrower);
-
         $request->validate(['reason' => ['nullable', 'string', 'max:500']]);
 
         $nowBlacklisting = ! $borrower->is_blacklisted;

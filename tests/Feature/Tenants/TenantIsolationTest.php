@@ -41,7 +41,7 @@ test('authenticated staff can list borrowers', function () {
         ->getJson(route('api.v1.borrowers.index'));
 
     $response->assertStatus(200);
-    $ids = collect($response->json('data.data'))->pluck('id')->toArray();
+    $ids = collect($response->json('data'))->pluck('id')->toArray();
     expect($ids)->toContain($borrower->id);
 });
 
@@ -112,7 +112,7 @@ test('unauthenticated fund access is rejected', function () {
 // ─── Role-based access ────────────────────────────────────────────────────────
 
 test('read_only user cannot record a payment', function () {
-    $readOnly = User::factory()->create(['role' => UserRole::ReadOnly, 'is_active' => true]);
+    $readOnly = User::factory()->create(['role' => UserRole::Auditor, 'is_active' => true]);
 
     $lt = LoanType::factory()->create();
     $plan = LoanPlan::factory()->create(['loan_type_id' => $lt->id]);

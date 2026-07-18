@@ -1,14 +1,13 @@
 <?php
 
 use App\Models\Tenant\Borrower;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
 
 // ─── OTP flow ────────────────────────────────────────────────────────────────
 
 test('borrower can request an otp for a registered phone', function () {
     Borrower::factory()->create([
-        'phone' => '+260971000001',
+        'phone' => '0971000001',
         'is_active' => true,
     ]);
 
@@ -25,14 +24,12 @@ test('otp request for unknown phone returns 422', function () {
 });
 
 test('borrower can verify a valid otp and receive a token', function () {
-    $borrower = Borrower::factory()->create([
-        'phone' => '+260971000002',
+    Borrower::factory()->create([
+        'phone' => '0971000002',
         'is_active' => true,
+        'otp' => Hash::make('123456'),
+        'otp_expires_at' => now()->addMinutes(5),
     ]);
-
-    // Seed the OTP into cache the same way the controller does
-    $cacheKey = 'borrower_otp_'.ltrim('+260971000002', '+');
-    Cache::put($cacheKey, '123456', now()->addMinutes(5));
 
     $this->postJson(route('api.v1.borrower.auth.verify-otp'), [
         'phone' => '+260971000002',
@@ -43,37 +40,37 @@ test('borrower can verify a valid otp and receive a token', function () {
 
 test('borrower otp verify fails with wrong code', function () {
     Borrower::factory()->create([
-        'phone' => '+260971000003',
+        'phone' => '0971000003',
         'is_active' => true,
+        'otp' => Hash::make('654321'),
+        'otp_expires_at' => now()->addMinutes(5),
     ]);
-
-    $cacheKey = 'borrower_otp_'.ltrim('+260971000003', '+');
-    Cache::put($cacheKey, '654321', now()->addMinutes(5));
 
     $this->postJson(route('api.v1.borrower.auth.verify-otp'), [
         'phone' => '+260971000003',
         'otp' => '000000',
-    ])->assertStatus(401);
+    ])->assertStatus(422);
 });
 
 test('borrower otp verify fails after expiry', function () {
     Borrower::factory()->create([
-        'phone' => '+260971000004',
+        'phone' => '0971000004',
         'is_active' => true,
+        'otp' => Hash::make('123456'),
+        'otp_expires_at' => now()->subMinutes(1), // expired
     ]);
 
-    // No cache entry = expired
     $this->postJson(route('api.v1.borrower.auth.verify-otp'), [
         'phone' => '+260971000004',
         'otp' => '123456',
-    ])->assertStatus(401);
+    ])->assertStatus(422);
 });
 
 // ─── PIN login ───────────────────────────────────────────────────────────────
 
 test('borrower can login with correct pin', function () {
-    $borrower = Borrower::factory()->create([
-        'phone' => '+260971000010',
+    Borrower::factory()->create([
+        'phone' => '0971000010',
         'pin' => Hash::make('1234'),
         'is_active' => true,
     ]);
@@ -87,7 +84,7 @@ test('borrower can login with correct pin', function () {
 
 test('borrower pin login fails with wrong pin', function () {
     Borrower::factory()->create([
-        'phone' => '+260971000011',
+        'phone' => '0971000011',
         'pin' => Hash::make('1234'),
         'is_active' => true,
     ]);
@@ -100,7 +97,7 @@ test('borrower pin login fails with wrong pin', function () {
 
 test('inactive borrower cannot login', function () {
     Borrower::factory()->create([
-        'phone' => '+260971000012',
+        'phone' => '0971000012',
         'pin' => Hash::make('1234'),
         'is_active' => false,
     ]);
@@ -115,13 +112,16 @@ test('inactive borrower cannot login', function () {
 
 test('authenticated borrower can set a pin', function () {
     $borrower = Borrower::factory()->create([
-        'phone' => '+260971000020',
+        'phone' => '0971000020',
         'is_active' => true,
         'pin' => null,
     ]);
 
-    $this->actingAs($borrower, 'borrower')
-        ->postJson(route('api.v1.borrower.auth.set-pin'), ['pin' => '5678'])
+    $this->actingAs($borrower, 'sanctum')
+        ->postJson(route('api.v1.borrower.auth.set-pin'), [
+            'pin' => '5678',
+            'pin_confirmation' => '5678',
+        ])
         ->assertStatus(200);
 
     expect(Hash::check('5678', $borrower->fresh()->pin))->toBeTrue();

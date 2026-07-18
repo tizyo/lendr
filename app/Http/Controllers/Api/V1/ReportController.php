@@ -71,7 +71,12 @@ class ReportController extends BaseApiController
             return $this->error("Unknown report type '{$type}'.", 422);
         }
 
-        $rows = $data['rows'] ?? [];
+        // Report methods can return either a plain array or an Eloquent
+        // Collection for 'rows' - normalize to a plain array so empty()
+        // and index access below behave the same either way (empty() is
+        // always false on an object, so an empty Collection would
+        // otherwise be treated as non-empty and $rows[0] would fail).
+        $rows = collect($data['rows'] ?? [])->toArray();
         $filename = "{$type}-report-".now()->format('Y-m-d');
 
         if ($format === 'csv') {

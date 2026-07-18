@@ -195,6 +195,15 @@ test('unknown report type returns 422', function () {
 
 test('loans report can be exported as csv', function () {
     $user = reportUser();
+    $loanType = LoanType::factory()->create();
+    $plan = LoanPlan::factory()->create(['loan_type_id' => $loanType->id]);
+    $borrower = Borrower::factory()->create();
+
+    Loan::factory()->create([
+        'loan_type_id' => $loanType->id,
+        'loan_plan_id' => $plan->id,
+        'borrower_id' => $borrower->id,
+    ]);
 
     $response = $this->actingAs($user)
         ->withHeaders(['Accept' => '*/*'])
