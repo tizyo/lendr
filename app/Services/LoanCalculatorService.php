@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Enums\RepaymentSchedule;
 use App\Models\Tenant\LoanPlan;
+use App\Traits\UsesBcMath;
 use Carbon\Carbon;
 
 /**
@@ -19,25 +20,11 @@ use Carbon\Carbon;
  */
 class LoanCalculatorService
 {
+    use UsesBcMath;
+
     private const SCALE = 2;
 
     private const RATE_SCALE = 10;
-
-    /**
-     * Round-half-up a BCMath string to $scale decimal places. Native bcmath
-     * scale truncates rather than rounds, so this adds a half-unit at the
-     * target precision before truncating.
-     */
-    private function bcround(string $num, int $scale = self::SCALE): string
-    {
-        $isNeg = str_starts_with($num, '-');
-        $abs = $isNeg ? substr($num, 1) : $num;
-
-        $increment = bcdiv('5', bcpow('10', (string) ($scale + 1)), $scale + 1);
-        $rounded = bcadd($abs, $increment, $scale);
-
-        return $isNeg && bccomp($rounded, '0', $scale) !== 0 ? '-'.$rounded : $rounded;
-    }
 
     /**
      * Normalise repayment_schedule to a plain string regardless of whether

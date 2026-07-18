@@ -6,12 +6,15 @@ use App\Enums\FundTransactionType;
 use App\Models\Tenant\FundBalance;
 use App\Models\Tenant\FundDeposit;
 use App\Models\Tenant\FundTransaction;
+use App\Traits\UsesBcMath;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class FundService
 {
+    use UsesBcMath;
+
     /**
      * Record a capital deposit being approved — credits available_balance.
      */
@@ -115,7 +118,7 @@ class FundService
         $balance = FundBalance::lockForUpdate()->first() ?? FundBalance::current();
 
         $before = (float) $balance->available_balance;
-        $after = $before + $amount;
+        $after = (float) $this->bcround(bcadd((string) $before, (string) $amount, 10));
 
         $this->updateBalanceForCredit($balance, $type, $amount, $after);
 
@@ -137,7 +140,7 @@ class FundService
         $balance = FundBalance::lockForUpdate()->first() ?? FundBalance::current();
 
         $before = (float) $balance->available_balance;
-        $after = $before - $amount;
+        $after = (float) $this->bcround(bcsub((string) $before, (string) $amount, 10));
 
         $this->updateBalanceForDebit($balance, $type, $amount, $after);
 
@@ -161,9 +164,9 @@ class FundService
         $fields = ['available_balance' => $newAvailable];
 
         $fields += match ($type) {
-            FundTransactionType::Deposit => ['total_deposits' => (float) $balance->total_deposits + $amount],
-            FundTransactionType::Repayment => ['total_repaid' => (float) $balance->total_repaid + $amount],
-            FundTransactionType::Penalty => ['total_penalties' => (float) $balance->total_penalties + $amount],
+            FundTransactionType::Deposit => ['total_deposits' => (float) $this->bcround(bcadd((string) $balance->total_deposits, (string) $amount, 10))],
+            FundTransactionType::Repayment => ['total_repaid' => (float) $this->bcround(bcadd((string) $balance->total_repaid, (string) $amount, 10))],
+            FundTransactionType::Penalty => ['total_penalties' => (float) $this->bcround(bcadd((string) $balance->total_penalties, (string) $amount, 10))],
             default => [],
         };
 
@@ -175,8 +178,8 @@ class FundService
         $fields = ['available_balance' => $newAvailable];
 
         $fields += match ($type) {
-            FundTransactionType::Disburse => ['total_disbursed' => (float) $balance->total_disbursed + $amount],
-            FundTransactionType::Withdrawal => ['total_expenses' => (float) $balance->total_expenses + $amount],
+            FundTransactionType::Disburse => ['total_disbursed' => (float) $this->bcround(bcadd((string) $balance->total_disbursed, (string) $amount, 10))],
+            FundTransactionType::Withdrawal => ['total_expenses' => (float) $this->bcround(bcadd((string) $balance->total_expenses, (string) $amount, 10))],
             default => [],
         };
 

@@ -5,11 +5,14 @@ namespace App\Services;
 use App\Models\Tenant\Investor;
 use App\Models\Tenant\InvestorAllocation;
 use App\Models\Tenant\InvestorDividend;
+use App\Traits\UsesBcMath;
 
 class InvestorReturnsService
 {
+    use UsesBcMath;
+
     /** Default withholding tax rate (15%) */
-    const TAX_RATE = 0.15;
+    const TAX_RATE = '0.15';
 
     /**
      * Calculate and create a dividend record for an investor for the given period.
@@ -26,12 +29,17 @@ class InvestorReturnsService
 
         $allocations = $query->get();
 
-        $totalPrincipal = (float) $allocations->sum('allocated_amount');
+        $totalPrincipal = (float) $allocations->reduce(
+            fn ($carry, $a) => bcadd($carry, (string) $a->allocated_amount, 2),
+            '0'
+        );
 
         // Monthly gross dividend = principal × annual_rate / 12
-        $grossDividend = round($totalPrincipal * ($annualRatePct / 100) / 12, 2);
-        $taxWithheld = round($grossDividend * self::TAX_RATE, 2);
-        $netDividend = round($grossDividend - $taxWithheld, 2);
+        $grossDividendStr = bcdiv(bcmul((string) $totalPrincipal, bcdiv((string) $annualRatePct, '100', 10), 10), '12', 10);
+        $taxWithheldStr = bcmul($grossDividendStr, self::TAX_RATE, 10);
+        $grossDividend = (float) $this->bcround($grossDividendStr);
+        $taxWithheld = (float) $this->bcround($taxWithheldStr);
+        $netDividend = (float) $this->bcround(bcsub($grossDividendStr, $taxWithheldStr, 10));
 
         return InvestorDividend::create([
             'investor_id' => $investor->id,
@@ -70,7 +78,8 @@ class InvestorReturnsService
                 ->get();
 
             foreach ($allocations as $alloc) {
-                $alloc->increment('actual_return', round($dividend->net_dividend / max($allocations->count(), 1), 2));
+                $share = (float) $this->bcround(bcdiv((string) $dividend->net_dividend, (string) max($allocations->count(), 1), 10));
+                $alloc->increment('actual_return', $share);
             }
         }
 
@@ -83,12 +92,16 @@ class InvestorReturnsService
     public function summary(Investor $investor): array
     {
         $dividends = $investor->dividends;
+        $bcSum = fn ($collection, $column) => (float) $collection->reduce(
+            fn ($carry, $d) => bcadd($carry, (string) $d->{$column}, 2),
+            '0'
+        );
 
         return [
-            'total_paid' => (float) $dividends->where('status', 'paid')->sum('net_dividend'),
-            'total_pending' => (float) $dividends->where('status', 'pending')->sum('net_dividend'),
-            'total_gross' => (float) $dividends->sum('gross_dividend'),
-            'total_tax' => (float) $dividends->sum('tax_withheld'),
+            'total_paid' => $bcSum($dividends->where('status', 'paid'), 'net_dividend'),
+            'total_pending' => $bcSum($dividends->where('status', 'pending'), 'net_dividend'),
+            'total_gross' => $bcSum($dividends, 'gross_dividend'),
+            'total_tax' => $bcSum($dividends, 'tax_withheld'),
             'count' => $dividends->count(),
         ];
     }

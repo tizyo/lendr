@@ -5,10 +5,13 @@ namespace App\Services;
 use App\Models\Tenant\LoanPenalty;
 use App\Models\Tenant\LoanSchedule;
 use App\Models\Tenant\User;
+use App\Traits\UsesBcMath;
 use Carbon\Carbon;
 
 class PenaltyService
 {
+    use UsesBcMath;
+
     /**
      * Apply penalties for all overdue schedules on the given date.
      */
@@ -19,7 +22,7 @@ class PenaltyService
             ->with('loan')
             ->get();
 
-        $totalPenalty = 0.0;
+        $totalPenalty = '0';
         $applied = 0;
         $skipped = 0;
 
@@ -44,7 +47,7 @@ class PenaltyService
             $result = $this->applyPenaltyForSchedule($schedule, $date, $dryRun);
 
             if ($result['penalty_amount'] > 0) {
-                $totalPenalty += $result['penalty_amount'];
+                $totalPenalty = bcadd($totalPenalty, (string) $result['penalty_amount'], 2);
                 $applied++;
             } else {
                 $skipped++;
@@ -55,7 +58,7 @@ class PenaltyService
             'penalty_date' => $date->toDateString(),
             'applied' => $applied,
             'skipped' => $skipped,
-            'total_penalty' => round($totalPenalty, 2),
+            'total_penalty' => (float) $totalPenalty,
             'dry_run' => $dryRun,
         ];
     }
@@ -70,7 +73,7 @@ class PenaltyService
         $overdueAmt = (float) $schedule->outstanding;
         $daysOverdue = (int) \Carbon\Carbon::parse($schedule->due_date)->startOfDay()
             ->diffInDays($date->startOfDay());
-        $penaltyAmt = round($overdueAmt * ($penaltyRate / 100), 2);
+        $penaltyAmt = (float) $this->bcround(bcmul((string) $overdueAmt, bcdiv((string) $penaltyRate, '100', 10), 10));
 
         if (! $dryRun && $penaltyAmt > 0) {
             LoanPenalty::create([

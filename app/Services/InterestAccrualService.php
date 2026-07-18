@@ -4,10 +4,13 @@ namespace App\Services;
 
 use App\Models\Tenant\Loan;
 use App\Models\Tenant\LoanInterestAccrual;
+use App\Traits\UsesBcMath;
 use Carbon\Carbon;
 
 class InterestAccrualService
 {
+    use UsesBcMath;
+
     /**
      * Accrue interest for all active loans on the given date.
      * Returns a summary array.
@@ -18,7 +21,7 @@ class InterestAccrualService
             ->where('outstanding_balance', '>', 0)
             ->get();
 
-        $totalAccrued = 0.0;
+        $totalAccrued = '0';
         $loansProcessed = 0;
         $loansSuspended = 0;
         $skipped = 0;
@@ -40,7 +43,7 @@ class InterestAccrualService
             if ($accrual['is_suspended']) {
                 $loansSuspended++;
             } else {
-                $totalAccrued += $accrual['accrued_amount'];
+                $totalAccrued = bcadd($totalAccrued, (string) $accrual['accrued_amount'], 2);
             }
             $loansProcessed++;
         }
@@ -50,7 +53,7 @@ class InterestAccrualService
             'loans_processed' => $loansProcessed,
             'loans_suspended' => $loansSuspended,
             'skipped' => $skipped,
-            'total_accrued' => round($totalAccrued, 2),
+            'total_accrued' => (float) $totalAccrued,
             'dry_run' => $dryRun,
         ];
     }
@@ -62,8 +65,9 @@ class InterestAccrualService
     {
         $outstanding = (float) $loan->outstanding_balance;
         $annualRate = (float) $loan->interest_rate;      // stored as % e.g. 24.00
-        $dailyRate = round($annualRate / 365 / 100, 6); // decimal fraction
-        $accrued = round($outstanding * $dailyRate, 2);
+        $dailyRateStr = bcdiv(bcdiv((string) $annualRate, '365', 10), '100', 10); // decimal fraction
+        $dailyRate = (float) $this->bcround($dailyRateStr, 6);
+        $accrued = (float) $this->bcround(bcmul((string) $outstanding, $dailyRateStr, 10));
 
         // Stage 3 (non-performing) → suspend accrual
         $isSuspended = $this->isNonPerforming($loan);
@@ -100,7 +104,10 @@ class InterestAccrualService
             ->groupBy(fn ($r) => \Carbon\Carbon::parse($r->accrual_date)->format('Y-m'))
             ->map(fn ($g) => [
                 'month' => $g->first()->accrual_date->format('Y-m'),
-                'total_accrued' => round((float) $g->sum('accrued_amount'), 2),
+                'total_accrued' => (float) $g->reduce(
+                    fn ($carry, $r) => bcadd($carry, (string) $r->accrued_amount, 2),
+                    '0'
+                ),
                 'loans' => $g->pluck('loan_id')->unique()->count(),
             ])
             ->values();
