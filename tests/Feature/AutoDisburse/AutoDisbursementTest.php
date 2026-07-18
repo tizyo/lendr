@@ -230,6 +230,60 @@ it('AutoDisbursementService marks log failed on HTTP error', function () {
     tenancy()->end();
 });
 
+it('AutoDisbursementService blocks a duplicate disbursement for the same loan', function () {
+    $tenant = disbTenant();
+    $wallet = disbWallet($tenant); // root DB — must be before tenancy()->initialize()
+    tenancy()->initialize($tenant);
+
+    $loan = disbLoan();
+
+    Http::fake(['*' => Http::response([
+        'status' => 'success',
+        'data' => ['id' => 'FLW-TX-002', 'status' => 'NEW'],
+    ], 200)]);
+
+    $service = app(AutoDisbursementService::class);
+
+    $first = $service->disburse($loan, $wallet);
+    $second = $service->disburse($loan, $wallet);
+
+    expect($second->id)->toBe($first->id);
+    expect($second->reference)->toBe($first->reference);
+    expect(DisbursementLog::where('loan_id', $loan->id)->count())->toBe(1);
+    Http::assertSentCount(1);
+
+    tenancy()->end();
+});
+
+it('AutoDisbursementService retries using the same reference after a prior failure', function () {
+    $tenant = disbTenant();
+    $wallet = disbWallet($tenant); // root DB — must be before tenancy()->initialize()
+    tenancy()->initialize($tenant);
+
+    $loan = disbLoan();
+
+    // A single fake covering both calls — Http::fake() stubs don't override
+    // each other on a second call, so ordered responses must come from one
+    // sequence to deterministically fail-then-succeed across two disburse() calls.
+    Http::fake(['*' => Http::sequence()
+        ->push(['message' => 'Bad credentials'], 401)
+        ->push(['status' => 'success', 'data' => ['id' => 'FLW-TX-003', 'status' => 'NEW']], 200),
+    ]);
+
+    $service = app(AutoDisbursementService::class);
+    $failed = $service->disburse($loan, $wallet);
+    expect($failed->status)->toBe('failed');
+
+    $retried = $service->disburse($loan, $wallet);
+
+    expect($retried->id)->toBe($failed->id);
+    expect($retried->reference)->toBe($failed->reference);
+    expect($retried->status)->not->toBe('failed');
+    expect(DisbursementLog::where('loan_id', $loan->id)->count())->toBe(1);
+
+    tenancy()->end();
+});
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // Section 3 — CreateStandingOrdersJob
 // ═══════════════════════════════════════════════════════════════════════════════

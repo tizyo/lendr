@@ -5,6 +5,7 @@ namespace App\Services\Payment;
 use App\Models\Landlord\TenantWallet;
 use App\Models\Tenant\DisbursementLog;
 use App\Models\Tenant\Loan;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -28,17 +29,61 @@ class AutoDisbursementService
     public function disburse(Loan $loan, TenantWallet $wallet): DisbursementLog
     {
         $phone = $loan->disbursement_account ?? $loan->borrower?->phone;
-        $reference = 'LENDR-DISB-'.$loan->id.'-'.time();
 
-        $log = DisbursementLog::create([
-            'loan_id' => $loan->id,
-            'gateway' => $wallet->gateway,
-            'reference' => $reference,
-            'amount' => $loan->principal_amount,
-            'recipient_phone' => $phone,
-            'status' => 'initiated',
-            'used_wallet' => true,
-        ]);
+        // Deterministic per loan (not time()-suffixed) so a retried job or a
+        // duplicate dispatch resolves to the same reference. Combined with a
+        // unique DB index on `reference`, this is what actually stops a
+        // second real payout — the SELECT-then-INSERT below narrows the
+        // window but can't close it alone under true concurrency.
+        $reference = 'LENDR-DISB-'.$loan->id;
+
+        $existing = DisbursementLog::where('reference', $reference)->first();
+
+        if ($existing && $existing->status !== 'failed') {
+            Log::warning('[AutoDisburse] Duplicate disbursement attempt blocked', [
+                'loan_id' => $loan->id,
+                'existing_log_id' => $existing->id,
+                'existing_status' => $existing->status,
+            ]);
+
+            return $existing;
+        }
+
+        if ($existing) {
+            // Previous attempt failed — retry using the same reference/row.
+            $log = tap($existing)->update([
+                'gateway' => $wallet->gateway,
+                'amount' => $loan->principal_amount,
+                'recipient_phone' => $phone,
+                'status' => 'initiated',
+                'failure_reason' => null,
+                'used_wallet' => true,
+            ]);
+        } else {
+            try {
+                $log = DisbursementLog::create([
+                    'loan_id' => $loan->id,
+                    'gateway' => $wallet->gateway,
+                    'reference' => $reference,
+                    'amount' => $loan->principal_amount,
+                    'recipient_phone' => $phone,
+                    'status' => 'initiated',
+                    'used_wallet' => true,
+                ]);
+            } catch (QueryException $e) {
+                // Lost the race to a concurrent attempt on the same loan —
+                // the unique index rejected our insert. Return whatever the
+                // winner created instead of disbursing a second time.
+                $log = DisbursementLog::where('reference', $reference)->firstOrFail();
+
+                Log::warning('[AutoDisburse] Concurrent disbursement attempt lost the race, using winner\'s log', [
+                    'loan_id' => $loan->id,
+                    'existing_log_id' => $log->id,
+                ]);
+
+                return $log;
+            }
+        }
 
         if (! $phone) {
             $log->update(['status' => 'failed', 'failure_reason' => 'No recipient phone found on loan or borrower.']);
