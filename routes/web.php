@@ -18,7 +18,7 @@ use Illuminate\Support\Facades\Route;
 | No tenancy context — marketing, onboarding.
 |--------------------------------------------------------------------------
 */
-Route::get('/', [LandingController::class, 'home'])->name('home');
+Route::get('/', [LandingController::class, 'home'])->name('home')->middleware(InitializeTenancy::class);
 Route::get('/about', [LandingController::class, 'about'])->name('about');
 Route::get('/contact', [LandingController::class, 'contact'])->name('contact');
 Route::get('/privacy', [LandingController::class, 'privacy'])->name('privacy');

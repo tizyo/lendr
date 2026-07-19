@@ -3,13 +3,23 @@
 namespace App\Http\Controllers;
 
 use App\Models\Landlord\PlanConfig;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class LandingController extends Controller
 {
-    public function home(): Response
+    public function home(): Response|RedirectResponse
     {
+        // InitializeTenancy (applied to this route) resolves the tenant from
+        // the session on central domains the same way it does for /login, so
+        // a staff member with an active portal session lands on their
+        // dashboard instead of the marketing page.
+        if (Auth::check()) {
+            return redirect()->route('portal.dashboard');
+        }
+
         return Inertia::render('Landing/Home', [
             'plans' => $this->buildPricingPlans(),
         ]);

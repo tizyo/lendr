@@ -63,7 +63,7 @@
 
         <!-- Desktop CTAs -->
         <div class="hidden md:flex items-center gap-3">
-          <a href="/login"      class="text-white/80 hover:text-white text-sm font-medium transition px-3 py-2">Log in</a>
+          <a href="/portal/login" class="text-white/80 hover:text-white text-sm font-medium transition px-3 py-2">Log in</a>
           <a href="/onboarding" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-bold transition shadow-lg shadow-blue-900/30">
             Create free account
           </a>
@@ -88,7 +88,7 @@
           <a href="/help"        @click="mobileOpen=false" class="block text-white/70 hover:text-white py-2.5 text-sm font-medium">Help Center</a>
           <a href="/blog"        @click="mobileOpen=false" class="block text-white/70 hover:text-white py-2.5 text-sm font-medium">Blog</a>
           <div class="pt-3 flex flex-col gap-2 border-t border-white/10 mt-2">
-            <a href="/login"      class="block text-white/80 hover:text-white text-center py-2.5 text-sm font-medium border border-white/20 rounded-lg">Log in</a>
+            <a href="/portal/login" class="block text-white/80 hover:text-white text-center py-2.5 text-sm font-medium border border-white/20 rounded-lg">Log in</a>
             <a href="/onboarding" class="block bg-blue-600 text-white text-center px-4 py-2.5 rounded-lg font-bold text-sm">Create free account</a>
           </div>
         </div>
