@@ -142,7 +142,7 @@
           <p class="text-xs text-emerald-600 mt-0.5">Post a listing to attract lenders across the network.</p>
         </div>
         <button
-          @click="$inertia.visit(route('pwa.marketplace.home'))"
+          @click="$inertia.visit(route('pwa.marketplace.create'))"
           class="bg-emerald-600 text-white text-xs font-semibold px-4 py-2 rounded-lg shrink-0 hover:bg-emerald-700 transition-colors"
         >
           Go

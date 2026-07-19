@@ -547,6 +547,7 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
             Route::post('listings', [\App\Http\Controllers\Api\V1\Borrower\MarketplaceController::class, 'createListing'])->name('listings.create');
             Route::put('listings/{id}/withdraw', [\App\Http\Controllers\Api\V1\Borrower\MarketplaceController::class, 'withdraw'])->name('listings.withdraw');
             Route::post('interests/{id}/accept', [\App\Http\Controllers\Api\V1\Borrower\MarketplaceController::class, 'acceptInterest'])->name('interests.accept');
+            Route::put('interests/{id}/decline', [\App\Http\Controllers\Api\V1\Borrower\MarketplaceController::class, 'declineInterest'])->name('interests.decline');
         });
     });
 

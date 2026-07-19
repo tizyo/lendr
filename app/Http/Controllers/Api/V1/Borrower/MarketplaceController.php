@@ -117,6 +117,29 @@ class MarketplaceController extends BaseApiController
         return $this->success(null, 'Interest accepted. Listing marked as funded.');
     }
 
+    /**
+     * PUT /api/v1/borrower/marketplace/interests/{id}/decline
+     * Borrower declines a specific lender's interest offer. The listing
+     * stays active/open so other pending offers can still be considered.
+     */
+    public function declineInterest(Request $request, int $id): JsonResponse
+    {
+        /** @var Borrower $borrower */
+        $borrower = $request->user();
+
+        $interest = MarketplaceInterest::with('listing')
+            ->whereHas('listing', fn ($q) => $q->where('borrower_id', $borrower->id))
+            ->findOrFail($id);
+
+        if ($interest->status !== 'pending') {
+            return $this->error('This interest offer is no longer pending.', 422);
+        }
+
+        $interest->update(['status' => 'declined', 'responded_at' => now()]);
+
+        return $this->success(null, 'Interest declined.');
+    }
+
     // ─── Helpers ─────────────────────────────────────────────────────────────
 
     private function format(MarketplaceListing $listing): array

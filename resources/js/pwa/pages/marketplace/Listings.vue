@@ -86,14 +86,22 @@
                 >
                   {{ interest.status }}
                 </span>
-                <button
-                  v-else
-                  @click="acceptInterest(listing, interest)"
-                  :disabled="accepting === interest.id"
-                  class="text-xs bg-emerald-600 text-white px-2.5 py-1 rounded-lg font-medium active:bg-emerald-700 disabled:opacity-50"
-                >
-                  {{ accepting === interest.id ? '…' : 'Accept' }}
-                </button>
+                <template v-else>
+                  <button
+                    @click="declineInterest(listing, interest)"
+                    :disabled="accepting === interest.id || declining === interest.id"
+                    class="text-xs border border-gray-200 text-gray-500 px-2.5 py-1 rounded-lg font-medium active:bg-gray-50 disabled:opacity-50"
+                  >
+                    {{ declining === interest.id ? '…' : 'Decline' }}
+                  </button>
+                  <button
+                    @click="acceptInterest(listing, interest)"
+                    :disabled="accepting === interest.id || declining === interest.id"
+                    class="text-xs bg-emerald-600 text-white px-2.5 py-1 rounded-lg font-medium active:bg-emerald-700 disabled:opacity-50"
+                  >
+                    {{ accepting === interest.id ? '…' : 'Accept' }}
+                  </button>
+                </template>
               </div>
             </div>
           </div>
@@ -123,6 +131,7 @@ import PwaLayout from '@/pwa/components/PwaLayout.vue'
 const listings   = ref([])
 const loading    = ref(false)
 const accepting  = ref(null)
+const declining  = ref(null)
 const withdrawing = ref(null)
 
 async function load() {
@@ -146,6 +155,18 @@ async function acceptInterest(listing, interest) {
     alert(e.response?.data?.message ?? 'Failed to accept interest.')
   } finally {
     accepting.value = null
+  }
+}
+
+async function declineInterest(listing, interest) {
+  declining.value = interest.id
+  try {
+    await axios.put(`/api/v1/me/marketplace/interests/${interest.id}/decline`)
+    await load()
+  } catch (e) {
+    alert(e.response?.data?.message ?? 'Failed to decline interest.')
+  } finally {
+    declining.value = null
   }
 }
 
