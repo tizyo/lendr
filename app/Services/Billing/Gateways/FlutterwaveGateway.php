@@ -101,6 +101,7 @@ class FlutterwaveGateway implements BillingGatewayInterface
             'tx_ref' => $data['tx_ref'] ?? '',
             'transaction_id' => (string) ($data['id'] ?? ''),
             'amount' => (float) ($data['amount'] ?? 0),
+            'currency' => (string) ($data['currency'] ?? ''),
             'status' => $status,
             'raw' => $body,
         ];

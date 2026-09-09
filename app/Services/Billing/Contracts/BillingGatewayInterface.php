@@ -43,6 +43,7 @@ interface BillingGatewayInterface
      *   tx_ref:         string,
      *   transaction_id: string,
      *   amount:         float,
+     *   currency:       string,
      *   status:         string,
      *   raw:            array,
      * }

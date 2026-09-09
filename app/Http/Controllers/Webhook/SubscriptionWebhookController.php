@@ -63,6 +63,7 @@ class SubscriptionWebhookController extends Controller
                 transactionId: $payload['transaction_id'],
                 status: $payload['status'],
                 amount: $payload['amount'],
+                currency: $payload['currency'],
             );
         } catch (\Throwable $e) {
             Log::error("[SubWebhook:{$gateway}] Error processing webhook", [

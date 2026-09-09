@@ -63,6 +63,11 @@ class BillingSettingsController extends BaseApiController
             return $this->error('Unknown gateway.', 422);
         }
 
+        $existing = BillingGatewayConfig::forGateway($gateway);
+        if ($message = $this->configurationError($gateway, $existing)) {
+            return $this->error($message, 422);
+        }
+
         // Deactivate all, then activate the chosen one
         BillingGatewayConfig::query()->update(['is_active' => false]);
 
@@ -97,5 +102,30 @@ class BillingSettingsController extends BaseApiController
             'extra_config' => $config?->extra_config ?? [],
             'configured' => ! empty($config?->secret_key),
         ];
+    }
+
+    private function configurationError(string $gateway, ?BillingGatewayConfig $config): ?string
+    {
+        if (! $config || empty($config->secret_key)) {
+            return ucfirst($gateway).' cannot be activated without an API secret or token.';
+        }
+
+        if ($gateway === 'pawapay' && empty($config->public_key)) {
+            return 'PawaPay cannot be activated without its callback verification public key.';
+        }
+
+        if (in_array($gateway, ['flutterwave', 'stripe', 'lipila'], true) && empty($config->webhook_secret)) {
+            return ucfirst($gateway).' cannot be activated without a webhook signing secret.';
+        }
+
+        if ($gateway === 'lipila') {
+            foreach (['phone_number', 'city', 'country', 'address', 'zip', 'account_number'] as $field) {
+                if (empty(data_get($config->extra_config, $field))) {
+                    return "Lipila cannot be activated until [{$field}] is configured.";
+                }
+            }
+        }
+
+        return null;
     }
 }

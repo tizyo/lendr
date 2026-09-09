@@ -103,13 +103,21 @@ class BillingService
             return ['success' => false, 'reason' => 'Gateway returned non-success status.'];
         }
 
+        if (($verified['tx_ref'] ?? '') !== $invoice->gateway_tx_ref) {
+            return ['success' => false, 'reason' => 'Gateway reference does not match this invoice.'];
+        }
+
+        if (! $this->paymentMatchesInvoice($invoice, $verified['amount'], $verified['currency'] ?? '')) {
+            return ['success' => false, 'reason' => 'Gateway amount or currency does not match this invoice.'];
+        }
+
         return $this->activateSubscription($invoice, $transactionId, $verified['amount']);
     }
 
     /**
      * Handle a webhook notification (idempotent — safe to call multiple times).
      */
-    public function handleWebhook(string $txRef, string $transactionId, string $status, float $amount): array
+    public function handleWebhook(string $txRef, string $transactionId, string $status, float $amount, string $currency): array
     {
         $invoice = SubscriptionInvoice::where('gateway_tx_ref', $txRef)->first();
 
@@ -125,6 +133,10 @@ class BillingService
             $invoice->update(['status' => 'failed', 'gateway_tx_id' => $transactionId]);
 
             return ['handled' => true, 'reason' => 'Marked as failed.'];
+        }
+
+        if (! $this->paymentMatchesInvoice($invoice, $amount, $currency)) {
+            return ['handled' => false, 'reason' => 'Webhook amount does not match this invoice.'];
         }
 
         $result = $this->activateSubscription($invoice, $transactionId, $amount);
@@ -206,5 +218,11 @@ class BillingService
         }
 
         return ['success' => true, 'plan' => $invoice->plan];
+    }
+
+    private function paymentMatchesInvoice(SubscriptionInvoice $invoice, float $amount, string $currency): bool
+    {
+        return strtoupper($currency) === strtoupper($invoice->currency)
+            && abs($amount - (float) $invoice->amount) < 0.005;
     }
 }

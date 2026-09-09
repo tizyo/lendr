@@ -7,6 +7,13 @@ use Illuminate\Support\Facades\Schema;
 
 class BillingGatewayConfig extends Model
 {
+    // Central-only data - must not follow the tenant connection swap once
+    // tenancy()->initialize() runs, or queries silently hit the wrong DB.
+    public function getConnectionName(): ?string
+    {
+        return config('database.central_connection');
+    }
+
     protected $fillable = [
         'gateway',
         'is_active',
@@ -30,7 +37,7 @@ class BillingGatewayConfig extends Model
 
     public static function active(): ?self
     {
-        if (! Schema::hasTable('billing_gateway_configs')) {
+        if (! Schema::connection(config('database.central_connection'))->hasTable('billing_gateway_configs')) {
             return null;
         }
 
@@ -39,7 +46,7 @@ class BillingGatewayConfig extends Model
 
     public static function forGateway(string $gateway): ?self
     {
-        if (! Schema::hasTable('billing_gateway_configs')) {
+        if (! Schema::connection(config('database.central_connection'))->hasTable('billing_gateway_configs')) {
             return null;
         }
 
@@ -48,7 +55,7 @@ class BillingGatewayConfig extends Model
 
     public static function allIndexed(): array
     {
-        if (! Schema::hasTable('billing_gateway_configs')) {
+        if (! Schema::connection(config('database.central_connection'))->hasTable('billing_gateway_configs')) {
             return [];
         }
 

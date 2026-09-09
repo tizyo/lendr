@@ -7,6 +7,13 @@ use Illuminate\Support\Facades\Schema;
 
 class PlatformSmsConfig extends Model
 {
+    // Central-only data - must not follow the tenant connection swap once
+    // tenancy()->initialize() runs, or queries silently hit the wrong DB.
+    public function getConnectionName(): ?string
+    {
+        return config('database.central_connection');
+    }
+
     protected $fillable = [
         'provider',
         'is_active',
@@ -28,7 +35,7 @@ class PlatformSmsConfig extends Model
 
     public static function active(): ?self
     {
-        if (! Schema::hasTable('platform_sms_configs')) {
+        if (! Schema::connection(config('database.central_connection'))->hasTable('platform_sms_configs')) {
             return null;
         }
 
@@ -37,7 +44,7 @@ class PlatformSmsConfig extends Model
 
     public static function allKeyed(): array
     {
-        if (! Schema::hasTable('platform_sms_configs')) {
+        if (! Schema::connection(config('database.central_connection'))->hasTable('platform_sms_configs')) {
             return [];
         }
 

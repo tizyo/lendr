@@ -204,7 +204,7 @@ it('activates tenant via webhook', function () {
     ]);
 
     $service = new BillingService(new BillingGatewayManager);
-    $result = $service->handleWebhook('LENDR-SUB-webhook', 'txid-wh', 'success', 1499);
+    $result = $service->handleWebhook('LENDR-SUB-webhook', 'txid-wh', 'success', 1499, 'ZMW');
 
     expect($result['handled'])->toBeTrue();
     expect($result['success'])->toBeTrue();
@@ -247,6 +247,7 @@ it('returns 204 and processes valid subscription webhook', function () {
             'id' => 12345,
             'status' => 'successful',
             'amount' => 1499,
+            'currency' => 'ZMW',
             'tx_ref' => 'LENDR-SUB-wh-valid',
         ],
     ], [

@@ -7,6 +7,15 @@ use Illuminate\Support\Facades\Schema;
 
 class PlanConfig extends Model
 {
+    // Central-only data - must not follow the tenant connection swap once
+    // tenancy()->initialize() runs, or queries silently hit the wrong DB
+    // (this was resolving to null for every plan check while a tenant was
+    // active, since the tenant DB has no plan_configs table).
+    public function getConnectionName(): ?string
+    {
+        return config('database.central_connection');
+    }
+
     protected $fillable = [
         'plan',
         'label',
@@ -25,7 +34,7 @@ class PlanConfig extends Model
     /** @return static|null */
     public static function forPlan(string $plan): ?self
     {
-        if (! Schema::hasTable('plan_configs')) {
+        if (! Schema::connection(config('database.central_connection'))->hasTable('plan_configs')) {
             return null;
         }
 
@@ -35,7 +44,7 @@ class PlanConfig extends Model
     /** Returns all plans keyed by plan slug. Returns [] if table not yet migrated. */
     public static function allKeyed(): array
     {
-        if (! Schema::hasTable('plan_configs')) {
+        if (! Schema::connection(config('database.central_connection'))->hasTable('plan_configs')) {
             return [];
         }
 

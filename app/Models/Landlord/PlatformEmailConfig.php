@@ -7,6 +7,13 @@ use Illuminate\Support\Facades\Schema;
 
 class PlatformEmailConfig extends Model
 {
+    // Central-only data - must not follow the tenant connection swap once
+    // tenancy()->initialize() runs, or queries silently hit the wrong DB.
+    public function getConnectionName(): ?string
+    {
+        return config('database.central_connection');
+    }
+
     protected $fillable = [
         'host',
         'port',
@@ -30,7 +37,7 @@ class PlatformEmailConfig extends Model
 
     public static function active(): ?self
     {
-        if (! Schema::hasTable('platform_email_configs')) {
+        if (! Schema::connection(config('database.central_connection'))->hasTable('platform_email_configs')) {
             return null;
         }
 

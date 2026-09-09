@@ -12,6 +12,13 @@ class LandlordUser extends Authenticatable
 {
     use HasApiTokens, HasFactory, Notifiable;
 
+    // Central-only data - must not follow the tenant connection swap once
+    // tenancy()->initialize() runs, or queries silently hit the wrong DB.
+    public function getConnectionName(): ?string
+    {
+        return config('database.central_connection');
+    }
+
     protected static function newFactory(): LandlordUserFactory
     {
         return LandlordUserFactory::new();

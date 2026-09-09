@@ -20,6 +20,22 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Central Connection Name
+    |--------------------------------------------------------------------------
+    |
+    | Stancl/tenancy overwrites 'default' above at runtime (swapping it to
+    | 'tenant' once a tenant is initialized). Models under App\Models\Landlord
+    | that must always read/write the central database - regardless of
+    | whether a tenant is currently active - should read this key instead of
+    | 'default', since it stays fixed at whatever DB_CONNECTION resolved to
+    | for this environment (mysql in dev/prod, sqlite in tests).
+    |
+    */
+
+    'central_connection' => env('DB_CONNECTION', 'mysql'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Database Connections
     |--------------------------------------------------------------------------
     |

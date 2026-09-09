@@ -74,7 +74,7 @@
             <div v-if="expanded[gw.gateway]" class="px-6 py-5">
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label class="block text-xs font-medium text-neutral-600 mb-1">Public Key / API Key</label>
+                  <label class="block text-xs font-medium text-neutral-600 mb-1">{{ publicKeyLabel(gw.gateway) }}</label>
                   <input
                     v-model="forms[gw.gateway].public_key"
                     type="password"
@@ -100,14 +100,27 @@
                     class="w-full border border-neutral-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none"
                   />
                   <p class="text-xs text-neutral-400 mt-1">
-                    For Flutterwave: the "verif-hash" value set in your dashboard webhook settings.
+                    {{ webhookHelp(gw.gateway) }}
                   </p>
                 </div>
+                <template v-if="gw.gateway === 'pawapay'">
+                  <div>
+                    <label class="block text-xs font-medium text-neutral-600 mb-1">API Base URL</label>
+                    <input v-model="forms[gw.gateway].extra_config.base_url" type="url" placeholder="https://api.sandbox.pawapay.io" class="w-full border border-neutral-300 rounded-lg px-3 py-2 text-sm" />
+                  </div>
+                  <div>
+                    <label class="block text-xs font-medium text-neutral-600 mb-1">Country code</label>
+                    <input v-model="forms[gw.gateway].extra_config.country" placeholder="ZMB" maxlength="3" class="w-full border border-neutral-300 rounded-lg px-3 py-2 text-sm" />
+                  </div>
+                </template>
+                <template v-if="gw.gateway === 'lipila'">
+                  <div v-for="field in lipilaFields" :key="field.key">
+                    <label class="block text-xs font-medium text-neutral-600 mb-1">{{ field.label }}</label>
+                    <input v-model="forms[gw.gateway].extra_config[field.key]" :type="field.type ?? 'text'" :placeholder="field.placeholder" class="w-full border border-neutral-300 rounded-lg px-3 py-2 text-sm" />
+                  </div>
+                </template>
               </div>
               <div class="flex items-center justify-between mt-4 pt-4 border-t border-neutral-100">
-                <p v-if="stubGateways.includes(gw.gateway)" class="text-xs text-amber-600">
-                  ⚠ This gateway is a stub — credentials can be saved but full API integration is pending.
-                </p>
                 <div class="ml-auto flex gap-2">
                   <button
                     @click="toggleExpand(gw.gateway)"
@@ -155,7 +168,15 @@ const auth    = useLandlordAuth()
 const baseUrl = window.location.origin
 const flash   = reactive({ success: '', error: '' })
 
-const stubGateways = ['pawapay', 'lipila', 'stripe']
+const lipilaFields = [
+  { key: 'base_url', label: 'API Base URL', type: 'url', placeholder: 'https://api.lipila.dev' },
+  { key: 'phone_number', label: 'Customer phone', placeholder: '260971234567' },
+  { key: 'account_number', label: 'Merchant account number', placeholder: '260971234567' },
+  { key: 'city', label: 'City', placeholder: 'Lusaka' },
+  { key: 'country', label: 'Country', placeholder: 'ZM' },
+  { key: 'address', label: 'Address', placeholder: 'Business address' },
+  { key: 'zip', label: 'Postal code', placeholder: '10101' },
+]
 
 const gateways = ref([])
 const loading  = reactive({})
@@ -174,7 +195,7 @@ async function loadGateways() {
     for (const gw of gateways.value) {
       expanded[gw.gateway] = false
       loading[gw.gateway]  = false
-      forms[gw.gateway]    = { public_key: '', secret_key: '', webhook_secret: '' }
+      forms[gw.gateway]    = { public_key: '', secret_key: '', webhook_secret: '', extra_config: { ...(gw.extra_config ?? {}) } }
     }
   } catch (e) {
     flash.error = 'Failed to load gateway settings.'
@@ -199,6 +220,7 @@ async function save(gateway) {
     if (form.public_key)     body.public_key     = form.public_key
     if (form.secret_key)     body.secret_key     = form.secret_key
     if (form.webhook_secret) body.webhook_secret = form.webhook_secret
+    body.extra_config = form.extra_config
 
     const res = await fetch(`/api/v1/landlord/billing-settings/${gateway}`, {
       method: 'PUT',
@@ -213,7 +235,7 @@ async function save(gateway) {
     if (!res.ok) throw new Error(json.message ?? 'Error saving credentials.')
 
     flash.success = json.message ?? 'Credentials saved.'
-    forms[gateway] = { public_key: '', secret_key: '', webhook_secret: '' }
+    forms[gateway] = { public_key: '', secret_key: '', webhook_secret: '', extra_config: {} }
     expanded[gateway] = false
     await loadGateways()
   } catch (e) {
@@ -263,6 +285,19 @@ function gatewayColor(gateway) {
     lipila:      'bg-teal-500',
     stripe:      'bg-indigo-500',
   }[gateway] ?? 'bg-neutral-500'
+}
+
+function publicKeyLabel(gateway) {
+  return gateway === 'pawapay' ? 'PawaPay callback public key (PEM)' : 'Public Key / API Key'
+}
+
+function webhookHelp(gateway) {
+  return {
+    flutterwave: 'The verif-hash configured in your Flutterwave dashboard.',
+    stripe: 'The Stripe endpoint signing secret beginning with whsec_.',
+    lipila: 'The base64 webhook signing secret from Lipila Settings → Webhooks.',
+    pawapay: 'PawaPay callbacks use the public verification key above; this field is not used.',
+  }[gateway]
 }
 </script>
 

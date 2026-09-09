@@ -7,6 +7,13 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class CrbIdentity extends Model
 {
+    // Central-only data - must not follow the tenant connection swap once
+    // tenancy()->initialize() runs, or queries silently hit the wrong DB.
+    public function getConnectionName(): ?string
+    {
+        return config('database.central_connection');
+    }
+
     protected $table = 'crb_identities';
 
     protected $fillable = [

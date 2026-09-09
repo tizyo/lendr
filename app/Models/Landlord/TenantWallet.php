@@ -13,6 +13,15 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class TenantWallet extends Model
 {
+    // Central-only data - must not follow the tenant connection swap once
+    // tenancy()->initialize() runs, or queries silently hit the wrong DB
+    // (this was the root cause of Enterprise wallet-based disbursement
+    // lookups silently returning null while a tenant was active).
+    public function getConnectionName(): ?string
+    {
+        return config('database.central_connection');
+    }
+
     protected $fillable = [
         'tenant_id',
         'gateway',

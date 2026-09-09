@@ -11,6 +11,13 @@ use Illuminate\Support\Facades\Storage;
  */
 class PlatformBranding extends Model
 {
+    // Central-only data - must not follow the tenant connection swap once
+    // tenancy()->initialize() runs, or queries silently hit the wrong DB.
+    public function getConnectionName(): ?string
+    {
+        return config('database.central_connection');
+    }
+
     protected $table = 'platform_branding';
 
     protected $fillable = [
@@ -40,7 +47,7 @@ class PlatformBranding extends Model
      */
     public static function current(): ?self
     {
-        if (! Schema::hasTable('platform_branding')) {
+        if (! Schema::connection(config('database.central_connection'))->hasTable('platform_branding')) {
             return null;
         }
 
