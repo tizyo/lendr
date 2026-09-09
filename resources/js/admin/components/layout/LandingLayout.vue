@@ -1,18 +1,6 @@
 <template>
   <div class="min-h-screen font-sans antialiased bg-white text-neutral-900">
 
-    <!-- ─── Announcement Bar ──────────────────────────────────────────────── -->
-    <div class="bg-blue-600 text-white text-center text-xs sm:text-sm py-2.5 px-4 flex items-center justify-center gap-2">
-      <span class="inline-flex items-center gap-1.5 font-semibold">
-        <svg class="w-3.5 h-3.5 shrink-0" fill="currentColor" viewBox="0 0 20 20">
-          <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clip-rule="evenodd"/>
-        </svg>
-        NEW
-      </span>
-      <span class="text-blue-100">LENDR v2 is live — multi-branch, real-time analytics &amp; mobile money collections</span>
-      <a href="/onboarding" class="ml-2 underline underline-offset-2 font-semibold hover:text-blue-200 whitespace-nowrap">Get started free →</a>
-    </div>
-
     <!-- ─── Nav ──────────────────────────────────────────────────────────── -->
     <nav class="sticky top-0 z-50 bg-[#0A1628]/97 backdrop-blur border-b border-white/10">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
