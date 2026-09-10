@@ -16,14 +16,12 @@ trait RunsTenantMigrations
 
     protected function migrateDatabases()
     {
-        // Root migrations: users, cache, jobs, tenancy, permissions, billing, etc.
+        // Root migrations: users, cache, jobs, tenancy, permissions, billing,
+        // landlord_users, credit_scores, etc.
         $this->artisan('migrate:fresh', $this->migrateFreshUsing());
 
         // Tenant-schema migrations: borrowers, loans, kyc_documents, etc.
         $this->artisan('migrate', ['--path' => 'database/migrations/tenant']);
-
-        // Landlord-specific migrations: landlord_users, etc.
-        $this->artisan('migrate', ['--path' => 'database/migrations/landlord']);
 
         // Seed roles/permissions so any factory-created User with a `role`
         // gets real, enforceable permissions via User::booted()'s sync hook,
