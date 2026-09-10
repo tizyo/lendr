@@ -3,7 +3,36 @@
 use App\Enums\UserRole;
 use App\Models\Landlord\Tenant;
 use App\Models\Tenant\User;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+
+// ─── Cleanup: purge any tenant DB connections created during this test ────────
+afterEach(function () {
+    // End active tenancy so the connection reverts to the root DB.
+    // Without this, a test that ends mid-tenant-session (e.g. via a login
+    // request that leaves tenancy active) orphans RefreshDatabase's
+    // transaction wrapper on the central connection, breaking every
+    // subsequent test class in the run.
+    if (tenancy()->initialized) {
+        tenancy()->end();
+    }
+
+    // Purge all dynamically-created tenant DB connections and delete their files.
+    Tenant::all()->each(function (Tenant $tenant) {
+        try {
+            DB::purge('tenant');
+
+            $dbFile = database_path('tenant'.$tenant->id);
+            if (file_exists($dbFile)) {
+                unlink($dbFile);
+            }
+
+            $tenant->delete();
+        } catch (\Throwable) {
+            // Ignore cleanup errors — best effort.
+        }
+    });
+});
 
 function landingTenant(): Tenant
 {
