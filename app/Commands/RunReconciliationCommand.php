@@ -2,6 +2,7 @@
 
 namespace App\Commands;
 
+use App\Commands\Concerns\RunsForEachTenant;
 use App\Models\Tenant\BankStatement;
 use App\Services\ReconciliationService;
 use Illuminate\Console\Command;
@@ -17,6 +18,8 @@ use Illuminate\Console\Command;
  */
 class RunReconciliationCommand extends Command
 {
+    use RunsForEachTenant;
+
     protected $signature = 'lendr:run-reconciliation';
 
     protected $description = 'Auto-reconcile any bank statements still pending after import';

@@ -16,6 +16,13 @@ return [
      *
      * Only relevant if you're using the domain or subdomain identification middleware.
      */
+    /*
+     * Tenant-level console commands (App\Commands\Concerns\RunsForEachTenant)
+     * normally loop over every live tenant. The test suite keeps tenant tables
+     * in its single database, so there they run once in the current DB.
+     */
+    'commands_in_current_database' => (bool) env('TENANT_COMMANDS_IN_CURRENT_DB', false),
+
     'central_domains' => [
         '127.0.0.1',
         'localhost',

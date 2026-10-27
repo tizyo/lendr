@@ -2,6 +2,7 @@
 
 namespace App\Commands;
 
+use App\Commands\Concerns\RunsForEachTenant;
 use App\Enums\LoanStatus;
 use App\Models\Tenant\Borrower;
 use App\Models\Tenant\Loan;
@@ -17,6 +18,8 @@ use Illuminate\Support\Facades\Log;
  */
 class SendBorrowerStatementsCommand extends Command
 {
+    use RunsForEachTenant;
+
     protected $signature = 'lendr:send-statements {--month= : Month (1-12, defaults to previous month)} {--year= : Year (defaults to current year)} {--dry-run : Preview without sending}';
 
     protected $description = 'Email monthly loan account statements to borrowers with active loans';

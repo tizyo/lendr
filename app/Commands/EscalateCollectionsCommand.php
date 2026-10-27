@@ -2,11 +2,14 @@
 
 namespace App\Commands;
 
+use App\Commands\Concerns\RunsForEachTenant;
 use App\Services\CollectionAutomationService;
 use Illuminate\Console\Command;
 
 class EscalateCollectionsCommand extends Command
 {
+    use RunsForEachTenant;
+
     protected $signature = 'lendr:escalate-collections';
 
     protected $description = 'Run automated collection escalation based on DPD rules and evaluate promise-to-pay statuses.';

@@ -2,6 +2,7 @@
 
 namespace App\Commands;
 
+use App\Commands\Concerns\RunsForEachTenant;
 use App\Models\Tenant\Lead;
 use Illuminate\Console\Command;
 
@@ -12,6 +13,8 @@ use Illuminate\Console\Command;
  */
 class ProcessCrmFollowupsCommand extends Command
 {
+    use RunsForEachTenant;
+
     protected $signature = 'lendr:crm-followups {--dry-run : Preview without sending}';
 
     protected $description = 'Notify staff of leads due for follow-up today';

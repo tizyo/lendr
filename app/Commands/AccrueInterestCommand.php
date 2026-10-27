@@ -2,12 +2,15 @@
 
 namespace App\Commands;
 
+use App\Commands\Concerns\RunsForEachTenant;
 use App\Services\InterestAccrualService;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
 
 class AccrueInterestCommand extends Command
 {
+    use RunsForEachTenant;
+
     protected $signature = 'lendr:accrue-interest
                             {--date= : Accrual date (Y-m-d, default: yesterday)}
                             {--dry-run : Calculate without persisting}';

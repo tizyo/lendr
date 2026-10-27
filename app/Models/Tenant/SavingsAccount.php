@@ -83,6 +83,17 @@ class SavingsAccount extends Model
             return null;
         }
 
+        // Once per calendar month: a re-run (manual, or a retried schedule) must never pay twice.
+        $alreadyPaid = $this->transactions()
+            ->where('type', 'interest')
+            ->whereYear('transaction_date', now()->year)
+            ->whereMonth('transaction_date', now()->month)
+            ->exists();
+
+        if ($alreadyPaid) {
+            return null;
+        }
+
         $newBalance = (float) $this->balance + $interest;
 
         $this->update(['balance' => $newBalance]);

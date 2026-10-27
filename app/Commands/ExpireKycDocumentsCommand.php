@@ -2,12 +2,15 @@
 
 namespace App\Commands;
 
+use App\Commands\Concerns\RunsForEachTenant;
 use App\Enums\KycStatus;
 use App\Models\Tenant\KycDocument;
 use Illuminate\Console\Command;
 
 class ExpireKycDocumentsCommand extends Command
 {
+    use RunsForEachTenant;
+
     protected $signature = 'lendr:expire-kyc-documents';
 
     protected $description = 'Mark KYC documents as expired when their expiry date has passed.';

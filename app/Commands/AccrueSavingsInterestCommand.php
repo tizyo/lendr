@@ -2,11 +2,14 @@
 
 namespace App\Commands;
 
+use App\Commands\Concerns\RunsForEachTenant;
 use App\Models\Tenant\SavingsAccount;
 use Illuminate\Console\Command;
 
 class AccrueSavingsInterestCommand extends Command
 {
+    use RunsForEachTenant;
+
     protected $signature = 'lendr:accrue-savings {--dry-run : Show what would be accrued without saving}';
 
     protected $description = 'Accrue monthly interest on active savings accounts (fixed & target types with interest_rate > 0)';

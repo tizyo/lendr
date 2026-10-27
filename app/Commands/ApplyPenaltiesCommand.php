@@ -2,12 +2,15 @@
 
 namespace App\Commands;
 
+use App\Commands\Concerns\RunsForEachTenant;
 use App\Services\PenaltyService;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
 
 class ApplyPenaltiesCommand extends Command
 {
+    use RunsForEachTenant;
+
     protected $signature = 'lendr:apply-penalties
                             {--date= : Penalty date (Y-m-d, default: today)}
                             {--dry-run : Calculate without persisting}';

@@ -2,11 +2,14 @@
 
 namespace App\Commands;
 
+use App\Commands\Concerns\RunsForEachTenant;
 use App\Models\Tenant\ComplianceEvent;
 use Illuminate\Console\Command;
 
 class ProcessComplianceRemindersCommand extends Command
 {
+    use RunsForEachTenant;
+
     protected $signature = 'lendr:compliance-reminders {--days=7 : Days ahead to send reminders}';
 
     protected $description = 'Mark overdue compliance events and flag upcoming ones for reminder';

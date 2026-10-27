@@ -2,6 +2,7 @@
 
 namespace App\Commands;
 
+use App\Commands\Concerns\RunsForEachTenant;
 use App\Jobs\SendLoanEventNotificationJob;
 use App\Models\Tenant\LoanSchedule;
 use Illuminate\Console\Command;
@@ -15,6 +16,8 @@ use Illuminate\Support\Facades\Log;
  */
 class ProcessUpcomingPaymentRemindersCommand extends Command
 {
+    use RunsForEachTenant;
+
     protected $signature = 'lendr:payment-reminders {--dry-run : Preview without sending SMS}';
 
     protected $description = 'Send SMS reminders for installments due in 1, 3, or 7 days';

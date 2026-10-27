@@ -1,7 +1,15 @@
 <?php
 
+use App\Commands\AccrueInterestCommand;
+use App\Commands\AccrueSavingsInterestCommand;
 use App\Commands\BackupTenantDatabasesCommand;
+use App\Commands\EscalateCollectionsCommand;
+use App\Commands\ExpireKycDocumentsCommand;
+use App\Commands\ProcessCampaignsCommand;
+use App\Commands\ProcessComplianceRemindersCommand;
+use App\Commands\ProcessCrmFollowupsCommand;
 use App\Commands\ProcessOverdueLoansCommand;
+use App\Commands\ProcessStandingOrdersCommand;
 use App\Commands\ProcessTrialExpiryCommand;
 use App\Commands\ProcessUpcomingPaymentRemindersCommand;
 use App\Commands\RunReconciliationCommand;
@@ -18,9 +26,13 @@ Artisan::command('inspire', function () {
 /*
 |--------------------------------------------------------------------------
 | LENDR — Scheduled Tasks
-| These run within each tenant's context via a tenancy-aware wrapper.
-| Ensure the queue worker and scheduler cron (php artisan schedule:run)
-| are both active on the server.
+| Tenant-level commands use App\Commands\Concerns\RunsForEachTenant, which
+| runs them inside every active / trial tenant (the scheduler itself runs on
+| the central connection). Ensure the queue worker and scheduler cron
+| (php artisan schedule:run) are both active on the server.
+|
+| Not scheduled on purpose: lendr:apply-penalties — penalties are already
+| accrued by lendr:process-overdue; running both would charge borrowers twice.
 |--------------------------------------------------------------------------
 */
 
@@ -86,3 +98,59 @@ Schedule::command(RunReconciliationCommand::class)
     ->withoutOverlapping()
     ->runInBackground()
     ->appendOutputTo(storage_path('logs/reconciliation.log'));
+
+// 00:30 daily — record yesterday's interest accrual per active loan (idempotent per date)
+Schedule::command(AccrueInterestCommand::class)
+    ->dailyAt('00:30')
+    ->withoutOverlapping()
+    ->runInBackground()
+    ->appendOutputTo(storage_path('logs/interest-accrual.log'));
+
+// 00:45 daily — mark KYC documents past their expiry date as expired
+Schedule::command(ExpireKycDocumentsCommand::class)
+    ->dailyAt('00:45')
+    ->withoutOverlapping()
+    ->runInBackground()
+    ->appendOutputTo(storage_path('logs/kyc-expiry.log'));
+
+// 06:00 daily — dispatch auto-debit collections for due standing orders (Enterprise wallets)
+Schedule::command(ProcessStandingOrdersCommand::class)
+    ->dailyAt('06:00')
+    ->withoutOverlapping()
+    ->runInBackground()
+    ->appendOutputTo(storage_path('logs/standing-orders.log'));
+
+// 07:30 daily — flag overdue / upcoming regulatory compliance events
+Schedule::command(ProcessComplianceRemindersCommand::class)
+    ->dailyAt('07:30')
+    ->withoutOverlapping()
+    ->runInBackground()
+    ->appendOutputTo(storage_path('logs/compliance-reminders.log'));
+
+// 08:00 daily — remind staff of CRM leads due for follow-up
+Schedule::command(ProcessCrmFollowupsCommand::class)
+    ->dailyAt('08:00')
+    ->withoutOverlapping()
+    ->runInBackground()
+    ->appendOutputTo(storage_path('logs/crm-followups.log'));
+
+// 09:00 daily — escalate collection cases by DPD rules, evaluate promises-to-pay
+Schedule::command(EscalateCollectionsCommand::class)
+    ->dailyAt('09:00')
+    ->withoutOverlapping()
+    ->runInBackground()
+    ->appendOutputTo(storage_path('logs/collections-escalation.log'));
+
+// Every 5 minutes — send campaigns whose scheduled time has arrived
+Schedule::command(ProcessCampaignsCommand::class)
+    ->everyFiveMinutes()
+    ->withoutOverlapping()
+    ->runInBackground()
+    ->appendOutputTo(storage_path('logs/campaigns.log'));
+
+// 1st of each month 00:15 — monthly savings interest (once per account per month)
+Schedule::command(AccrueSavingsInterestCommand::class)
+    ->monthlyOn(1, '00:15')
+    ->withoutOverlapping()
+    ->runInBackground()
+    ->appendOutputTo(storage_path('logs/savings-interest.log'));

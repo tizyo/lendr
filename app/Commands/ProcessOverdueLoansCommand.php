@@ -2,6 +2,7 @@
 
 namespace App\Commands;
 
+use App\Commands\Concerns\RunsForEachTenant;
 use App\Enums\LoanStatus;
 use App\Jobs\RecalculateCreditScoreJob;
 use App\Jobs\SendLoanEventNotificationJob;
@@ -23,6 +24,8 @@ use Illuminate\Support\Facades\Log;
  */
 class ProcessOverdueLoansCommand extends Command
 {
+    use RunsForEachTenant;
+
     protected $signature = 'lendr:process-overdue {--dry-run : Preview without persisting changes}';
 
     protected $description = 'Accrue penalties on overdue loans and auto-default severely delinquent loans';

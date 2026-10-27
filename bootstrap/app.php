@@ -25,6 +25,7 @@ return Application::configure(basePath: dirname(__DIR__))
         \App\Commands\ProcessComplianceRemindersCommand::class,
         \App\Commands\BackupTenantDatabasesCommand::class,
         \App\Commands\RunReconciliationCommand::class,
+        \App\Commands\ProcessCrmFollowupsCommand::class,
     ])
     ->withRouting(
         web: __DIR__.'/../routes/web.php',

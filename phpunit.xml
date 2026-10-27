@@ -27,6 +27,7 @@
         <env name="DB_DATABASE" value=":memory:"/>
         <env name="MAIL_MAILER" value="array"/>
         <env name="QUEUE_CONNECTION" value="sync"/>
+        <env name="TENANT_COMMANDS_IN_CURRENT_DB" value="true"/>
         <env name="SESSION_DRIVER" value="array"/>
         <env name="SANCTUM_STATEFUL_DOMAINS" value="app.lendr.app"/>
         <env name="PULSE_ENABLED" value="false"/>
