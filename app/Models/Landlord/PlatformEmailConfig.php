@@ -14,7 +14,11 @@ class PlatformEmailConfig extends Model
         return config('database.central_connection');
     }
 
+    public const DRIVERS = ['resend', 'smtp'];
+
     protected $fillable = [
+        'driver',
+        'api_key',
         'host',
         'port',
         'encryption',
@@ -29,9 +33,10 @@ class PlatformEmailConfig extends Model
         'port' => 'integer',
         'is_active' => 'boolean',
         'password' => 'encrypted',
+        'api_key' => 'encrypted',
     ];
 
-    protected $hidden = ['password'];
+    protected $hidden = ['password', 'api_key'];
 
     // ─── Finders ──────────────────────────────────────────────────────────────
 
@@ -46,14 +51,30 @@ class PlatformEmailConfig extends Model
 
     // ─── Helpers ──────────────────────────────────────────────────────────────
 
+    public function usesResend(): bool
+    {
+        return $this->driver === 'resend';
+    }
+
     public function isConfigured(): bool
     {
+        if ($this->usesResend()) {
+            return ! empty($this->api_key);
+        }
+
         return ! empty($this->host) && ! empty($this->username);
     }
 
     /** Build a Laravel mailer config array from this record. */
     public function toMailerConfig(): array
     {
+        if ($this->usesResend()) {
+            return [
+                'transport' => 'resend',
+                'key' => $this->api_key,
+            ];
+        }
+
         return [
             'transport' => 'smtp',
             'host' => $this->host,

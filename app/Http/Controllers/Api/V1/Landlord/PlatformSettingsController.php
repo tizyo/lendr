@@ -10,6 +10,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
 
 class PlatformSettingsController extends BaseApiController
 {
@@ -111,6 +112,8 @@ class PlatformSettingsController extends BaseApiController
             return $this->success([
                 'configured' => false,
                 'is_active' => false,
+                'driver' => 'resend',
+                'has_api_key' => false,
                 'host' => null,
                 'port' => 587,
                 'encryption' => 'tls',
@@ -124,6 +127,8 @@ class PlatformSettingsController extends BaseApiController
         return $this->success([
             'configured' => $config->isConfigured(),
             'is_active' => $config->is_active,
+            'driver' => $config->driver,
+            'has_api_key' => ! empty($config->api_key),
             'host' => $config->host,
             'port' => $config->port,
             'encryption' => $config->encryption,
@@ -137,6 +142,7 @@ class PlatformSettingsController extends BaseApiController
     public function emailUpdate(Request $request): JsonResponse
     {
         $data = $request->validate([
+            'driver' => ['required', Rule::in(PlatformEmailConfig::DRIVERS)],
             'host' => ['nullable', 'string', 'max:255'],
             'port' => ['nullable', 'integer', 'between:1,65535'],
             'encryption' => ['nullable', 'in:tls,ssl,'],
@@ -145,7 +151,7 @@ class PlatformSettingsController extends BaseApiController
             'from_name' => ['nullable', 'string', 'max:128'],
         ]);
 
-        $config = PlatformEmailConfig::firstOrCreate([]);
+        $config = PlatformEmailConfig::firstOrNew([]);
 
         $update = array_filter($data, fn ($v) => $v !== null);
 
@@ -154,14 +160,25 @@ class PlatformSettingsController extends BaseApiController
             $update['password'] = $request->password;
         }
 
-        $config->update($update);
-
-        // Auto-activate if not already active
-        if (! $config->is_active && $config->isConfigured()) {
-            $config->update(['is_active' => true]);
+        // Write-only: blank keeps the stored key, so the UI never needs to echo it back.
+        if ($request->filled('api_key')) {
+            $request->validate(['api_key' => ['string', 'starts_with:re_', 'max:512']], [
+                'api_key.starts_with' => 'Resend API keys start with "re_".',
+            ]);
+            $update['api_key'] = trim($request->api_key);
         }
 
-        return $this->success(null, 'Platform email config updated.');
+        $config->fill($update);
+
+        if ($config->usesResend() && ! $config->isConfigured()) {
+            return $this->error('Enter a Resend API key to use Resend.', 422);
+        }
+
+        // Activate once usable; deactivate if switching left it unusable.
+        $config->is_active = $config->isConfigured();
+        $config->save();
+
+        return $this->success(['is_active' => $config->is_active], 'Platform email config updated.');
     }
 
     public function emailTest(Request $request): JsonResponse
@@ -176,16 +193,17 @@ class PlatformSettingsController extends BaseApiController
             return $this->error('No active platform email config found.', 422);
         }
 
+        $via = $config->usesResend() ? 'Resend' : 'SMTP';
+
         try {
-            $mailer = Mail::build($config->toMailerConfig());
-            $mailer->raw(
-                'LENDR platform SMTP test — configuration is working.',
-                fn ($m) => $m->to($data['to'])->subject('LENDR — Platform SMTP Test'),
+            Mail::mailer('platform')->raw(
+                "LENDR platform email test — {$via} configuration is working.",
+                fn ($m) => $m->to($data['to'])->subject("LENDR — Platform Email Test ({$via})"),
             );
 
-            return $this->success(null, "Test email sent to {$data['to']}.");
+            return $this->success(null, "Test email sent to {$data['to']} via {$via}.");
         } catch (\Throwable $e) {
-            return $this->error('SMTP error: '.$e->getMessage(), 422);
+            return $this->error("{$via} error: ".$e->getMessage(), 422);
         }
     }
 

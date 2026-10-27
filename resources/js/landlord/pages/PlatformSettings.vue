@@ -218,14 +218,71 @@
 
       <!-- ─── Platform Email ────────────────────────────────────────────────── -->
       <section>
-        <h2 class="text-xs font-semibold text-neutral-500 uppercase tracking-widest mb-4">Platform Email (SMTP)</h2>
+        <h2 class="text-xs font-semibold text-neutral-500 uppercase tracking-widest mb-4">Platform Email</h2>
         <p class="text-sm text-neutral-500 mb-4">
-          Used for all system emails (trial warnings, invoices, staff invites) for Starter &amp; Growth tenants.
-          Enterprise tenants may override with their own SMTP.
+          Delivers every email the platform sends — system emails (trial warnings, verification) and tenant emails
+          (staff invites, loan notices, statements). Enterprise tenants may override with their own SMTP.
         </p>
 
         <div class="bg-white rounded-xl border border-neutral-200 p-6 space-y-5">
+          <div>
+            <label class="label">Provider</label>
+            <div class="inline-flex rounded-lg border border-neutral-200 p-0.5 bg-neutral-50">
+              <button
+                v-for="opt in emailDrivers"
+                :key="opt.value"
+                type="button"
+                @click="email.driver = opt.value"
+                class="px-4 py-1.5 text-sm rounded-md transition-colors"
+                :class="email.driver === opt.value ? 'bg-white shadow-sm text-neutral-900 font-medium' : 'text-neutral-500 hover:text-neutral-700'"
+              >{{ opt.label }}</button>
+            </div>
+            <p class="text-xs text-neutral-400 mt-1.5">
+              {{ email.driver === 'resend'
+                ? 'Sends over HTTPS — use this on DigitalOcean, which blocks outbound SMTP.'
+                : 'Classic SMTP relay. Will not work on hosts that block SMTP ports (e.g. DigitalOcean).' }}
+            </p>
+          </div>
+
+          <!-- Resend -->
+          <div v-if="email.driver === 'resend'">
+            <label class="label">Resend API Key</label>
+            <div class="flex gap-2">
+              <input
+                v-model="email.api_key"
+                :type="showApiKey ? 'text' : 'password'"
+                class="input w-full font-mono text-sm"
+                autocomplete="off"
+                :placeholder="email.has_api_key ? '•••••••• saved — enter a new key to replace' : 're_…'"
+              />
+              <button type="button" @click="showApiKey = !showApiKey" class="btn-secondary text-xs px-3">
+                {{ showApiKey ? 'Hide' : 'Show' }}
+              </button>
+            </div>
+            <p class="text-xs text-neutral-400 mt-1">
+              Create one at resend.com → API Keys. Stored encrypted and never shown again after saving.
+            </p>
+          </div>
+
           <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="label">From Address</label>
+              <input v-model="email.from_address" type="email" class="input w-full" placeholder="noreply@lendr.app" />
+              <p v-if="email.driver === 'resend'" class="text-xs text-neutral-400 mt-1">Must be on a domain verified in Resend.</p>
+            </div>
+            <div>
+              <label class="label">System Sender Name</label>
+              <input v-model="email.from_name" type="text" class="input w-full" placeholder="LENDR" />
+            </div>
+            <p class="col-span-2 text-xs text-neutral-500 -mt-1">
+              System emails are sent as <span class="font-medium text-neutral-700">{{ email.from_name || 'LENDR' }}</span>.
+              Tenant emails use the tenant's workspace slug as the sender name, e.g.
+              <span class="font-medium text-neutral-700">vozara &lt;{{ email.from_address || 'noreply@lendr.app' }}&gt;</span>.
+            </p>
+          </div>
+
+          <!-- SMTP -->
+          <div v-if="email.driver === 'smtp'" class="grid grid-cols-2 gap-4">
             <div class="col-span-2">
               <label class="label">SMTP Host</label>
               <input v-model="email.host" type="text" class="input w-full" placeholder="smtp.mailgun.org" />
@@ -255,14 +312,6 @@
                 placeholder="Enter to update"
               />
             </div>
-            <div>
-              <label class="label">From Address</label>
-              <input v-model="email.from_address" type="email" class="input w-full" placeholder="noreply@lendr.app" />
-            </div>
-            <div>
-              <label class="label">From Name</label>
-              <input v-model="email.from_name" type="text" class="input w-full" placeholder="LENDR" />
-            </div>
           </div>
 
           <div class="flex items-center gap-3 pt-1 flex-wrap">
@@ -282,7 +331,12 @@
           </p>
 
           <div v-if="email.is_active" class="flex items-center gap-2 text-xs text-emerald-600 font-medium">
-            <span class="w-2 h-2 rounded-full bg-emerald-500"></span> Active platform SMTP
+            <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+            Active — all mail is sent via {{ email.active_driver === 'resend' ? 'Resend' : 'SMTP' }}
+          </div>
+          <div v-else class="flex items-center gap-2 text-xs text-amber-600 font-medium">
+            <span class="w-2 h-2 rounded-full bg-amber-500"></span>
+            Not configured — mail falls back to the server's .env mailer
           </div>
         </div>
       </section>
@@ -494,18 +548,27 @@ async function deactivateSms(provider) {
 }
 
 // ─── Email state ──────────────────────────────────────────────────────────────
-const email      = ref({ host: '', port: 587, encryption: 'tls', username: '', password: '', from_address: '', from_name: '', is_active: false })
+const emailDrivers = [
+  { value: 'resend', label: 'Resend (recommended)' },
+  { value: 'smtp',   label: 'SMTP' },
+]
+const email      = ref({ driver: 'resend', api_key: '', has_api_key: false, active_driver: null, host: '', port: 587, encryption: 'tls', username: '', password: '', from_address: '', from_name: '', is_active: false })
 const emailSaving = ref(false)
 const emailTesting = ref(false)
 const emailMsg   = ref('')
 const emailErr   = ref(false)
 const showPassword = ref(false)
+const showApiKey = ref(false)
 const testTo     = ref('')
 
 async function loadEmail() {
   const { data } = await axios.get('/api/v1/landlord/platform-settings/email')
   const d = data.data ?? {}
   email.value = {
+    driver:        d.driver       ?? 'resend',
+    api_key:       '',
+    has_api_key:   d.has_api_key  ?? false,
+    active_driver: d.is_active ? d.driver : null,
     host:         d.host         ?? '',
     port:         d.port         ?? 587,
     encryption:   d.encryption   ?? 'tls',
@@ -521,13 +584,18 @@ async function saveEmail() {
   emailSaving.value = true
   emailMsg.value    = ''
   try {
-    const payload = { ...email.value }
+    const { has_api_key, active_driver, is_active, ...payload } = email.value
     if (! payload.password) delete payload.password
-    await axios.put('/api/v1/landlord/platform-settings/email', payload)
-    email.value.is_active = true
-    email.value.password  = ''
-    emailMsg.value = 'Email config saved.'
-    emailErr.value = false
+    if (! payload.api_key) delete payload.api_key
+    const { data } = await axios.put('/api/v1/landlord/platform-settings/email', payload)
+    if (payload.api_key) email.value.has_api_key = true
+    email.value.is_active     = data.data?.is_active ?? false
+    email.value.active_driver = email.value.is_active ? email.value.driver : null
+    email.value.password      = ''
+    email.value.api_key       = ''
+    showApiKey.value          = false
+    emailMsg.value = email.value.is_active ? 'Email config saved.' : 'Saved, but not active yet — complete the provider details.'
+    emailErr.value = ! email.value.is_active
   } catch (e) {
     emailMsg.value = e.response?.data?.message ?? 'Save failed.'
     emailErr.value = true
@@ -544,7 +612,7 @@ async function testEmail() {
     emailMsg.value = data.message ?? 'Test sent.'
     emailErr.value = false
   } catch (e) {
-    emailMsg.value = e.response?.data?.message ?? 'SMTP error.'
+    emailMsg.value = e.response?.data?.message ?? 'Send failed.'
     emailErr.value = true
   } finally {
     emailTesting.value = false

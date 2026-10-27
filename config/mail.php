@@ -14,7 +14,9 @@ return [
     |
     */
 
-    'default' => env('MAIL_MAILER', 'log'),
+    // "platform" = deliver via the provider configured in Landlord → Platform
+    // Settings → Email (Resend / SMTP); falls back to MAIL_FALLBACK_MAILER.
+    'default' => env('MAIL_MAILER', 'platform'),
 
     /*
     |--------------------------------------------------------------------------
@@ -63,6 +65,12 @@ return [
 
         'resend' => [
             'transport' => 'resend',
+            'key' => env('RESEND_API_KEY'),
+        ],
+
+        'platform' => [
+            'transport' => 'platform',
+            'fallback' => env('MAIL_FALLBACK_MAILER', 'log'),
         ],
 
         'sendmail' => [
