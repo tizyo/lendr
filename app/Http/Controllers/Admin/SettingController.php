@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Services\Mail\TenantMailService;
+use App\Services\TenantLogo;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -22,7 +23,26 @@ class SettingController extends Controller
 
         return Inertia::render('settings/Index', [
             'settings' => $settings,
+            'logoUrl' => TenantLogo::url(),
         ]);
+    }
+
+    public function uploadLogo(Request $request): RedirectResponse
+    {
+        $request->validate(['logo' => TenantLogo::RULES], [
+            'logo.mimes' => 'Upload a PNG, JPG or WebP image (SVG logos don\'t display in email).',
+        ]);
+
+        TenantLogo::store($request->file('logo'));
+
+        return back()->with('success', 'Logo updated.');
+    }
+
+    public function deleteLogo(): RedirectResponse
+    {
+        TenantLogo::delete();
+
+        return back()->with('success', 'Logo removed.');
     }
 
     public function update(Request $request): RedirectResponse

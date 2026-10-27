@@ -17,7 +17,9 @@
         'Due date' => $context['due_date'] ?? null,
     ]" />
 
-    <x-email.button :href="$ctaUrl" :variant="$isAlert ? 'danger' : 'primary'">{{ $ctaLabel }}</x-email.button>
+    @if ($ctaUrl)
+        <x-email.button :href="$ctaUrl" :variant="$isAlert ? 'danger' : 'primary'">{{ $ctaLabel }}</x-email.button>
+    @endif
 
     <p style="font-size: 13px; color: #667085;">
         Questions about your loan? Reply to this email or contact your loan officer

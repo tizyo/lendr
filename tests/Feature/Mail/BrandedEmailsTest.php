@@ -163,12 +163,15 @@ it('renders broadcast emails (previously a fatal readonly-property error)', func
     expect($html)->toContain('Office closed Friday')->toContain('Mobile money still works.');
 });
 
-it('uses the danger button for overdue loan notices', function () {
+it('omits the portal button on loan notices when the tenant has no borrower portal', function () {
     enterTenantContext();
 
     $html = (new LoanEventMail('Chanda', 'c@x.test', 'overdue', 'LN-42', ['due_date' => '30 Oct 2026']))->render();
 
-    expect($html)->toContain('Payment Overdue')->toContain('#D92D20')->toContain('30 Oct 2026');
+    expect($html)->toContain('Payment Overdue')
+        ->toContain('30 Oct 2026')
+        ->not->toContain('View your loan')
+        ->not->toContain('/app/loans');
 });
 
 // ─── Logo endpoint ───────────────────────────────────────────────────────────

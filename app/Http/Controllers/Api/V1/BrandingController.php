@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Services\TenantLogo;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -39,7 +40,7 @@ class BrandingController extends BaseApiController
             'company_name' => $rows->get('company_name', 'LENDR'),
             'primary_color' => $rows->get('primary_color', '#0D47A1'),
             'secondary_color' => $rows->get('secondary_color', '#1565C0'),
-            'logo_url' => $this->fileUrl($rows->get('company_logo_path')),
+            'logo_url' => TenantLogo::url($rows->get(TenantLogo::SETTING)),
             'favicon_url' => $this->fileUrl($rows->get('favicon_path')),
             'pwa_app_name' => $rows->get('pwa_app_name', 'LENDR'),
             'pwa_theme_color' => $rows->get('pwa_theme_color', '#0D47A1'),
@@ -88,18 +89,9 @@ class BrandingController extends BaseApiController
      */
     public function uploadLogo(Request $request): JsonResponse
     {
-        $request->validate([
-            'logo' => ['required', 'image', 'mimes:jpeg,png,svg,webp', 'max:2048'],
-        ]);
+        $request->validate(['logo' => TenantLogo::RULES]);
 
-        $path = $request->file('logo')->store('branding/logos', 'public');
-
-        DB::table('settings')->updateOrInsert(
-            ['key' => 'company_logo_path'],
-            ['value' => $path, 'updated_at' => now()],
-        );
-
-        return $this->success(['url' => Storage::disk('public')->url($path)], 'Logo uploaded.');
+        return $this->success(['url' => TenantLogo::store($request->file('logo'))], 'Logo uploaded.');
     }
 
     /**

@@ -18,7 +18,13 @@
         'Role' => ucwords(str_replace('_', ' ', $staff->role?->value ?? 'Staff')),
     ]" />
 
-    <x-email.button :href="url('/login')">Sign in now</x-email.button>
+    <x-email.button :href="$loginUrl">Sign in now</x-email.button>
+
+    @if (tenancy()->tenant?->usesSharedPortal())
+        <x-email.panel title="Your workspace ID">
+            On the sign-in page, enter <strong>{{ tenancy()->tenant->slug }}</strong> as your workspace ID.
+        </x-email.panel>
+    @endif
 
     <x-email.panel variant="warning" title="Change your password on first sign-in">
         For your security you'll be asked to set a new password the first time you sign in.

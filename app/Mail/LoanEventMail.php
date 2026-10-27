@@ -46,8 +46,10 @@ class LoanEventMail extends Mailable
                 'context' => $this->context,
                 'headline' => $this->headline(),
                 'body' => $this->bodyText(),
-                'ctaLabel' => 'View Your Loan',
-                'ctaUrl' => url('/app/loans'),
+                'ctaLabel' => 'View your loan',
+                // Sent from queued jobs, where url() would point at the central domain.
+                // No borrower portal (shared-portal plan / no "pwa" feature) → no button.
+                'ctaUrl' => tenancy()->initialized ? tenancy()->tenant?->borrowerPortalUrl('/loans') : null,
                 'isAlert' => in_array($this->event, ['overdue', 'defaulted']),
             ],
         );

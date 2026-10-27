@@ -3,11 +3,11 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Services\Mail\TenantMailService;
+use App\Services\TenantLogo;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
 
 class SettingController extends BaseApiController
 {
@@ -73,22 +73,9 @@ class SettingController extends BaseApiController
 
     public function uploadLogo(Request $request): JsonResponse
     {
-        $request->validate([
-            'logo' => ['required', 'image', 'mimes:jpeg,png,svg', 'max:2048'],
-        ]);
+        $request->validate(['logo' => TenantLogo::RULES]);
 
-        $path = $request->file('logo')->store('logos', 's3');
-
-        DB::table('settings')->updateOrInsert(
-            ['key' => 'company_logo_path'],
-            ['value' => $path, 'updated_at' => now()],
-        );
-
-        $tenantId = tenant('id');
-        Cache::forget("tenant_settings_{$tenantId}");
-        Cache::forget("tenant_branding_{$tenantId}");
-
-        return $this->success(['url' => Storage::disk('s3')->url($path)], 'Logo uploaded.');
+        return $this->success(['url' => TenantLogo::store($request->file('logo'))], 'Logo uploaded.');
     }
 
     public function branding(): JsonResponse
@@ -100,9 +87,7 @@ class SettingController extends BaseApiController
             return [
                 'primary_color' => $rows->get('primary_color', '#0D47A1'),
                 'secondary_color' => $rows->get('secondary_color', '#1565C0'),
-                'logo_url' => $rows->get('company_logo_path')
-                                        ? Storage::disk('s3')->url($rows->get('company_logo_path'))
-                                        : null,
+                'logo_url' => TenantLogo::url($rows->get(TenantLogo::SETTING)),
                 'pwa_app_name' => $rows->get('pwa_app_name', 'LENDR'),
                 'pwa_theme_color' => $rows->get('pwa_theme_color', '#0D47A1'),
                 'company_name' => $rows->get('company_name', 'LENDR'),

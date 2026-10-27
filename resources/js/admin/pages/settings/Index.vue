@@ -72,6 +72,32 @@
       <template v-if="activeTab === 'branding'">
         <div class="lendr-card p-6 space-y-5">
           <h2 class="text-base font-semibold text-neutral-800 mb-2">Branding</h2>
+
+          <!-- Logo -->
+          <div>
+            <label class="label">Logo</label>
+            <div class="flex items-center gap-4">
+              <div class="w-40 h-16 rounded-lg border border-neutral-200 bg-neutral-50 flex items-center justify-center overflow-hidden shrink-0">
+                <img v-if="logoUrl" :src="logoUrl" alt="Logo" class="max-h-12 max-w-[140px] object-contain" />
+                <span v-else class="text-xs text-neutral-400">No logo</span>
+              </div>
+              <div class="flex flex-col gap-2">
+                <div class="flex gap-2">
+                  <label class="btn-secondary text-sm px-3 py-1.5 cursor-pointer" :class="{ 'opacity-50 pointer-events-none': logoUploading }">
+                    {{ logoUploading ? 'Uploading…' : (logoUrl ? 'Replace' : 'Upload logo') }}
+                    <input type="file" accept="image/png,image/jpeg,image/webp" class="hidden" @change="uploadLogo" />
+                  </label>
+                  <button v-if="logoUrl" type="button" @click="removeLogo"
+                          class="text-sm px-3 py-1.5 rounded-lg text-neutral-500 hover:bg-neutral-100">
+                    Remove
+                  </button>
+                </div>
+                <p class="text-xs text-neutral-400">PNG, JPG or WebP, up to 2 MB. Shown on borrower emails and the borrower portal.</p>
+                <p v-if="page.props.errors?.logo" class="text-xs text-red-500">{{ page.props.errors.logo }}</p>
+              </div>
+            </div>
+          </div>
+
           <div class="grid grid-cols-2 gap-4">
             <div>
               <label class="label">Primary Colour</label>
@@ -303,7 +329,7 @@ import { ref, reactive, computed } from 'vue'
 import { router, usePage } from '@inertiajs/vue3'
 import AppLayout from '@/admin/components/layout/AppLayout.vue'
 
-const props = defineProps({ settings: Object })
+const props = defineProps({ settings: Object, logoUrl: String })
 
 const page = usePage()
 const isEnterprise = computed(() => page.props.tenant?.plan === 'enterprise')
@@ -360,6 +386,29 @@ function save() {
     preserveScroll: true,
     onFinish: () => { saving.value = false },
   })
+}
+
+// ─── Logo ─────────────────────────────────────────────────────────────────────
+// Separate from the main form: the file uploads immediately and the page props
+// (logoUrl) refresh on success.
+const logoUploading = ref(false)
+
+function uploadLogo(e) {
+  const file = e.target.files?.[0]
+  e.target.value = ''
+  if (! file) return
+  logoUploading.value = true
+  router.post(route('settings.logo.upload'), { logo: file }, {
+    forceFormData: true,
+    preserveScroll: true,
+    preserveState: true,
+    onFinish: () => { logoUploading.value = false },
+  })
+}
+
+function removeLogo() {
+  if (! confirm('Remove your logo?')) return
+  router.delete(route('settings.logo.delete'), { preserveScroll: true, preserveState: true })
 }
 
 function testEmail() {

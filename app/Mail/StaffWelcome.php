@@ -30,6 +30,7 @@ class StaffWelcome extends Mailable
     {
         return new Content(
             view: 'emails.staff-welcome',
+            with: ['loginUrl' => tenancy()->tenant?->loginUrl() ?? url('/login')],
         );
     }
 }

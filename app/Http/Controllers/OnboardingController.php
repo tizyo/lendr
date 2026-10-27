@@ -222,9 +222,7 @@ class OnboardingController extends Controller
             tenancy()->end();
         }
 
-        $loginUrl = $tenant->usesSharedPortal()
-            ? route('portal.login')
-            : 'http://'.optional($tenant->domains->first())->domain.'/login';
+        $loginUrl = $tenant->loginUrl();
 
         // A mail outage must never block activation — the workspace is already live.
         if ($tenant->admin_email) {

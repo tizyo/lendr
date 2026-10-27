@@ -8,12 +8,13 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
 /**
- * Serves tenant logos to email clients.
+ * Public URL for a tenant's logo (see App\Services\TenantLogo), used by the
+ * admin settings, branding API, borrower portal and emails.
  *
  * Tenant uploads live on a tenant-suffixed disk that has no public URL, and
- * emails are opened far from any tenant domain — so mail templates point here,
- * on the central domain, instead. Raster images only: an SVG served from our
- * own origin could carry script.
+ * emails are opened far from any tenant domain — so everything points here,
+ * on the central domain. Raster images only: an SVG served from our own origin
+ * could carry script.
  */
 class EmailAssetController extends Controller
 {

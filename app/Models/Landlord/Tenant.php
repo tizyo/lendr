@@ -2,6 +2,7 @@
 
 namespace App\Models\Landlord;
 
+use App\Services\PlanFeatureService;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Stancl\Tenancy\Contracts\TenantWithDatabase;
 use Stancl\Tenancy\Database\Concerns\HasDatabase;
@@ -44,6 +45,46 @@ class Tenant extends BaseTenant implements TenantWithDatabase
     public function usesSharedPortal(): bool
     {
         return in_array($this->plan, ['starter', 'trial']);
+    }
+
+    // ─── URLs (safe in queued jobs, where url() would point at APP_URL) ─────
+
+    /** Root of the tenant's own subdomain, or null when it has none. */
+    public function domainUrl(): ?string
+    {
+        $domain = $this->domains()->value('domain');
+
+        if (! $domain) {
+            return null;
+        }
+
+        $scheme = parse_url((string) config('app.url'), PHP_URL_SCHEME) ?: 'https';
+
+        return "{$scheme}://{$domain}";
+    }
+
+    /** Where this tenant's staff sign in. */
+    public function loginUrl(): string
+    {
+        $base = $this->usesSharedPortal() ? null : $this->domainUrl();
+
+        return $base ? $base.'/login' : route('portal.login');
+    }
+
+    /**
+     * A page in the borrower self-service portal (e.g. '/loans'), or null when
+     * borrowers have no portal: it lives only on the tenant's own subdomain and
+     * only on plans with the "pwa" feature.
+     */
+    public function borrowerPortalUrl(string $path = ''): ?string
+    {
+        $base = $this->domainUrl();
+
+        if (! $base || ! (new PlanFeatureService($this->plan))->has('pwa')) {
+            return null;
+        }
+
+        return $base.'/app'.$path;
     }
 
     public static function getCustomColumns(): array

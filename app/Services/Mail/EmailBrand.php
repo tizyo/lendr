@@ -4,6 +4,7 @@ namespace App\Services\Mail;
 
 use App\Models\Landlord\PlatformBranding;
 use App\Models\Landlord\Tenant;
+use App\Services\TenantLogo;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -61,11 +62,13 @@ class EmailBrand
     {
         /** @var Collection $s */
         $s = rescue(fn () => DB::table('settings')->whereIn('key', [
-            'company_name', 'primary_color', 'email_header_color', 'company_logo_path',
+            'company_name', 'primary_color', 'email_header_color', TenantLogo::SETTING,
             'support_email', 'support_phone', 'address', 'website', 'email_footer_text',
+            // Settings → General saves these; the branding API saves the support_* ones.
+            'company_email', 'company_phone', 'company_address',
         ])->pluck('value', 'key'), collect(), false);
 
-        $logoPath = $s->get('company_logo_path');
+        $logoPath = $s->get(TenantLogo::SETTING);
 
         // The generic placeholder name is never a real brand — prefer the tenant's actual name.
         $name = $s->get('company_name');
@@ -77,16 +80,11 @@ class EmailBrand
             'is_tenant' => true,
             'name' => $name,
             'tagline' => null,
-            'logo_url' => $logoPath && ! $this->isSvg($logoPath)
-                ? $this->absolute(route('email.brand-logo', [
-                    'tenant' => $tenant->getTenantKey(),
-                    'v' => substr(md5($logoPath), 0, 8),
-                ], false))
-                : null,
+            'logo_url' => $logoPath && ! $this->isSvg($logoPath) ? TenantLogo::url($logoPath) : null,
             'color' => $s->get('email_header_color') ?: $s->get('primary_color') ?: self::TENANT_DEFAULT_COLOR,
-            'email' => $s->get('support_email'),
-            'phone' => $s->get('support_phone'),
-            'address' => $s->get('address'),
+            'email' => $s->get('support_email') ?: $s->get('company_email'),
+            'phone' => $s->get('support_phone') ?: $s->get('company_phone'),
+            'address' => $s->get('address') ?: $s->get('company_address'),
             'website' => $s->get('website'),
             'footer' => $s->get('email_footer_text'),
         ], self::TENANT_DEFAULT_COLOR);
