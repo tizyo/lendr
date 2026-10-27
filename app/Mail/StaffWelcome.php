@@ -3,6 +3,7 @@
 namespace App\Mail;
 
 use App\Models\Tenant\User;
+use App\Services\Mail\EmailBrand;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
@@ -21,7 +22,7 @@ class StaffWelcome extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Welcome to '.config('app.name').' — Your account is ready',
+            subject: 'Welcome to '.app(EmailBrand::class)->current()['name'].' — your account is ready',
         );
     }
 

@@ -5,6 +5,7 @@ use App\Http\Controllers\Admin\AuthController;
 use App\Http\Controllers\Admin\BillingController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\SupportTicketController;
+use App\Http\Controllers\EmailAssetController;
 use App\Http\Controllers\LandingController;
 use App\Http\Controllers\Landlord\PanelController;
 use App\Http\Controllers\OnboardingController;
@@ -42,6 +43,9 @@ Route::get('/onboarding', [OnboardingController::class, 'show'])->name('onboardi
 Route::post('/onboarding', [OnboardingController::class, 'store'])->name('onboarding.store');
 Route::get('/onboarding/success', [OnboardingController::class, 'success'])->name('onboarding.success');
 Route::get('/onboarding/verify/{token}', [OnboardingController::class, 'verifyEmail'])->name('onboarding.verify');
+
+// Tenant logo for email clients (central domain — tenant uploads have no public URL)
+Route::get('/email-assets/{tenant}/logo', [EmailAssetController::class, 'tenantLogo'])->name('email.brand-logo');
 
 // Staff invitation (central domain — controller initializes tenancy manually)
 Route::get('/invitation/{tenant}/{token}', [AcceptInvitationController::class, 'show'])->name('invitation.show');

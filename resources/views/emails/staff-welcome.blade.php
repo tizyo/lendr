@@ -1,45 +1,27 @@
 @extends('emails.layout')
 
-@section('title', 'Welcome to ' . ($branding['company_name'] ?? config('app.name')))
-
-@section('header_sub')
-    Your account is ready
-@endsection
-
-@push('styles')
-<style>
-    .credentials { background: #F3F4F6; border-radius: 6px; padding: 16px 20px; margin: 24px 0; }
-    .credentials p { margin: 4px 0; font-size: 14px; }
-    .credentials strong { display: inline-block; width: 120px; color: #6B7280; }
-    .credentials code { font-family: monospace; color: #111827; font-size: 15px; }
-</style>
-@endpush
+@section('title', 'Welcome to '.$brand['name'])
+@section('preheader', 'Your '.$brand['name'].' account is ready — your sign-in details are inside.')
+@section('eyebrow', 'Your account is ready')
+@section('heading', 'Welcome aboard, '.\Illuminate\Support\Str::before(trim($staff->name), ' ').'!')
 
 @section('content')
-    <h2>Welcome, {{ $staff->name }}!</h2>
-
     <p>
-        Your staff account has been created on <strong>{{ $branding['company_name'] ?? config('app.name') }}</strong>.
-        You can log in with the credentials below.
+        Your staff account on <strong>{{ $brand['name'] }}</strong> has been created.
+        Use the details below to sign in.
     </p>
 
-    <div class="credentials">
-        <p><strong>Email:</strong> <code>{{ $staff->email }}</code></p>
-        @if ($staff->username)
-        <p><strong>Username:</strong> <code>{{ $staff->username }}</code></p>
-        @endif
-        <p><strong>Password:</strong> <code>{{ $temporaryPassword }}</code></p>
-        <p><strong>Role:</strong> <code>{{ $staff->role?->value }}</code></p>
-    </div>
+    <x-email.details :mono="['Username', 'Temporary password']" :rows="[
+        'Email' => $staff->email,
+        'Username' => $staff->username,
+        'Temporary password' => $temporaryPassword,
+        'Role' => ucwords(str_replace('_', ' ', $staff->role?->value ?? 'Staff')),
+    ]" />
 
-    <p>
-        For security, you will be prompted to change your password on first login.
-        Please keep your credentials safe and do not share them.
-    </p>
+    <x-email.button :href="url('/login')">Sign in now</x-email.button>
 
-    <a href="{{ url('/login') }}" class="btn">Log in Now</a>
-
-    <p style="font-size:13px; color:#6B7280;">
-        If you did not expect this email, please contact your administrator immediately.
-    </p>
+    <x-email.panel variant="warning" title="Change your password on first sign-in">
+        For your security you'll be asked to set a new password the first time you sign in.
+        Never share your credentials — {{ $brand['name'] }} staff will never ask for them.
+    </x-email.panel>
 @endsection

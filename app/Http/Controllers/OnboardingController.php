@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Enums\UserRole;
 use App\Mail\TenantVerificationMail;
+use App\Mail\TenantWelcomeMail;
 use App\Models\Landlord\PlanConfig;
 use App\Models\Landlord\Tenant;
 use App\Models\Tenant\User;
@@ -224,6 +225,11 @@ class OnboardingController extends Controller
         $loginUrl = $tenant->usesSharedPortal()
             ? route('portal.login')
             : 'http://'.optional($tenant->domains->first())->domain.'/login';
+
+        // A mail outage must never block activation — the workspace is already live.
+        if ($tenant->admin_email) {
+            rescue(fn () => Mail::to($tenant->admin_email)->queue(new TenantWelcomeMail($tenant, $loginUrl)));
+        }
 
         return redirect($loginUrl)->with('success', 'Email verified! Your account is now active. Please log in.');
     }

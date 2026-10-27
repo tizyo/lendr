@@ -1,34 +1,27 @@
 @extends('emails.layout')
 
-@section('title', 'Trial Expired — ' . ($branding['company_name'] ?? config('app.name')))
+@php($supportEmail = $brand['email'] ?: 'support@lendr.app')
+@php($upgradeUrl = 'mailto:'.$supportEmail.'?subject='.rawurlencode('Upgrade request — '.$tenant->name))
 
-@push('styles')
-<style>
-    .cta-wrap { text-align:center; margin: 24px 0; }
-    .cta-btn { display:inline-block; background:#16a34a; color:#fff !important; font-weight:700; font-size:15px; padding:14px 28px; border-radius:10px; text-decoration:none; }
-    .cta-sec { display:inline-block; margin-top:12px; border:1px solid #e5e7eb; color:#374151 !important; font-weight:600; font-size:14px; padding:12px 28px; border-radius:10px; text-decoration:none; }
-</style>
-@endpush
-
-@section('header_sub')
-    {{ $branding['company_name'] ?? config('app.name') }} · Account Notice
-@endsection
+@section('title', 'Your trial has ended — '.$brand['name'])
+@section('preheader', 'Your '.$tenant->name.' workspace is paused. Your data is safe for 30 days — upgrade to restore access.')
+@section('eyebrow', 'Account notice')
+@section('heading', 'Your free trial has ended')
 
 @section('content')
-    <h2 style="color:#DC2626;">Trial Expired</h2>
     <p>Hi {{ $tenant->name }},</p>
-    <p>Your 14-day free trial has ended. Your workspace is currently paused.</p>
-    <p><strong>Your data is safe.</strong> We keep everything for 30 days. Upgrade any time to restore full access immediately — no data loss, no setup needed.</p>
+    <p>Your {{ $brand['name'] }} trial has ended and your workspace is now paused.</p>
 
-    <div class="cta-wrap">
-        <a href="mailto:{{ $branding['email'] ?? 'sales@lendr.app' }}?subject=Upgrade%20request%20%E2%80%94%20{{ urlencode($tenant->name) }}" class="cta-btn">
-            Upgrade &amp; Restore Access →
-        </a>
-        <br>
-        <a href="mailto:{{ $branding['email'] ?? 'support@lendr.app' }}" class="cta-sec">Contact Support</a>
-    </div>
+    <x-email.panel variant="success" title="Your data is safe">
+        We keep everything for <strong>30 days</strong>. Upgrade any time in that window and
+        your team picks up exactly where they left off — no data loss, no setup.
+    </x-email.panel>
 
-    <p style="color:#9ca3af;font-size:12px;margin-top:24px;">
-        If you no longer need your account, no action is required. Data is automatically deleted after 30 days of inactivity.
+    <x-email.button :href="$upgradeUrl">Upgrade &amp; restore access</x-email.button>
+
+    <x-email.button :href="'mailto:'.$supportEmail" variant="secondary">Talk to support</x-email.button>
+
+    <p style="font-size: 12px; color: #98A2B3;">
+        No longer need your workspace? No action is required — data is deleted automatically after 30 days.
     </p>
 @endsection

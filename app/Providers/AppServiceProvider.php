@@ -6,6 +6,7 @@ use App\Mail\Listeners\ApplyPlatformSender;
 use App\Mail\Transport\PlatformTransport;
 use App\Mail\Transport\ResendTransport;
 use App\Models\Landlord\PlatformBranding;
+use App\Services\Mail\EmailBrand;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Mail\Events\MessageSending;
@@ -19,7 +20,8 @@ class AppServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        //
+        // Scoped: fresh per request / queued job, so branding edits reach long-running workers.
+        $this->app->scoped(EmailBrand::class);
     }
 
     public function boot(): void
@@ -37,8 +39,13 @@ class AppServiceProvider extends ServiceProvider
         ));
         Event::listen(MessageSending::class, ApplyPlatformSender::class);
 
-        // Inject platform branding into all email + PDF views.
-        View::composer(['emails.*', 'pdf.*'], function ($view) {
+        // Email look: tenant branding in tenant context, platform branding otherwise.
+        View::composer(['emails.*', 'components.email.*'], function ($view) {
+            $view->with('brand', $this->app->make(EmailBrand::class)->current());
+        });
+
+        // Inject platform branding into all PDF views.
+        View::composer(['pdf.*'], function ($view) {
             try {
                 $view->with('branding', PlatformBranding::defaults());
             } catch (\Throwable) {

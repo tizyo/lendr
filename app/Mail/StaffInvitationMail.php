@@ -22,7 +22,7 @@ class StaffInvitationMail extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: "You've been invited to join {$this->orgName} on ".config('app.name'),
+            subject: "You're invited to join {$this->orgName}",
         );
     }
 

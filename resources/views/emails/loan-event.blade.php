@@ -1,31 +1,26 @@
 @extends('emails.layout')
 
 @section('title', $headline)
-
-@section('header_sub')
-    Loan Notification — {{ $loanNumber }}
-@endsection
+@section('preheader', strip_tags($body))
+@section('eyebrow', 'Loan '.$loanNumber)
+@section('heading', $headline)
 
 @section('content')
-    <h2>{{ $headline }}</h2>
     <p>Hi {{ $borrowerName }},</p>
     <p>{!! $body !!}</p>
 
-    <div class="highlight {{ $isAlert ? 'alert' : '' }}">
-        <strong>Loan Reference:</strong> {{ $loanNumber }}
-        @if (!empty($context['amount_paid']))
-        <br><strong>Amount Paid:</strong> ZMW {{ number_format((float) $context['amount_paid'], 2) }}
-        @endif
-        @if (!empty($context['due_date']))
-        <br><strong>Due Date:</strong> {{ $context['due_date'] }}
-        @endif
-    </div>
+    <x-email.details :rows="[
+        'Loan reference' => $loanNumber,
+        'Amount paid' => ! empty($context['amount_paid']) ? 'ZMW '.number_format((float) $context['amount_paid'], 2) : null,
+        'Outstanding balance' => isset($context['outstanding']) && $context['outstanding'] !== '' ? 'ZMW '.number_format((float) $context['outstanding'], 2) : null,
+        'Amount due' => ! empty($context['amount_due']) ? 'ZMW '.number_format((float) $context['amount_due'], 2) : null,
+        'Due date' => $context['due_date'] ?? null,
+    ]" />
 
-    <p>
-        <a href="{{ $ctaUrl }}" class="btn {{ $isAlert ? 'alert' : '' }}">{{ $ctaLabel }}</a>
-    </p>
+    <x-email.button :href="$ctaUrl" :variant="$isAlert ? 'danger' : 'primary'">{{ $ctaLabel }}</x-email.button>
 
-    <p style="font-size:13px; color:#6B7280;">
-        If you have any questions, please contact your loan officer or visit our support centre.
+    <p style="font-size: 13px; color: #667085;">
+        Questions about your loan? Reply to this email or contact your loan officer
+        @if (! empty($brand['phone'])) on <strong>{{ $brand['phone'] }}</strong>@endif.
     </p>
 @endsection

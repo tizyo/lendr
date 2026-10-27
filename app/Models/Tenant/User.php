@@ -3,6 +3,7 @@
 namespace App\Models\Tenant;
 
 use App\Enums\UserRole;
+use App\Notifications\ResetPasswordNotification;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -70,6 +71,12 @@ class User extends Authenticatable
                 $user->syncRoles([$role]);
             }
         });
+    }
+
+    /** Branded reset email (tenant colours + logo) instead of Laravel's stock one. */
+    public function sendPasswordResetNotification($token): void
+    {
+        $this->notify(new ResetPasswordNotification($token));
     }
 
     public function getActivitylogOptions(): LogOptions

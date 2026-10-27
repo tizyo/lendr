@@ -12,11 +12,21 @@ class BroadcastMail extends Mailable
 {
     use Queueable, SerializesModels;
 
+    public readonly string $body;
+
+    /**
+     * $subject is Mailable's own (non-readonly) property, and $message is
+     * overwritten in mail views by Laravel's Message object — so neither can
+     * be a promoted readonly property. The body is exposed to the view as $body.
+     */
     public function __construct(
         public readonly string $borrowerName,
-        public readonly string $subject,
-        public readonly string $message,
-    ) {}
+        string $subject,
+        string $message,
+    ) {
+        $this->subject = $subject;
+        $this->body = $message;
+    }
 
     public function envelope(): Envelope
     {
@@ -25,6 +35,7 @@ class BroadcastMail extends Mailable
 
     public function content(): Content
     {
-        return new Content(view: 'emails.broadcast');
+        // Mailable's own properties (like $subject) aren't auto-shared with the view.
+        return new Content(view: 'emails.broadcast', with: ['subject' => $this->subject]);
     }
 }
