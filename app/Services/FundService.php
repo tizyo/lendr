@@ -48,6 +48,22 @@ class FundService
     }
 
     /**
+     * Return a disbursement's funds when the payout failed and no money left.
+     */
+    public function reverseDisbursement(Model $loan, ?int $userId, string $reason): FundTransaction
+    {
+        return DB::transaction(function () use ($loan, $userId, $reason) {
+            return $this->credit(
+                (float) $loan->principal_amount,
+                FundTransactionType::DisburseReversal,
+                $loan,
+                $userId,
+                "Disbursement reversed: {$loan->loan_number} — {$reason}",
+            );
+        });
+    }
+
+    /**
      * Credit fund for a loan repayment.
      */
     public function recordRepayment(Model $payment, float $amount, ?int $userId): FundTransaction
@@ -167,6 +183,8 @@ class FundService
             FundTransactionType::Deposit => ['total_deposits' => (float) $this->bcround(bcadd((string) $balance->total_deposits, (string) $amount, 10))],
             FundTransactionType::Repayment => ['total_repaid' => (float) $this->bcround(bcadd((string) $balance->total_repaid, (string) $amount, 10))],
             FundTransactionType::Penalty => ['total_penalties' => (float) $this->bcround(bcadd((string) $balance->total_penalties, (string) $amount, 10))],
+            // Undo the disbursement in the totals too, so deposits − disbursed + repaid still reconciles.
+            FundTransactionType::DisburseReversal => ['total_disbursed' => (float) $this->bcround(bcsub((string) $balance->total_disbursed, (string) $amount, 10))],
             default => [],
         };
 

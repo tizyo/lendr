@@ -86,6 +86,7 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::post('loans/{loan}/review', [\App\Http\Controllers\Api\V1\LoanController::class, 'review'])->name('loans.review')->middleware('permission:loans.edit');
         Route::post('loans/{loan}/approve', [\App\Http\Controllers\Api\V1\LoanController::class, 'approve'])->name('loans.approve')->middleware('permission:loans.approve');
         Route::post('loans/{loan}/disburse', [\App\Http\Controllers\Api\V1\LoanController::class, 'disburse'])->name('loans.disburse')->middleware('permission:loans.disburse');
+        Route::post('loans/{loan}/payout/resolve', [\App\Http\Controllers\Api\V1\LoanController::class, 'resolvePayout'])->name('loans.payout.resolve')->middleware('permission:loans.disburse');
         Route::post('loans/{loan}/deny', [\App\Http\Controllers\Api\V1\LoanController::class, 'deny'])->name('loans.deny')->middleware('permission:loans.deny');
         Route::post('loans/{loan}/freeze', [\App\Http\Controllers\Api\V1\LoanController::class, 'freeze'])->name('loans.freeze')->middleware('permission:loans.freeze');
         Route::post('loans/{loan}/unfreeze', [\App\Http\Controllers\Api\V1\LoanController::class, 'unfreeze'])->name('loans.unfreeze')->middleware('permission:loans.freeze');

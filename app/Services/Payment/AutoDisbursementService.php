@@ -2,9 +2,12 @@
 
 namespace App\Services\Payment;
 
+use App\Enums\LoanStatus;
+use App\Exceptions\PayoutRejected;
 use App\Models\Landlord\TenantWallet;
 use App\Models\Tenant\DisbursementLog;
 use App\Models\Tenant\Loan;
+use App\Services\Payment\Concerns\ClassifiesPayouts;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -22,13 +25,24 @@ use Illuminate\Support\Str;
  */
 class AutoDisbursementService
 {
+    use ClassifiesPayouts;
+
+    public function __construct(private readonly DisbursementOutcomeService $outcome) {}
+
     /**
-     * Initiate a disbursement using the tenant wallet.
-     * Returns the DisbursementLog record (status = initiated or processing or failed).
+     * Initiate a disbursement using the tenant wallet. The result is handed to
+     * DisbursementOutcomeService (accepted / rejected → reversed / unconfirmed).
      */
     public function disburse(Loan $loan, TenantWallet $wallet): DisbursementLog
     {
         $phone = $loan->disbursement_account ?? $loan->borrower?->phone;
+
+        // Only a loan activated by disburse() is awaiting a payout (not e.g. one just reversed).
+        if ($loan->fresh()?->status !== LoanStatus::Active) {
+            Log::warning('[AutoDisburse] Skipped — loan not awaiting a payout', ['loan_id' => $loan->id]);
+
+            return $loan->disbursementLogs()->latest('id')->first() ?? new DisbursementLog(['loan_id' => $loan->id, 'status' => 'skipped']);
+        }
 
         // Deterministic per loan (not time()-suffixed) so a retried job or a
         // duplicate dispatch resolves to the same reference. Combined with a
@@ -39,7 +53,8 @@ class AutoDisbursementService
 
         $existing = DisbursementLog::where('reference', $reference)->first();
 
-        if ($existing && $existing->status !== 'failed') {
+        // A rejected-and-reversed (or failed) attempt may be retried once staff re-disburse.
+        if ($existing && ! in_array($existing->status, ['failed', 'reversed'], true)) {
             Log::warning('[AutoDisburse] Duplicate disbursement attempt blocked', [
                 'loan_id' => $loan->id,
                 'existing_log_id' => $existing->id,
@@ -85,48 +100,32 @@ class AutoDisbursementService
             }
         }
 
-        if (! $phone) {
-            $log->update(['status' => 'failed', 'failure_reason' => 'No recipient phone found on loan or borrower.']);
-            Log::warning('[AutoDisburse] No phone for loan', ['loan_id' => $loan->id]);
-
-            return $log;
-        }
-
         try {
+            if (! $phone) {
+                throw new PayoutRejected('No recipient phone found on loan or borrower.');
+            }
+
             $providerRef = match ($wallet->gateway) {
                 'flutterwave' => $this->flutterwave($loan, $wallet, $phone, $reference),
                 'airtel_money' => $this->airtel($loan, $wallet, $phone, $reference),
                 'mtn_momo' => $this->mtn($loan, $wallet, $phone, $reference),
                 'zamtel_kwacha' => $this->zamtel($loan, $wallet, $phone, $reference),
-                'pawapay' => $this->pawapay($loan, $wallet, $phone, $reference),
-                default => throw new \RuntimeException("Unsupported gateway: {$wallet->gateway}"),
+                'pawapay' => $this->pawapay($loan, $wallet, $phone),
+                default => throw new PayoutRejected("Unsupported gateway: {$wallet->gateway}"),
             };
+        } catch (PayoutRejected $e) {
+            $this->outcome->rejected($loan, $log, $e->getMessage());
 
-            $log->update([
-                'status' => 'processing',
-                'provider_reference' => $providerRef,
-            ]);
-
-            Log::info('[AutoDisburse] Initiated', [
-                'loan_id' => $loan->id,
-                'gateway' => $wallet->gateway,
-                'ref' => $reference,
-                'provider' => $providerRef,
-            ]);
+            return $log->refresh();
         } catch (\Throwable $e) {
-            $log->update([
-                'status' => 'failed',
-                'failure_reason' => $e->getMessage(),
-            ]);
+            $this->outcome->unconfirmed($loan, $log, $e->getMessage());
 
-            Log::error('[AutoDisburse] Failed', [
-                'loan_id' => $loan->id,
-                'gateway' => $wallet->gateway,
-                'error' => $e->getMessage(),
-            ]);
+            return $log->refresh();
         }
 
-        return $log;
+        $this->outcome->accepted($loan, $log, $providerRef);
+
+        return $log->refresh();
     }
 
     // ─── Flutterwave ─────────────────────────────────────────────────────────
@@ -140,7 +139,7 @@ class AutoDisbursementService
 
         $e164Phone = $this->e164($phone);
 
-        $response = Http::withHeaders(['Authorization' => "Bearer {$apiKey}"])
+        $response = Http::withHeaders(['Authorization' => "Bearer {$apiKey}"])->timeout(30)
             ->post("{$baseUrl}/v3/transfers", [
                 'account_bank' => $this->flutterwaveBank($phone),
                 'account_number' => $e164Phone,
@@ -152,9 +151,7 @@ class AutoDisbursementService
                 'beneficiary_name' => $loan->borrower?->first_name.' '.($loan->borrower?->last_name ?? ''),
             ]);
 
-        if (! $response->successful()) {
-            throw new \RuntimeException("Flutterwave transfer failed ({$response->status()}): ".$response->body());
-        }
+        $this->assertFlutterwaveAccepted($response);
 
         return (string) ($response->json('data.id') ?? $reference);
     }
@@ -183,19 +180,19 @@ class AutoDisbursementService
             ? 'https://openapi.airtel.africa'
             : 'https://openapiuat.airtel.africa';
 
-        $authResponse = Http::post("{$baseUrl}/auth/oauth2/token", [
-            'client_id' => $clientId,
-            'client_secret' => $clientSecret,
-            'grant_type' => 'client_credentials',
-        ]);
+        $token = $this->beforeSending(function () use ($baseUrl, $clientId, $clientSecret) {
+            $auth = Http::timeout(20)->post("{$baseUrl}/auth/oauth2/token", [
+                'client_id' => $clientId,
+                'client_secret' => $clientSecret,
+                'grant_type' => 'client_credentials',
+            ]);
 
-        if (! $authResponse->successful()) {
-            throw new \RuntimeException('Airtel auth failed: '.$authResponse->body());
-        }
+            return $auth->successful() && $auth->json('access_token')
+                ? $auth->json('access_token')
+                : throw new PayoutRejected('Airtel auth failed: '.Str::limit($auth->body(), 200));
+        });
 
-        $token = $authResponse->json('access_token');
-
-        $response = Http::withToken($token)
+        $response = Http::withToken($token)->timeout(30)
             ->withHeaders(['X-Country' => 'ZM', 'X-Currency' => 'ZMW'])
             ->post("{$baseUrl}/standard/v1/disbursements/", [
                 'payee' => ['msisdn' => ltrim($phone, '0')],
@@ -208,11 +205,9 @@ class AutoDisbursementService
                 ],
             ]);
 
-        if (! $response->successful()) {
-            throw new \RuntimeException("Airtel disbursement failed ({$response->status()}): ".$response->body());
-        }
+        $this->assertAirtelAccepted($response);
 
-        return $response->json('data.transaction.id') ?? $reference;
+        return (string) ($response->json('data.transaction.id') ?? $reference);
     }
 
     // ─── MTN MoMo ─────────────────────────────────────────────────────────────
@@ -228,18 +223,20 @@ class AutoDisbursementService
             ? 'https://proxy.momoapi.mtn.com'
             : 'https://sandbox.momodeveloper.mtn.com';
 
-        $authResponse = Http::withHeaders(['Ocp-Apim-Subscription-Key' => $subscriptionKey])
-            ->withBasicAuth($apiUser, $apiKey)
-            ->post("{$baseUrl}/disbursement/token/");
+        $token = $this->beforeSending(function () use ($baseUrl, $subscriptionKey, $apiUser, $apiKey) {
+            $auth = Http::timeout(20)
+                ->withHeaders(['Ocp-Apim-Subscription-Key' => $subscriptionKey])
+                ->withBasicAuth($apiUser, $apiKey)
+                ->post("{$baseUrl}/disbursement/token/");
 
-        if (! $authResponse->successful()) {
-            throw new \RuntimeException('MTN token failed: '.$authResponse->body());
-        }
+            return $auth->successful() && $auth->json('access_token')
+                ? $auth->json('access_token')
+                : throw new PayoutRejected('MTN token request failed: '.Str::limit($auth->body(), 200));
+        });
 
-        $token = $authResponse->json('access_token');
         $requestUuid = (string) Str::uuid();
 
-        $response = Http::withToken($token)
+        $response = Http::withToken($token)->timeout(30)
             ->withHeaders([
                 'X-Reference-Id' => $requestUuid,
                 'X-Target-Environment' => $env,
@@ -254,8 +251,9 @@ class AutoDisbursementService
                 'payeeNote' => $reference,
             ]);
 
+        // MTN returns 202 Accepted for a queued transfer.
         if ($response->status() !== 202) {
-            throw new \RuntimeException("MTN transfer failed ({$response->status()}): ".$response->body());
+            $this->providerError('MTN', $response);
         }
 
         return $requestUuid;
@@ -268,7 +266,7 @@ class AutoDisbursementService
         $apiKey = $wallet->api_key;
         $baseUrl = $wallet->meta('zamtel_api_url') ?? 'https://api.zamtel.com';
 
-        $response = Http::withHeaders(['Authorization' => "Bearer {$apiKey}"])
+        $response = Http::withHeaders(['Authorization' => "Bearer {$apiKey}"])->timeout(30)
             ->post(rtrim($baseUrl, '/').'/payments/disburse', [
                 'reference' => $reference,
                 'msisdn' => $this->e164($phone),
@@ -278,38 +276,39 @@ class AutoDisbursementService
             ]);
 
         if (! $response->successful()) {
-            throw new \RuntimeException("Zamtel disbursement failed ({$response->status()}): ".$response->body());
+            $this->providerError('Zamtel', $response);
         }
 
-        return $response->json('reference') ?? $reference;
+        return (string) ($response->json('reference') ?? $reference);
     }
 
     // ─── PawaPay ─────────────────────────────────────────────────────────────
 
-    private function pawapay(Loan $loan, TenantWallet $wallet, string $phone, string $reference): string
+    private function pawapay(Loan $loan, TenantWallet $wallet, string $phone): string
     {
         $apiKey = $wallet->api_key;
         $baseUrl = $wallet->environment === 'production'
             ? 'https://api.pawapay.io'
             : 'https://api.sandbox.pawapay.cloud';
 
-        $response = Http::withToken($apiKey)
+        // PawaPay requires a UUIDv4 payoutId (our LENDR-DISB-… reference isn't one).
+        $payoutId = (string) Str::uuid();
+
+        $response = Http::withToken($apiKey)->timeout(30)
             ->post("{$baseUrl}/payouts", [
-                'payoutId' => $reference,
+                'payoutId' => $payoutId,
                 'amount' => number_format((float) $loan->principal_amount, 2, '.', ''),
                 'currency' => 'ZMW',
                 'country' => 'ZMB',
                 'correspondent' => $this->pawaPayCorrespondent($phone),
-                'recipient' => ['type' => 'MSISDN', 'address' => ['value' => $this->e164($phone)]],
+                'recipient' => ['type' => 'MSISDN', 'address' => ['value' => ltrim($this->e164($phone), '+')]],
                 'customerTimestamp' => now()->toIso8601String(),
-                'statementDescription' => "LENDR Loan {$loan->loan_number}",
+                'statementDescription' => Str::limit("Loan {$loan->loan_number}", 22, ''),
             ]);
 
-        if (! $response->successful()) {
-            throw new \RuntimeException("PawaPay payout failed ({$response->status()}): ".$response->body());
-        }
+        $this->assertPawaPayAccepted($response);
 
-        return $reference;
+        return $payoutId;
     }
 
     private function pawaPayCorrespondent(string $phone): string

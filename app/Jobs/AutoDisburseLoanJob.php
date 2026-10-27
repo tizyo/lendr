@@ -21,9 +21,9 @@ class AutoDisburseLoanJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    public int $tries = 3;
-
-    public int $backoff = 30;
+    // One attempt: AutoDisbursementService hands every outcome to
+    // DisbursementOutcomeService, and a blind retry could pay twice.
+    public int $tries = 1;
 
     public function __construct(
         public readonly Loan $loan,

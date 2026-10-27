@@ -10,6 +10,7 @@ enum FundTransactionType: string
     case Penalty = 'penalty';
     case Adjustment = 'adjustment';
     case Withdrawal = 'withdrawal';
+    case DisburseReversal = 'disburse_reversal'; // payout failed — funds returned
 
     public function label(): string
     {
@@ -20,12 +21,13 @@ enum FundTransactionType: string
             self::Penalty => 'Penalty',
             self::Adjustment => 'Adjustment',
             self::Withdrawal => 'Withdrawal',
+            self::DisburseReversal => 'Disbursement reversal',
         };
     }
 
     public function isCredit(): bool
     {
-        return in_array($this, [self::Deposit, self::Repayment, self::Penalty]);
+        return in_array($this, [self::Deposit, self::Repayment, self::Penalty, self::DisburseReversal]);
     }
 
     public function isDebit(): bool

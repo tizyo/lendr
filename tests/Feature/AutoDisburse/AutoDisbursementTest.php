@@ -213,7 +213,7 @@ it('AutoDisbursementService creates a DisbursementLog and calls Flutterwave API'
     tenancy()->end();
 });
 
-it('AutoDisbursementService marks log failed on HTTP error', function () {
+it('AutoDisbursementService reverses the disbursement when the provider refuses the payout', function () {
     $tenant = disbTenant();
     $wallet = disbWallet($tenant); // root DB — must be before tenancy()->initialize()
     tenancy()->initialize($tenant);
@@ -225,7 +225,26 @@ it('AutoDisbursementService marks log failed on HTTP error', function () {
     $service = app(AutoDisbursementService::class);
     $log = $service->disburse($loan, $wallet);
 
-    expect($log->status)->toBe('failed');
+    expect($log->status)->toBe('reversed')
+        ->and($log->failure_reason)->toContain('401')
+        ->and($loan->fresh()->status)->toBe(LoanStatus::Approved);
+
+    tenancy()->end();
+});
+
+it('AutoDisbursementService leaves the loan alone when the payout outcome is unknown', function () {
+    $tenant = disbTenant();
+    $wallet = disbWallet($tenant);
+    tenancy()->initialize($tenant);
+
+    $loan = disbLoan();
+
+    Http::fake(['*' => Http::response('Gateway timeout', 504)]);
+
+    $log = app(AutoDisbursementService::class)->disburse($loan, $wallet);
+
+    expect($log->status)->toBe('unconfirmed')
+        ->and($loan->fresh()->status)->toBe(LoanStatus::Active);
 
     tenancy()->end();
 });
@@ -272,13 +291,18 @@ it('AutoDisbursementService retries using the same reference after a prior failu
 
     $service = app(AutoDisbursementService::class);
     $failed = $service->disburse($loan, $wallet);
-    expect($failed->status)->toBe('failed');
+    expect($failed->status)->toBe('reversed');
 
+    // A reversed loan is back to Approved — no payout until staff disburse again.
+    $service->disburse($loan, $wallet);
+    Http::assertSentCount(1);
+
+    $loan->refresh()->update(['status' => LoanStatus::Active]); // staff re-disbursed
     $retried = $service->disburse($loan, $wallet);
 
     expect($retried->id)->toBe($failed->id);
     expect($retried->reference)->toBe($failed->reference);
-    expect($retried->status)->not->toBe('failed');
+    expect($retried->status)->toBe('processing');
     expect(DisbursementLog::where('loan_id', $loan->id)->count())->toBe(1);
 
     tenancy()->end();

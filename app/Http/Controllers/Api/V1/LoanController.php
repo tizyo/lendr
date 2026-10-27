@@ -24,6 +24,7 @@ use App\Services\FundService;
 use App\Services\GlLedgerService;
 use App\Services\LoanCalculatorService;
 use App\Services\NotificationService;
+use App\Services\Payment\DisbursementOutcomeService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -365,27 +366,8 @@ class LoanController extends BaseApiController
             }
         });
 
-        dispatch(new SendLoanEventNotificationJob($loan->id, 'disbursed'));
-
-        // Record CRB loan_opened event (fire-and-forget, non-blocking)
-        $fresh = $loan->fresh(['borrower']);
-        if ($identifier = $fresh->borrower->crbIdentifier()) {
-            try {
-                $this->crb->recordLoanOpened(
-                    $this->crb->hash($identifier['value'], $identifier['type']),
-                    $identifier['type'],
-                    $tenantId,
-                    (float) $fresh->principal_amount,
-                    $fresh->loan_number,
-                );
-            } catch (\Throwable) {
-                // CRB failure must never block disbursement
-            }
-        }
-
         // Trigger MoMo payout — Enterprise tenants use wallet credentials; others use tenant settings
-        $fresh = $loan->fresh();
-        $tenantId = (string) (tenant('id') ?? 'local');
+        $fresh = $loan->fresh(['borrower']);
         $tenantPlan = tenant('plan') ?? 'starter';
         $wallet = null;
 
@@ -393,17 +375,68 @@ class LoanController extends BaseApiController
             $wallet = TenantWallet::where('tenant_id', $tenantId)->where('is_active', true)->first();
         }
 
-        if ($wallet && $wallet->disburse_enabled) {
-            dispatch(new AutoDisburseLoanJob($fresh, $wallet->id));
+        $payout = match (true) {
+            (bool) $wallet?->disburse_enabled => new AutoDisburseLoanJob($fresh, $wallet->id),
+            (bool) $fresh->disbursement_method?->isMobileMoney() => new DisburseMobileMoneyJob($fresh),
+            default => null,
+        };
 
-            if ($wallet->debit_enabled) {
+        if ($payout) {
+            // The borrower notification and CRB "loan opened" wait for the provider
+            // to accept the payout; a rejected payout reverses this disbursement
+            // (see DisbursementOutcomeService).
+            dispatch($payout);
+
+            if ($wallet?->disburse_enabled && $wallet->debit_enabled) {
                 dispatch(new CreateStandingOrdersJob($fresh, $wallet->id));
             }
-        } elseif ($fresh->disbursement_method?->isMobileMoney()) {
-            dispatch(new DisburseMobileMoneyJob($fresh));
+
+            return $this->success(
+                $this->formatLoan($fresh->load('schedule')),
+                'Loan activated — mobile money payout sent to the provider. You\'ll be notified if it fails.',
+            );
         }
 
+        // Cash / bank transfer: the money has already been handed over.
+        dispatch(new SendLoanEventNotificationJob($loan->id, 'disbursed'));
+        app(DisbursementOutcomeService::class)->recordCrbLoanOpened($fresh);
+
         return $this->success($this->formatLoan($fresh->load('schedule')), 'Loan disbursed and activated.');
+    }
+
+    /**
+     * Settle a payout whose outcome we couldn't confirm (timeout / provider
+     * error), after staff have checked the provider's dashboard.
+     * POST /api/v1/loans/{loan}/payout/resolve  { outcome: sent|not_sent, notes }
+     */
+    public function resolvePayout(Request $request, Loan $loan, DisbursementOutcomeService $outcome): JsonResponse
+    {
+        $data = $request->validate([
+            'outcome' => ['required', 'in:sent,not_sent'],
+            'notes' => ['required', 'string', 'max:500'],
+        ]);
+
+        $log = $loan->disbursementLogs()->where('status', 'unconfirmed')->latest('id')->first();
+
+        if (! $log) {
+            return $this->error('This loan has no unconfirmed payout to resolve.', 422);
+        }
+
+        if ($data['outcome'] === 'sent') {
+            $outcome->accepted($loan, $log);
+            $loan->statusLogs()->create([
+                'changed_by' => auth()->id(),
+                'from_status' => $loan->status->value,
+                'to_status' => $loan->status->value,
+                'notes' => "Payout confirmed sent by staff: {$data['notes']}",
+            ]);
+
+            return $this->success($this->formatLoan($loan->fresh()), 'Payout confirmed. The borrower has been notified.');
+        }
+
+        $outcome->rejected($loan, $log, "Confirmed not sent by staff: {$data['notes']}", auth()->id());
+
+        return $this->success($this->formatLoan($loan->fresh()), 'Disbursement reversed. The loan is back to Approved.');
     }
 
     /**
