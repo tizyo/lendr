@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Enums\FundTransactionType;
+use App\Jobs\SendLowFundBalanceAlertJob;
 use App\Models\Tenant\FundBalance;
 use App\Models\Tenant\FundDeposit;
 use App\Models\Tenant\FundTransaction;
@@ -160,6 +161,8 @@ class FundService
 
         $this->updateBalanceForDebit($balance, $type, $amount, $after);
 
+        $this->alertIfFellBelowThreshold($before, $after);
+
         return FundTransaction::create([
             'transaction_ref' => $this->generateRef(),
             'type' => $type->value,
@@ -174,6 +177,21 @@ class FundService
     }
 
     // ─── Helpers ─────────────────────────────────────────────────────────────
+
+    /**
+     * Scope 5.7: alert when the available balance drops below the tenant's
+     * threshold (Settings → General). Fires only on the crossing, not on every
+     * debit while the fund stays low; dispatched after commit so a rolled-back
+     * disbursement never raises a false alarm.
+     */
+    private function alertIfFellBelowThreshold(float $before, float $after): void
+    {
+        $threshold = (float) rescue(fn () => DB::table('settings')->where('key', 'fund_low_balance_threshold')->value('value'), 0, false);
+
+        if ($threshold > 0 && $before >= $threshold && $after < $threshold) {
+            SendLowFundBalanceAlertJob::dispatch($after, $threshold)->afterCommit();
+        }
+    }
 
     private function updateBalanceForCredit(FundBalance $balance, FundTransactionType $type, float $amount, float $newAvailable): void
     {

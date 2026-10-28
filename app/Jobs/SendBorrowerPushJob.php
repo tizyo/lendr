@@ -33,7 +33,7 @@ class SendBorrowerPushJob implements ShouldQueue
         $loanId = $notification->data['loan_id'] ?? null;
 
         $push->sendToBorrower($notification->borrower, $notification->title, (string) $notification->body, [
-            'url' => $loanId ? "/app/loans/{$loanId}" : '/app/notifications',
+            'url' => $notification->data['url'] ?? ($loanId ? "/app/loans/{$loanId}" : '/app/notifications'),
             'tag' => "{$notification->type}-".($loanId ?? $notification->id),
         ]);
     }

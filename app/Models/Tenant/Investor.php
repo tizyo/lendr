@@ -23,6 +23,10 @@ class Investor extends Model
         'notes',
     ];
 
+    protected $casts = [
+        'national_id' => 'encrypted', // PII — encrypted at rest
+    ];
+
     public function dividends(): HasMany
     {
         return $this->hasMany(InvestorDividend::class);

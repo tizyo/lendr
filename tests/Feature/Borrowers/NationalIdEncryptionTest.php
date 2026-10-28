@@ -1,6 +1,10 @@
 <?php
 
+use App\Models\Tenant\Agent;
 use App\Models\Tenant\Borrower;
+use App\Models\Tenant\Guarantor;
+use App\Models\Tenant\Investor;
+use App\Models\Tenant\Loan;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
 
@@ -79,6 +83,20 @@ it('lets a borrower keep their own NRC on update', function () {
             'national_id' => '123456/78/1',
         ])
         ->assertOk();
+});
+
+it('encrypts guarantor, agent and investor NRCs too', function () {
+    $guarantor = Guarantor::create(['loan_id' => Loan::factory()->create()->id, 'name' => 'G', 'national_id' => '111111/11/1']);
+    $agent = Agent::create(['agent_number' => 'AG-1', 'first_name' => 'A', 'phone' => '0970000001', 'national_id' => '222222/22/2']);
+    $investor = Investor::create(['investor_number' => 'INV-1', 'name' => 'I', 'email' => 'i@x.test', 'national_id' => '333333/33/3']);
+
+    foreach ([[$guarantor, 'guarantors', '111111/11/1'], [$agent, 'agents', '222222/22/2'], [$investor, 'investors', '333333/33/3']] as [$model, $table, $plain]) {
+        $raw = DB::table($table)->where('id', $model->id)->value('national_id');
+
+        expect($raw)->not->toBe($plain)
+            ->and(Crypt::decryptString($raw))->toBe($plain)
+            ->and($model->fresh()->national_id)->toBe($plain);
+    }
 });
 
 it('migrates existing plaintext NRCs both ways', function () {

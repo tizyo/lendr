@@ -29,6 +29,7 @@ class Guarantor extends Model
     ];
 
     protected $casts = [
+        'national_id' => 'encrypted', // PII — encrypted at rest
         'monthly_income' => 'decimal:2',
         'status' => 'string',
     ];

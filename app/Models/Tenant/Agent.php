@@ -30,6 +30,7 @@ class Agent extends Model
     protected function casts(): array
     {
         return [
+            'national_id' => 'encrypted', // PII — encrypted at rest
             'commission_rate' => 'decimal:2',
             'fixed_commission' => 'decimal:2',
         ];

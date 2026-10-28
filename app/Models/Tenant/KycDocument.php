@@ -3,6 +3,7 @@
 namespace App\Models\Tenant;
 
 use App\Enums\KycStatus;
+use App\Jobs\SendKycStatusNotificationJob;
 use Database\Factories\Tenant\KycDocumentFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -43,9 +44,35 @@ class KycDocument extends Model
         ];
     }
 
+    protected static function booted(): void
+    {
+        // Tell the borrower whenever a decision is made on their document (staff review or expiry).
+        static::updated(function (self $document) {
+            if ($document->wasChanged('status') && in_array($document->status, SendKycStatusNotificationJob::NOTIFIABLE, true)) {
+                SendKycStatusNotificationJob::dispatch($document)->afterCommit();
+            }
+        });
+    }
+
     public function borrower(): BelongsTo
     {
         return $this->belongsTo(Borrower::class);
+    }
+
+    /** Human name of the document type, as the borrower knows it. */
+    public function typeLabel(): string
+    {
+        return match ($this->document_type) {
+            'national_id_front' => 'NRC (front)',
+            'national_id_back' => 'NRC (back)',
+            'passport' => 'passport',
+            'drivers_licence' => "driver's licence",
+            'utility_bill' => 'utility bill',
+            'bank_statement' => 'bank statement',
+            'payslip', 'pay_slip' => 'pay slip',
+            'selfie' => 'selfie',
+            default => str_replace('_', ' ', (string) $this->document_type),
+        };
     }
 
     public function reviewer(): BelongsTo

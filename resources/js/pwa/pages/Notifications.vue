@@ -125,6 +125,9 @@ const typeLabel = (t) => ({
   overdue:          'Overdue',
   defaulted:        'Defaulted',
   upcoming_payment: 'Reminder',
+  kyc_verified:     'Verified',
+  kyc_rejected:     'Action needed',
+  kyc_expired:      'Expired',
 }[t] ?? t)
 
 const typeBadge = (t) => ({
@@ -134,6 +137,9 @@ const typeBadge = (t) => ({
   overdue:          'bg-amber-100 text-amber-700',
   defaulted:        'bg-red-100 text-red-700',
   upcoming_payment: 'bg-purple-100 text-purple-700',
+  kyc_verified:     'bg-emerald-100 text-emerald-700',
+  kyc_rejected:     'bg-amber-100 text-amber-700',
+  kyc_expired:      'bg-amber-100 text-amber-700',
 }[t] ?? 'bg-gray-100 text-gray-600')
 
 onMounted(async () => {
