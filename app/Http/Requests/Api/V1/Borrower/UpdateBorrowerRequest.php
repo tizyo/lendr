@@ -2,13 +2,14 @@
 
 namespace App\Http\Requests\Api\V1\Borrower;
 
+use App\Rules\UniqueNationalId;
 use Illuminate\Foundation\Http\FormRequest;
 
 class UpdateBorrowerRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()->can('borrowers.update');
+        return $this->user()->can('borrowers.edit'); // the seeded permission (there is no borrowers.update)
     }
 
     public function rules(): array
@@ -24,7 +25,7 @@ class UpdateBorrowerRequest extends FormRequest
             'phone_alt' => ['nullable', 'regex:/^(\+260|0)(9[5-7]|7[6-8]|6[5-7])\d{7}$/'],
             'gender' => ['nullable', 'in:male,female,other'],
             'date_of_birth' => ['nullable', 'date', 'before:today'],
-            'national_id' => ['nullable', 'string', 'max:50'],
+            'national_id' => ['nullable', 'string', 'max:50', new UniqueNationalId($id)],
             'occupation' => ['nullable', 'string', 'max:100'],
             'employer' => ['nullable', 'string', 'max:150'],
             'address' => ['nullable', 'string', 'max:255'],

@@ -8,6 +8,7 @@ use App\Jobs\InitiateMobileMoneyPaymentJob;
 use App\Models\Tenant\Borrower;
 use App\Models\Tenant\MobileMoneyIntent;
 use App\Models\Tenant\Payment;
+use App\Rules\UniqueNationalId;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -55,7 +56,7 @@ class ProfileController extends BaseApiController
             'other_names' => ['nullable', 'string', 'max:100'],
             'gender' => ['nullable', 'in:male,female,other'],
             'date_of_birth' => ['nullable', 'date', 'before:today'],
-            'national_id' => ['nullable', 'string', 'max:50'],
+            'national_id' => ['nullable', 'string', 'max:50', new UniqueNationalId($borrower->id)],
             'address' => ['nullable', 'string', 'max:255'],
             'city' => ['nullable', 'string', 'max:100'],
             'province' => ['nullable', 'string', 'max:100'],

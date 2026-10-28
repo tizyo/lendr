@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Admin;
 
+use App\Rules\UniqueNationalId;
 use Illuminate\Foundation\Http\FormRequest;
 
 class StoreBorrowerRequest extends FormRequest
@@ -22,7 +23,7 @@ class StoreBorrowerRequest extends FormRequest
             'phone_alt' => ['nullable', 'string', 'max:20'],
             'gender' => ['nullable', 'in:male,female,other'],
             'date_of_birth' => ['nullable', 'date', 'before:today'],
-            'national_id' => ['nullable', 'string', 'max:50'],
+            'national_id' => ['nullable', 'string', 'max:50', new UniqueNationalId],
             'occupation' => ['nullable', 'string', 'max:100'],
             'employer' => ['nullable', 'string', 'max:150'],
             'address' => ['nullable', 'string', 'max:255'],

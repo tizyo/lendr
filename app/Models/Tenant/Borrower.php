@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Str;
 use Laravel\Sanctum\HasApiTokens;
 use Spatie\Activitylog\LogOptions;
@@ -56,12 +57,15 @@ class Borrower extends Authenticatable
     protected $hidden = [
         'pin',
         'otp',
-        'national_id_encrypted',
+        'national_id_hash',
     ];
 
     protected function casts(): array
     {
         return [
+            // NRC is PII (Data Protection Act 2021): encrypted at rest. Exact lookups and the
+            // uniqueness rule use national_id_hash instead (see nationalIdHash()).
+            'national_id' => 'encrypted',
             'date_of_birth' => 'date',
             'is_active' => 'boolean',
             'is_blacklisted' => 'boolean',
@@ -69,6 +73,34 @@ class Borrower extends Authenticatable
             'otp_expires_at' => 'datetime',
             'credit_score_updated_at' => 'datetime',
         ];
+    }
+
+    protected static function booted(): void
+    {
+        // Keep the blind index in step with the encrypted NRC.
+        static::saving(function (self $borrower) {
+            if ($borrower->isDirty('national_id')) {
+                $borrower->national_id_hash = self::nationalIdHash($borrower->national_id);
+            }
+        });
+    }
+
+    /**
+     * Keyed hash of an NRC for exact-match search and uniqueness — the column
+     * itself is encrypted with a random IV, so it can't be compared directly.
+     * Formatting is ignored: "123456/78/1" and "123456781" match.
+     */
+    public static function nationalIdHash(?string $nationalId): ?string
+    {
+        $normalized = strtoupper(preg_replace('/[^A-Za-z0-9]/', '', (string) $nationalId));
+
+        return $normalized === '' ? null : hash_hmac('sha256', 'nrc|'.$normalized, (string) config('app.key'));
+    }
+
+    /** Ciphertext for raw inserts that bypass the model (e.g. legacy data migration). */
+    public static function encryptNationalId(?string $nationalId): ?string
+    {
+        return filled($nationalId) ? Crypt::encryptString($nationalId) : null;
     }
 
     public function getActivitylogOptions(): LogOptions

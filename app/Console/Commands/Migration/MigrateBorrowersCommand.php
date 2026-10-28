@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands\Migration;
 
+use App\Models\Tenant\Borrower;
 use App\Services\Migration\MigrationResult;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -71,7 +72,9 @@ class MigrateBorrowersCommand extends BaseMigrationCommand
                             'last_name' => $row->last_name ?? (isset($row->name) ? (explode(' ', $row->name)[1] ?? '') : ''),
                             'email' => $row->email ?? null,
                             'phone' => $phone,
-                            'national_id' => $row->national_id ?? $row->nrc ?? null,
+                            // Raw insert bypasses the model cast — encrypt + index here.
+                            'national_id' => Borrower::encryptNationalId($row->national_id ?? $row->nrc ?? null),
+                            'national_id_hash' => Borrower::nationalIdHash($row->national_id ?? $row->nrc ?? null),
                             'date_of_birth' => $row->dob ?? $row->date_of_birth ?? null,
                             'gender' => $row->gender ?? null,
                             'address' => $row->address ?? null,

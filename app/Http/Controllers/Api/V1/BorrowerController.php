@@ -24,7 +24,8 @@ class BorrowerController extends BaseApiController
                     ->orWhere('last_name', 'like', "%{$s}%")
                     ->orWhere('phone', 'like', "%{$s}%")
                     ->orWhere('borrower_number', 'like', "%{$s}%")
-                    ->orWhere('national_id', 'like', "%{$s}%")
+                    // NRC is encrypted: full-number match via its keyed hash (no partial search).
+                    ->orWhere('national_id_hash', Borrower::nationalIdHash($s))
                     ->orWhere('email', 'like', "%{$s}%");
             }))
             ->when($request->status, function ($q, $status) {
