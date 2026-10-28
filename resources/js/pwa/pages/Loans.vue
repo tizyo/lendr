@@ -106,9 +106,8 @@ onMounted(async () => {
     const data = await fetchLoans()
     loans.value = data.data ?? []
     nextPage.value = data.links?.next ? 2 : null
-  } catch {
-    auth.clearAuth()
-    router.visit(route('pwa.auth.login'))
+  } catch (error) {
+    auth.handleAuthError(error) // only a 401 signs out; offline keeps cached data
   } finally {
     loading.value = false
   }

@@ -294,9 +294,8 @@ onMounted(async () => {
     if (providers.value.length === 1) {
       form.provider = providers.value[0].value
     }
-  } catch {
-    auth.clearAuth()
-    router.visit(route('pwa.auth.login'))
+  } catch (error) {
+    auth.handleAuthError(error) // only a 401 signs out
   } finally {
     loading.value = false
   }

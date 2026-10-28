@@ -2,6 +2,8 @@
 
 namespace App\Models\Tenant;
 
+use App\Jobs\SendBorrowerPushJob;
+use App\Services\PushNotificationService;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -22,6 +24,16 @@ class BorrowerNotification extends Model
             'data' => 'array',
             'read_at' => 'datetime',
         ];
+    }
+
+    protected static function booted(): void
+    {
+        // Every in-app notification is also pushed to the borrower's phone (if they subscribed).
+        static::created(function (self $notification) {
+            if (app(PushNotificationService::class)->isConfigured()) {
+                SendBorrowerPushJob::dispatch($notification)->afterCommit();
+            }
+        });
     }
 
     public function borrower(): BelongsTo

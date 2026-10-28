@@ -74,37 +74,21 @@ test('sendToBorrower skips inactive tokens', function () {
     Http::assertNothingSent();
 });
 
-test('sendToBorrower attempts FCM when server key configured', function () {
+// Delivery itself (Web Push) is covered in WebPushTest.php — Google shut the legacy
+// FCM endpoint down in 2024, so fcm tokens are no longer sent to.
+
+test('sendToBorrower returns 0 without Web Push (VAPID) keys configured', function () {
     $borrower = pushBorrower();
     DeviceToken::create([
         'borrower_id' => $borrower->id,
-        'token' => 'active-token-fcm',
-        'platform' => 'fcm',
+        'token' => 'https://fcm.googleapis.com/fcm/send/active-no-key',
+        'platform' => 'webpush',
+        'public_key' => 'pub',
+        'auth_token' => 'auth',
         'is_active' => true,
     ]);
 
-    // Fake FCM success response
-    Http::fake([
-        'fcm.googleapis.com/*' => Http::response(['success' => 1], 200),
-    ]);
-
-    config(['services.fcm.server_key' => 'test-fcm-key']);
-
-    $svc = app(PushNotificationService::class);
-    $sent = $svc->sendToBorrower($borrower, 'Loan Update', 'Your payment was received.');
-    expect($sent)->toBe(1);
-});
-
-test('sendToBorrower returns 0 without FCM key configured', function () {
-    $borrower = pushBorrower();
-    DeviceToken::create([
-        'borrower_id' => $borrower->id,
-        'token' => 'active-no-key',
-        'platform' => 'fcm',
-        'is_active' => true,
-    ]);
-
-    config(['services.fcm.server_key' => null]);
+    config(['services.webpush.public_key' => null, 'services.webpush.private_key' => null]);
 
     Http::fake();
     $svc = app(PushNotificationService::class);

@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Pwa\AppController;
+use App\Http\Controllers\Pwa\PwaAssetController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -9,6 +10,12 @@ use Illuminate\Support\Facades\Route;
 |--------------------------------------------------------------------------
 | Entry point: resources/js/pwa.js  →  resolves pages from pwa/pages/
 */
+
+// ─── Installable app: manifest, service worker, home-screen icons ─────────
+Route::get('/manifest.webmanifest', [PwaAssetController::class, 'manifest'])->name('manifest');
+Route::get('/sw.js', [PwaAssetController::class, 'serviceWorker'])->name('sw');
+Route::get('/icons/{size}-{purpose}.png', [PwaAssetController::class, 'icon'])
+    ->whereNumber('size')->whereIn('purpose', ['any', 'maskable'])->name('icon');
 
 // ─── Guest routes ─────────────────────────────────────────────────────────
 Route::get('/', [AppController::class, 'login'])->name('auth.login');

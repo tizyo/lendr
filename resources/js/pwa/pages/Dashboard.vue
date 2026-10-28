@@ -173,10 +173,8 @@ onMounted(async () => {
     // Update store borrower data
     auth.setAuth(auth.token, borrower)
     recentLoans.value = loansRes.data.data ?? []
-  } catch {
-    // Token expired — redirect to login
-    auth.clearAuth()
-    router.visit(route('pwa.auth.login'))
+  } catch (error) {
+    auth.handleAuthError(error) // only a 401 signs out; offline keeps cached data
   } finally {
     loading.value = false
   }

@@ -534,6 +534,7 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::put('notifications/{id}/read', [\App\Http\Controllers\Api\V1\Borrower\NotificationController::class, 'markRead'])->name('notifications.read');
 
         // Device Tokens (Push Notifications)
+        Route::get('push/config', [\App\Http\Controllers\Api\V1\Borrower\DeviceTokenController::class, 'config'])->name('push.config');
         Route::post('device-tokens', [\App\Http\Controllers\Api\V1\Borrower\DeviceTokenController::class, 'register'])->name('device-tokens.register');
         Route::delete('device-tokens', [\App\Http\Controllers\Api\V1\Borrower\DeviceTokenController::class, 'unregister'])->name('device-tokens.unregister');
 
