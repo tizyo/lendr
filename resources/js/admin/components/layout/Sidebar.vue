@@ -76,6 +76,7 @@ const navGroups = [
       { name: 'KYC Review', route: 'kyc.index', icon: 'shield-check' },
       { name: 'Loans', route: 'loans.index', icon: 'credit-card' },
       { name: 'Payments', route: 'payments.index', icon: 'banknotes' },
+      { name: 'Bank Deposits', route: 'payments.bank-deposits', icon: 'banknotes' },
       { name: 'Collections', route: 'collections.index', icon: 'phone' },
     ],
   },

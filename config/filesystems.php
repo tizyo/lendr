@@ -38,6 +38,17 @@ return [
             'report' => false,
         ],
 
+        // Sensitive borrower uploads (KYC documents, proofs of payment). Never publicly
+        // reachable: files are streamed through authenticated API routes. Tenant-suffixed
+        // via config/tenancy.php so tenants' files never share a folder.
+        'private' => [
+            'driver' => 'local',
+            'root' => storage_path('app/secure'),
+            'visibility' => 'private',
+            'throw' => false,
+            'report' => false,
+        ],
+
         'public' => [
             'driver' => 'local',
             'root' => storage_path('app/public'),

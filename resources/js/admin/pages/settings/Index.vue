@@ -66,6 +66,48 @@
             <textarea v-model="form.company_address" rows="2" class="input w-full" />
           </div>
         </div>
+
+        <div class="lendr-card p-6 space-y-4">
+          <h2 class="text-base font-semibold text-neutral-800 mb-1">Bank Account for Repayments</h2>
+          <p class="text-xs text-neutral-400 -mt-1 mb-2">
+            Shown to borrowers in the app under "Pay by bank deposit", with their loan number as the payment reference.
+            They upload the deposit slip and you verify it under Payments → Bank deposits.
+          </p>
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="label">Bank</label>
+              <input v-model="form.bank_name" type="text" class="input w-full" placeholder="e.g. Zanaco" />
+            </div>
+            <div>
+              <label class="label">Account name</label>
+              <input v-model="form.bank_account_name" type="text" class="input w-full" />
+            </div>
+            <div>
+              <label class="label">Account number</label>
+              <input v-model="form.bank_account_number" type="text" class="input w-full" />
+            </div>
+            <div>
+              <label class="label">Branch</label>
+              <input v-model="form.bank_branch" type="text" class="input w-full" placeholder="e.g. Cairo Road" />
+            </div>
+            <div>
+              <label class="label">Branch / sort code</label>
+              <input v-model="form.bank_branch_code" type="text" class="input w-full" />
+            </div>
+          </div>
+        </div>
+
+        <div class="lendr-card p-6 space-y-4">
+          <h2 class="text-base font-semibold text-neutral-800 mb-2">Disbursement Fund</h2>
+          <div>
+            <label class="label">Low balance alert (ZMW)</label>
+            <input v-model="form.fund_low_balance_threshold" type="number" min="0" step="0.01" class="input w-full" placeholder="e.g. 50000" />
+            <p class="text-xs text-neutral-400 mt-1">
+              Managers and accountants get an in-app alert and an email when the available fund balance drops below this amount.
+              Leave empty to turn alerts off.
+            </p>
+          </div>
+        </div>
       </template>
 
       <!-- ─── Branding ─── -->
@@ -357,6 +399,12 @@ const form = reactive({
   company_phone:          s.company_phone          || '',
   company_email:          s.company_email          || '',
   company_address:        s.company_address        || '',
+  fund_low_balance_threshold: s.fund_low_balance_threshold || '',
+  bank_name:              s.bank_name              || '',
+  bank_account_name:      s.bank_account_name      || '',
+  bank_account_number:    s.bank_account_number    || '',
+  bank_branch:            s.bank_branch            || '',
+  bank_branch_code:       s.bank_branch_code       || '',
   currency:               s.currency               || 'ZMW',
   timezone:               s.timezone               || 'Africa/Lusaka',
   date_format:            s.date_format            || 'd/m/Y',

@@ -28,16 +28,35 @@
           </div>
         </div>
 
-        <!-- ── No gateways configured ── -->
-        <div v-if="providers.length === 0" class="bg-amber-50 border border-amber-200 rounded-2xl p-6 text-center space-y-2">
+        <!-- ── Choose how to pay (when both are offered) ── -->
+        <div v-if="providers.length && bank" class="grid grid-cols-2 gap-1 p-1 bg-gray-100 rounded-xl">
+          <button v-for="m in [{ id: 'momo', label: 'Mobile money' }, { id: 'bank', label: 'Bank deposit' }]" :key="m.id"
+                  type="button" @click="method = m.id"
+                  class="py-2 rounded-lg text-sm font-medium transition"
+                  :class="method === m.id ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500'">
+            {{ m.label }}
+          </button>
+        </div>
+
+        <!-- ── No way to pay online ── -->
+        <div v-if="providers.length === 0 && !bank" class="bg-amber-50 border border-amber-200 rounded-2xl p-6 text-center space-y-2">
           <svg class="w-10 h-10 text-amber-400 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
           </svg>
-          <p class="font-semibold text-amber-800 text-sm">Mobile Money Not Available</p>
+          <p class="font-semibold text-amber-800 text-sm">Online Payment Not Available</p>
           <p class="text-xs text-amber-700">
-            No mobile money gateways are configured for this account. Please contact your loan officer to make a payment.
+            Mobile money and bank deposits aren't set up for this account yet. Please contact your loan officer to make a payment.
           </p>
         </div>
+
+        <!-- ── Bank deposit ── -->
+        <BankDepositPayment
+          v-else-if="method === 'bank'"
+          :loan-id="loanId"
+          :bank="bank"
+          :reference="bankReference"
+          :default-amount="form.amount"
+        />
 
         <template v-else>
 
@@ -236,6 +255,7 @@ import { ref, reactive, computed, onMounted, onUnmounted } from 'vue'
 import { router } from '@inertiajs/vue3'
 import axios from 'axios'
 import PwaLayout from '@/pwa/components/PwaLayout.vue'
+import BankDepositPayment from '@/pwa/components/BankDepositPayment.vue'
 import { usePwaAuthStore } from '@/pwa/stores/auth.js'
 
 const props = defineProps({
@@ -251,6 +271,9 @@ const loading    = ref(true)
 const submitting = ref(false)
 const submitError = ref('')
 const intent     = ref(null)   // active MobileMoneyIntent being polled
+const bank       = ref(null)   // tenant bank account for deposits (null = not offered)
+const bankReference = ref('')
+const method     = ref('momo') // 'momo' | 'bank'
 
 const form = reactive({ amount: '', phone: '', provider: '' })
 const errors = reactive({ amount: '', phone: '', provider: '' })
@@ -277,14 +300,18 @@ const expiresLabel = computed(() => {
 onMounted(async () => {
   loading.value = true
   try {
-    const [loanRes, gatewaysRes, meRes] = await Promise.all([
+    const [loanRes, gatewaysRes, meRes, bankRes] = await Promise.all([
       axios.get(`/api/v1/me/loans/${props.loanId}`),
       axios.get('/api/v1/me/payment-gateways'),
       axios.get('/api/v1/me'),
+      axios.get(`/api/v1/me/loans/${props.loanId}/bank-details`).catch(() => null),
     ])
     loan.value      = loanRes.data.data
     providers.value = gatewaysRes.data.data ?? []
     form.phone      = meRes.data.data?.phone ?? ''
+    bank.value      = bankRes?.data?.data?.bank ?? null
+    bankReference.value = bankRes?.data?.data?.reference ?? loan.value?.loan_number ?? ''
+    method.value    = providers.value.length ? 'momo' : 'bank'
 
     // Pre-fill amount: next instalment if available, else full outstanding
     const next = loan.value?.schedule?.find(s => !s.is_paid && s.outstanding > 0)

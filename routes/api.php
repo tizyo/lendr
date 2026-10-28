@@ -64,6 +64,7 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::post('kyc/{document}/start-review', [\App\Http\Controllers\Api\V1\KycController::class, 'startReview'])->name('kyc.start-review')->middleware('permission:kyc.review');
         Route::put('kyc/{document}/review', [\App\Http\Controllers\Api\V1\KycController::class, 'review'])->name('kyc.review')->middleware('permission:kyc.review');
         Route::get('kyc/{document}/view', [\App\Http\Controllers\Api\V1\KycController::class, 'view'])->name('kyc.view')->middleware('permission:kyc.view');
+        Route::get('kyc/{document}/file', [\App\Http\Controllers\Api\V1\KycController::class, 'file'])->name('kyc.file')->middleware('permission:kyc.view');
         Route::delete('kyc/{document}', [\App\Http\Controllers\Api\V1\KycController::class, 'destroy'])->name('kyc.destroy')->middleware('permission:kyc.review');
 
         // Loan Products
@@ -187,6 +188,12 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::apiResource('payments', \App\Http\Controllers\Api\V1\PaymentController::class)->only(['store'])->middleware('permission:payments.create');
         Route::apiResource('payments', \App\Http\Controllers\Api\V1\PaymentController::class)->only(['destroy'])->middleware('permission:payments.delete');
         Route::get('payments/{payment}/receipt', [\App\Http\Controllers\Api\V1\PaymentController::class, 'receipt'])->name('payments.receipt')->middleware('permission:payments.view');
+
+        // Bank-deposit proofs uploaded by borrowers (verify → records the payment)
+        Route::get('payment-proofs', [\App\Http\Controllers\Api\V1\PaymentProofController::class, 'index'])->name('payment-proofs.index')->middleware('permission:payments.view');
+        Route::get('payment-proofs/{proof}/file', [\App\Http\Controllers\Api\V1\PaymentProofController::class, 'file'])->name('payment-proofs.file')->middleware('permission:payments.view');
+        Route::post('payment-proofs/{proof}/approve', [\App\Http\Controllers\Api\V1\PaymentProofController::class, 'approve'])->name('payment-proofs.approve')->middleware('permission:payments.create');
+        Route::post('payment-proofs/{proof}/reject', [\App\Http\Controllers\Api\V1\PaymentProofController::class, 'reject'])->name('payment-proofs.reject')->middleware('permission:payments.create');
 
         // Fund Management
         Route::middleware('permission:funds.view')->group(function () {
@@ -526,6 +533,11 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::get('payment-gateways', [\App\Http\Controllers\Api\V1\Borrower\LoanController::class, 'paymentGateways'])->name('payment-gateways');
         Route::post('loans/{id}/initiate-payment', [\App\Http\Controllers\Api\V1\Borrower\LoanController::class, 'initiatePayment'])->name('loans.initiate-payment');
         Route::get('loans/{id}/payment-status/{reference}', [\App\Http\Controllers\Api\V1\Borrower\LoanController::class, 'paymentStatus'])->name('loans.payment-status');
+
+        // Pay by bank deposit: bank details + reference, upload the slip, track status
+        Route::get('loans/{id}/bank-details', [\App\Http\Controllers\Api\V1\Borrower\PaymentProofController::class, 'bankDetails'])->name('loans.bank-details');
+        Route::post('loans/{id}/payment-proofs', [\App\Http\Controllers\Api\V1\Borrower\PaymentProofController::class, 'store'])->name('loans.payment-proofs.store');
+        Route::get('payment-proofs', [\App\Http\Controllers\Api\V1\Borrower\PaymentProofController::class, 'index'])->name('payment-proofs.index');
         Route::get('statement/pdf', [\App\Http\Controllers\Api\V1\Borrower\LoanController::class, 'statementPdf'])->name('statement.pdf');
 
         // Borrower notifications

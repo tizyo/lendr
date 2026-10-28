@@ -10,6 +10,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class KycController extends BaseApiController
 {
@@ -172,9 +173,20 @@ class KycController extends BaseApiController
             return $this->success(['url' => $document->file_path], 'OK');
         }
 
-        $url = Storage::disk('private')->temporaryUrl($document->file_path, now()->addMinutes(15));
+        // The private disk is local and tenant-suffixed, so it has no public or signed URL —
+        // the file is streamed by file() below, behind the same auth and permission.
+        return $this->success(['url' => route('api.v1.kyc.file', $document)], 'OK');
+    }
 
-        return $this->success(['url' => $url, 'expires_at' => now()->addMinutes(15)->toIso8601String()], 'OK');
+    /** GET /kyc/{document}/file — streams the document to authorised staff. */
+    public function file(KycDocument $document): StreamedResponse
+    {
+        abort_unless(Storage::disk('private')->exists($document->file_path), 404);
+
+        return Storage::disk('private')->response($document->file_path, $document->file_name, [
+            'Cache-Control' => 'private, no-store',
+            'X-Content-Type-Options' => 'nosniff',
+        ]);
     }
 
     // ─── Helpers ──────────────────────────────────────────────────────────────

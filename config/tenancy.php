@@ -114,6 +114,7 @@ return [
         'disks' => [
             'local',
             'public',
+            'private',
             // 's3',
         ],
 
@@ -126,6 +127,7 @@ return [
             // Disks whose roots should be overridden after storage_path() is suffixed.
             'local' => '%storage_path%/app/',
             'public' => '%storage_path%/app/public/',
+            'private' => '%storage_path%/app/secure/',
         ],
 
         /**
