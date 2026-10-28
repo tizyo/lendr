@@ -5,6 +5,7 @@ namespace App\Services\Payment;
 use App\Enums\LoanStatus;
 use App\Enums\UserRole;
 use App\Jobs\SendLoanEventNotificationJob;
+use App\Models\Tenant\BorrowerNotification;
 use App\Models\Tenant\DisbursementLog;
 use App\Models\Tenant\Loan;
 use App\Services\CrbService;
@@ -57,7 +58,8 @@ class DisbursementOutcomeService
      * The payout definitively failed: put the loan back to Approved so staff
      * can fix the problem and disburse again.
      */
-    public function rejected(Loan $loan, DisbursementLog $log, string $reason, ?int $userId = null): void
+    /** @return bool whether the disbursement was reversed */
+    public function rejected(Loan $loan, DisbursementLog $log, string $reason, ?int $userId = null): bool
     {
         $reversed = DB::transaction(function () use ($loan, $log, $reason, $userId) {
             $loan = Loan::lockForUpdate()->find($loan->id);
@@ -98,11 +100,39 @@ class DisbursementOutcomeService
             'disbursement_failed',
             "Payout failed for loan {$loan->loan_number}",
             $reversed
-                ? "The {$this->gatewayLabel($log)} payout was rejected, so the disbursement was reversed and the loan is back to Approved. Reason: {$reason}"
-                : "The {$this->gatewayLabel($log)} payout was rejected, but the loan has changed since, so it was NOT reversed automatically — please review. Reason: {$reason}",
+                ? "The {$this->gatewayLabel($log)} payout failed, so the disbursement was reversed and the loan is back to Approved. Reason: {$reason}"
+                : "The {$this->gatewayLabel($log)} payout failed, but the loan has changed since, so it was NOT reversed automatically — please review. Reason: {$reason}",
         );
 
         Log::warning('[Disbursement] Payout rejected', ['loan_id' => $loan->id, 'reversed' => $reversed, 'reason' => $reason]);
+
+        return $reversed;
+    }
+
+    /** The provider confirmed the money reached the borrower. */
+    public function completed(DisbursementLog $log): void
+    {
+        $log->update(['status' => 'completed']);
+    }
+
+    /**
+     * A payout the provider had accepted later failed (the status check found
+     * it). Unwind like a rejection — and since the borrower was already told
+     * the money was sent, tell them it wasn't.
+     */
+    public function failedAfterAcceptance(Loan $loan, DisbursementLog $log, string $reason): void
+    {
+        $reversed = $this->rejected($loan, $log, "Failed after {$this->gatewayLabel($log)} accepted it: {$reason}");
+
+        if ($reversed) {
+            BorrowerNotification::create([
+                'borrower_id' => $loan->borrower_id,
+                'type' => 'disbursement_failed',
+                'title' => 'Your loan payout didn\'t go through',
+                'body' => "The transfer for loan {$loan->loan_number} couldn't be completed, so no money was sent. We're looking into it and will be in touch.",
+                'data' => ['loan_id' => $loan->id],
+            ]);
+        }
     }
 
     /**

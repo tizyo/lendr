@@ -3,6 +3,7 @@
 use App\Commands\AccrueInterestCommand;
 use App\Commands\AccrueSavingsInterestCommand;
 use App\Commands\BackupTenantDatabasesCommand;
+use App\Commands\CheckPendingPayoutsCommand;
 use App\Commands\EscalateCollectionsCommand;
 use App\Commands\ExpireKycDocumentsCommand;
 use App\Commands\ProcessCampaignsCommand;
@@ -140,6 +141,14 @@ Schedule::command(EscalateCollectionsCommand::class)
     ->withoutOverlapping()
     ->runInBackground()
     ->appendOutputTo(storage_path('logs/collections-escalation.log'));
+
+// Every 30 minutes — ask providers what happened to accepted mobile-money payouts
+// (completed / failed after acceptance → reversed / stuck → staff verify)
+Schedule::command(CheckPendingPayoutsCommand::class)
+    ->everyThirtyMinutes()
+    ->withoutOverlapping()
+    ->runInBackground()
+    ->appendOutputTo(storage_path('logs/payout-checks.log'));
 
 // Every 5 minutes — send campaigns whose scheduled time has arrived
 Schedule::command(ProcessCampaignsCommand::class)
