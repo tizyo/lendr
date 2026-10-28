@@ -12,9 +12,8 @@
   "devDependencies": {
     "@playwright/test": "^1.59.0",
     "@tailwindcss/forms": "^0.5.11",
-    "@tailwindcss/typography": "^0.5.19",
     "@tailwindcss/vite": "^4.2.1",
-    "@vitest/ui": "^4.0.18",
+    "@vitest/ui": "^4.1.12",
     "@vue/test-utils": "^2.4.6",
     "autoprefixer": "^10.4.27",
     "axios": "^1.13.6",
@@ -27,7 +26,7 @@
     "pusher-js": "^8.4.0",
     "tailwindcss": "^4.2.1",
     "vite": "^7.0.7",
-    "vitest": "^4.0.18"
+    "vitest": "^4.1.12"
   },
   "dependencies": {
     "@heroicons/vue": "^2.2.0",
