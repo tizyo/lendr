@@ -231,3 +231,37 @@ test('login with 2fa enabled does not expose full token until challenge passed',
     expect($response->json('data.token'))->toBeNull();
     expect($response->json('token'))->toBeNull();
 })->group('2fa');
+
+// ─── Pre-auth token scope ─────────────────────────────────────────────────────
+
+test('pre-auth token cannot reach the staff api or disable 2fa', function () {
+    $user = userWithTwoFaEnabled();
+
+    $preAuthToken = $this->postJson(route('api.v1.auth.login'), [
+        'login' => $user->email,
+        'password' => 'Secret@123',
+    ])->json('pre_auth_token');
+
+    foreach ([['getJson', 'api.v1.auth.me'], ['getJson', 'api.v1.borrowers.index'], ['deleteJson', 'api.v1.auth.2fa.disable']] as [$method, $route]) {
+        app('auth')->forgetGuards();
+        $this->withToken($preAuthToken)->{$method}(route($route))->assertUnauthorized();
+    }
+
+    expect($user->refresh()->two_factor_confirmed_at)->not->toBeNull();
+})->group('2fa');
+
+test('the token issued by the 2fa challenge reaches the staff api', function () {
+    $user = userWithTwoFaEnabled();
+
+    $preAuthToken = $this->postJson(route('api.v1.auth.login'), [
+        'login' => $user->email,
+        'password' => 'Secret@123',
+    ])->json('pre_auth_token');
+
+    $token = $this->withToken($preAuthToken)
+        ->postJson(route('api.v1.auth.2fa.challenge'), ['code' => (new Google2FA)->getCurrentOtp($user->two_factor_secret)])
+        ->json('data.token');
+
+    app('auth')->forgetGuards();
+    $this->withToken($token)->getJson(route('api.v1.auth.me'))->assertOk()->assertJsonPath('data.email', $user->email);
+})->group('2fa');

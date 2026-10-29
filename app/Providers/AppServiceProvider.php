@@ -15,9 +15,21 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
+use Laravel\Sanctum\Sanctum;
 
 class AppServiceProvider extends ServiceProvider
 {
+    /**
+     * Sign-in step tokens (anything without the '*' ability) and the only routes
+     * each may authenticate on. Route name => required token ability.
+     */
+    public const STAGE_TOKEN_ROUTES = [
+        'api.v1.auth.2fa.challenge' => '2fa-challenge',
+        'landlord.auth.2fa.challenge' => '2fa-challenge',
+        'landlord.auth.2fa.setup' => '2fa-setup',
+        'landlord.auth.2fa.verify' => '2fa-setup',
+    ];
+
     public function register(): void
     {
         // Scoped: fresh per request / queued job, so branding edits reach long-running workers.
@@ -26,6 +38,19 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        // A password-only 2FA pre-auth / setup token authenticates ONLY on the step it
+        // was issued for. Without this, every auth:sanctum route (staff, borrower,
+        // field, marketplace) accepted it, letting a password skip the 2FA code.
+        Sanctum::authenticateAccessTokensUsing(function ($token, bool $isValid): bool {
+            if (! $isValid || in_array('*', (array) $token->abilities, true)) {
+                return $isValid;
+            }
+
+            $ability = self::STAGE_TOKEN_ROUTES[request()->route()?->getName()] ?? null;
+
+            return $ability !== null && $token->can($ability);
+        });
+
         RateLimiter::for('api', function (Request $request) {
             return Limit::perMinute(120)->by($request->user()?->id ?: $request->ip());
         });

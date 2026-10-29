@@ -40,15 +40,15 @@ it('does not let a password-only (pre-2FA) token into the landlord API', functio
         ->assertOk()
         ->json('pre_auth_token');
 
-    asBearer($preAuth)->getJson('/api/v1/landlord/tenants')->assertForbidden();
-    asBearer($preAuth)->getJson('/api/v1/landlord/auth/me')->assertForbidden();
+    asBearer($preAuth)->getJson('/api/v1/landlord/tenants')->assertUnauthorized();
+    asBearer($preAuth)->getJson('/api/v1/landlord/auth/me')->assertUnauthorized();
 });
 
 it('does not let a 2FA-setup token into the landlord API', function () {
     $landlord = LandlordUser::factory()->create(['is_active' => true]);
     $setup = $landlord->createToken('2fa-setup', ['2fa-setup'])->plainTextToken;
 
-    asBearer($setup)->getJson('/api/v1/landlord/tenants')->assertForbidden();
+    asBearer($setup)->getJson('/api/v1/landlord/tenants')->assertUnauthorized();
 });
 
 it('completes login with the 2FA code and then allows the landlord API', function () {
