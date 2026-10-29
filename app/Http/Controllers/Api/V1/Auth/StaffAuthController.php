@@ -5,6 +5,10 @@ namespace App\Http\Controllers\Api\V1\Auth;
 use App\Http\Controllers\Api\V1\BaseApiController;
 use App\Http\Requests\Api\V1\Auth\StaffLoginRequest;
 use App\Models\Tenant\User;
+use BaconQrCode\Renderer\Image\SvgImageBackEnd;
+use BaconQrCode\Renderer\ImageRenderer;
+use BaconQrCode\Renderer\RendererStyle\RendererStyle;
+use BaconQrCode\Writer;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -112,6 +116,13 @@ class StaffAuthController extends BaseApiController
     {
         /** @var User $user */
         $user = $request->user();
+
+        // Re-running setup would replace the secret and clear the confirmation —
+        // i.e. switch 2FA off without a code. Turning it off goes through disable2fa.
+        if ($user->hasRole2faEnabled()) {
+            return $this->error('2FA is already enabled. Disable it with your current code first.', 422);
+        }
+
         $google2fa = new Google2FA;
         $secret = $google2fa->generateSecretKey();
 
@@ -122,9 +133,13 @@ class StaffAuthController extends BaseApiController
 
         $qrCodeUrl = $google2fa->getQRCodeUrl(config('app.name'), $user->email, $secret);
 
+        // Rendered here so the secret never goes to a third-party QR service.
+        $svg = (new Writer(new ImageRenderer(new RendererStyle(200), new SvgImageBackEnd)))->writeString($qrCodeUrl);
+
         return $this->success([
             'secret' => $secret,
             'qr_code_url' => $qrCodeUrl,
+            'qr_code_svg' => 'data:image/svg+xml;base64,'.base64_encode($svg),
         ], 'Scan the QR code with your authenticator app, then confirm with /2fa/verify.');
     }
 
@@ -158,6 +173,15 @@ class StaffAuthController extends BaseApiController
     {
         /** @var User $user */
         $user = $request->user();
+
+        // A signed-in session alone isn't enough: whoever turns 2FA off must hold the authenticator.
+        if ($user->hasRole2faEnabled()) {
+            $request->validate(['code' => ['required', 'string', 'digits:6']]);
+
+            if (! (new Google2FA)->verifyKey($user->two_factor_secret, $request->code)) {
+                return $this->error('Invalid authentication code.', 422);
+            }
+        }
 
         $user->forceFill([
             'two_factor_secret' => null,

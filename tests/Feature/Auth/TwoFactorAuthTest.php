@@ -45,18 +45,25 @@ test('authenticated user can request 2fa setup', function () {
     expect($user->two_factor_confirmed_at)->toBeNull(); // not confirmed yet
 })->group('2fa');
 
-test('setup overwrites any previous secret and clears confirmation', function () {
+test('setup refuses to replace an enabled 2fa secret', function () {
     $user = userWithTwoFaEnabled();
 
     $oldSecret = $user->two_factor_secret;
 
     $this->actingAs($user)
         ->postJson(route('api.v1.auth.2fa.setup'))
-        ->assertOk();
+        ->assertUnprocessable();
 
     $user->refresh();
-    expect($user->two_factor_secret)->not->toEqual($oldSecret);
-    expect($user->two_factor_confirmed_at)->toBeNull();
+    expect($user->two_factor_secret)->toEqual($oldSecret);
+    expect($user->two_factor_confirmed_at)->not->toBeNull();
+})->group('2fa');
+
+test('setup returns a locally rendered qr image', function () {
+    $this->actingAs(twoFaUser())
+        ->postJson(route('api.v1.auth.2fa.setup'))
+        ->assertOk()
+        ->assertJsonPath('data.qr_code_svg', fn ($svg) => str_starts_with($svg, 'data:image/svg+xml;base64,'));
 })->group('2fa');
 
 test('unauthenticated user cannot call 2fa setup', function () {
@@ -114,11 +121,24 @@ test('verify requires a 6-digit code', function () {
 
 // ─── 2FA Disable ──────────────────────────────────────────────────────────────
 
+test('disabling 2fa requires a valid current code', function () {
+    $user = userWithTwoFaEnabled();
+
+    $this->actingAs($user)->deleteJson(route('api.v1.auth.2fa.disable'))
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors(['code']);
+    $this->actingAs($user)->deleteJson(route('api.v1.auth.2fa.disable'), ['code' => '000000'])
+        ->assertUnprocessable()
+        ->assertJsonPath('message', 'Invalid authentication code.');
+
+    expect($user->refresh()->two_factor_confirmed_at)->not->toBeNull();
+})->group('2fa');
+
 test('user can disable 2fa', function () {
     $user = userWithTwoFaEnabled();
 
     $this->actingAs($user)
-        ->deleteJson(route('api.v1.auth.2fa.disable'))
+        ->deleteJson(route('api.v1.auth.2fa.disable'), ['code' => (new Google2FA)->getCurrentOtp($user->two_factor_secret)])
         ->assertOk()
         ->assertJsonPath('message', '2FA disabled.');
 

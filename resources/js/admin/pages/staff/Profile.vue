@@ -82,9 +82,31 @@
               2FA Enabled
             </span>
           </div>
-          <button @click="disable2fa" :disabled="tfa.loading" class="text-sm text-red-600 hover:underline font-medium">
-            {{ tfa.loading ? 'Disabling…' : 'Disable 2FA' }}
+          <button @click="startDisable" class="text-sm text-red-600 hover:underline font-medium">
+            Disable 2FA
           </button>
+        </div>
+
+        <!-- Disable: confirm with the current code -->
+        <div v-if="tfa.step === 'disable'" class="space-y-4">
+          <div>
+            <label class="block text-xs font-medium text-neutral-500 mb-1">Enter the 6-digit code from your authenticator app to turn 2FA off</label>
+            <input
+              v-model="tfa.code"
+              type="text"
+              inputmode="numeric"
+              maxlength="6"
+              placeholder="000000"
+              class="input w-40 text-center tracking-widest text-lg font-mono"
+            />
+            <p v-if="tfa.error" class="mt-1 text-xs text-red-600">{{ tfa.error }}</p>
+          </div>
+          <div class="flex gap-3">
+            <button @click="disable2fa" :disabled="tfa.loading" class="text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg px-4 py-2">
+              {{ tfa.loading ? 'Disabling…' : 'Disable 2FA' }}
+            </button>
+            <button @click="cancelSetup" class="text-sm text-neutral-500 hover:text-neutral-700">Cancel</button>
+          </div>
         </div>
 
         <!-- Not enabled + idle -->
@@ -99,7 +121,7 @@
         <div v-if="tfa.step === 'setup'" class="space-y-4">
           <p class="text-sm text-neutral-600">Scan this QR code with your authenticator app (Google Authenticator, Authy, etc.):</p>
           <div class="bg-neutral-50 border border-neutral-200 rounded-lg p-4 inline-block">
-            <img :src="'https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=' + encodeURIComponent(tfa.qrUrl)" alt="QR Code" class="w-44 h-44" />
+            <img :src="tfa.qrImage" alt="QR Code" class="w-44 h-44" />
           </div>
           <div>
             <p class="text-xs text-neutral-500 mb-1">Or enter this key manually:</p>
@@ -187,7 +209,7 @@ const props = defineProps({
 
 // ── 2FA ───────────────────────────────────────────────────────────────────────
 const twoFactorEnabled = ref(props.staff.two_factor_enabled ?? false)
-const tfa = reactive({ step: 'idle', loading: false, error: '', success: '', qrUrl: '', secret: '', code: '' })
+const tfa = reactive({ step: 'idle', loading: false, error: '', success: '', qrImage: '', secret: '', code: '' })
 
 async function setup2fa() {
   tfa.loading = true
@@ -195,7 +217,7 @@ async function setup2fa() {
   tfa.success = ''
   try {
     const { data } = await axios.post(route('api.v1.auth.2fa.setup'))
-    tfa.qrUrl   = data.data.qr_code_url
+    tfa.qrImage = data.data.qr_code_svg
     tfa.secret  = data.data.secret
     tfa.step    = 'setup'
   } catch (e) {
@@ -222,12 +244,22 @@ async function verify2fa() {
   }
 }
 
-async function disable2fa() {
-  tfa.loading = true
+function startDisable() {
+  tfa.step    = 'disable'
+  tfa.code    = ''
+  tfa.error   = ''
   tfa.success = ''
+}
+
+async function disable2fa() {
+  if (tfa.code.length !== 6) { tfa.error = 'Enter a 6-digit code.'; return }
+  tfa.loading = true
+  tfa.error   = ''
   try {
-    await axios.delete(route('api.v1.auth.2fa.disable'))
+    await axios.delete(route('api.v1.auth.2fa.disable'), { data: { code: tfa.code } })
     twoFactorEnabled.value = false
+    tfa.step    = 'idle'
+    tfa.code    = ''
     tfa.success = '2FA has been disabled.'
   } catch (e) {
     tfa.error = e.response?.data?.message ?? 'Failed to disable 2FA.'
