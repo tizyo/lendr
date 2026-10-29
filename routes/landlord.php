@@ -22,17 +22,24 @@ Route::prefix('v1/landlord')->name('landlord.')->group(function () {
     Route::prefix('auth')->name('auth.')->group(function () {
         Route::post('login', [AuthController::class, 'login'])->name('login');
 
-        Route::middleware('auth:sanctum')->group(function () {
+        // Each sign-in step only accepts the token issued for it (see EnsureLandlordToken).
+        Route::middleware(['auth:sanctum', 'landlord.token:2fa-setup'])->group(function () {
             Route::post('2fa/setup', [AuthController::class, 'setup2fa'])->name('2fa.setup');
             Route::post('2fa/verify', [AuthController::class, 'verify2fa'])->name('2fa.verify');
-            Route::post('2fa/challenge', [AuthController::class, 'challenge2fa'])->name('2fa.challenge');
+        });
+        Route::post('2fa/challenge', [AuthController::class, 'challenge2fa'])->name('2fa.challenge')
+            ->middleware(['auth:sanctum', 'landlord.token:2fa-challenge']);
+
+        Route::middleware(['auth:sanctum', 'landlord.token'])->group(function () {
             Route::post('logout', [AuthController::class, 'logout'])->name('logout');
             Route::get('me', [AuthController::class, 'me'])->name('me');
         });
     });
 
     // ─── Protected Landlord Routes ────────────────────
-    Route::middleware('auth:sanctum')->group(function () {
+    // landlord.token: a LandlordUser with a full post-2FA session — auth:sanctum alone
+    // would also admit marketplace users and password-only pre-2FA tokens.
+    Route::middleware(['auth:sanctum', 'landlord.token'])->group(function () {
         // Tenant management
         Route::apiResource('tenants', \App\Http\Controllers\Api\V1\Landlord\TenantController::class);
         Route::post('tenants/{id}/suspend', [\App\Http\Controllers\Api\V1\Landlord\TenantController::class, 'suspend'])->name('landlord.tenants.suspend');

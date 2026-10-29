@@ -98,12 +98,15 @@ async function submitCredentials() {
       qrCodeUrl.value = setupData.data?.qr_code_url ?? ''
       secretKey.value = setupData.data?.secret ?? ''
       step.value      = 'setup'
-    } else if (res.requires_2fa) {
+    } else if (res.two_factor || res.requires_2fa) {
+      // The API answers `two_factor: true` + `pre_auth_token`; ask for the authenticator code.
       authToken  = res.pre_auth_token
       step.value = 'challenge'
     } else if (res.token) {
       auth.setToken(res.token, form.value.email)
       router.visit(route('landlord.dashboard'))
+    } else {
+      error.value = res.message ?? 'Unexpected response from the server — please try again.'
     }
   } catch (e) {
     error.value = e.response?.data?.message ?? 'Login failed.'

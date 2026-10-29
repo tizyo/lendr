@@ -63,6 +63,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'tenant.status' => \App\Http\Middleware\CheckTenantStatus::class,
             'api-gateway' => \App\Http\Middleware\ApiGatewayAuth::class,
             'marketplace' => \App\Http\Middleware\RequiresMarketplaceEnabled::class,
+            'landlord.token' => \App\Http\Middleware\EnsureLandlordToken::class,
         ]);
 
         // Exclude mobile money webhook routes from CSRF (they use HMAC signature verification instead)
