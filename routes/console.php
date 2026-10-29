@@ -16,8 +16,10 @@ use App\Commands\ProcessUpcomingPaymentRemindersCommand;
 use App\Commands\RunReconciliationCommand;
 use App\Commands\SendBorrowerStatementsCommand;
 use App\Console\Commands\ExpireFeaturedItemsCommand;
+use App\Console\Commands\GoLiveCheckCommand;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Schedule;
 
 Artisan::command('inspire', function () {
@@ -36,6 +38,11 @@ Artisan::command('inspire', function () {
 | accrued by lendr:process-overdue; running both would charge borrowers twice.
 |--------------------------------------------------------------------------
 */
+
+// Every minute — proves to `lendr:go-live-check` that cron is calling schedule:run
+Schedule::call(fn () => Cache::forever(GoLiveCheckCommand::HEARTBEAT_KEY, now()))
+    ->everyMinute()
+    ->name('scheduler-heartbeat');
 
 // 01:00 daily — accrue penalties on overdue installments, auto-default severely delinquent loans
 Schedule::command(ProcessOverdueLoansCommand::class)
