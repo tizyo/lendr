@@ -53,7 +53,7 @@
           <tr v-for="t in tenants" :key="t.id" class="hover:bg-neutral-50">
             <td class="px-4 py-3">
               <div class="flex items-center gap-1.5">
-                <p class="font-medium text-neutral-900">{{ t.name }}</p>
+                <Link :href="route('landlord.tenant-detail', t.id)" class="font-medium text-neutral-900 hover:text-primary-600 hover:underline">{{ t.name }}</Link>
                 <!-- Gold verification badge -->
                 <span v-if="t.verification_badge === 'gold'" title="Gold Verified" class="inline-flex items-center">
                   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4 text-yellow-500">
@@ -78,6 +78,7 @@
             <td class="px-4 py-3 text-neutral-600">{{ t.currency }}</td>
             <td class="px-4 py-3 text-neutral-500">{{ formatDate(t.created_at) }}</td>
             <td class="px-4 py-3 text-right space-x-2">
+              <Link :href="route('landlord.tenant-detail', t.id)" class="text-xs text-primary-600 hover:underline font-medium">View</Link>
               <!-- Send reminders -->
               <span v-if="reminderCooldowns[t.id]" class="text-xs text-neutral-400 font-medium">
                 Sent · {{ reminderCooldowns[t.id] }}
@@ -460,7 +461,7 @@
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
-import { router } from '@inertiajs/vue3'
+import { Link, router } from '@inertiajs/vue3'
 import axios from 'axios'
 import LandlordLayout from '@/landlord/components/LandlordLayout.vue'
 import { useLandlordAuth } from '@/landlord/stores/auth.js'

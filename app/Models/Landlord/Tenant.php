@@ -71,6 +71,20 @@ class Tenant extends BaseTenant implements TenantWithDatabase
         return $base ? $base.'/login' : route('portal.login');
     }
 
+    /** True when staff work on the central host (identified by session), not a subdomain. */
+    public function staffUseCentralHost(): bool
+    {
+        return $this->usesSharedPortal() || ! $this->domains()->exists();
+    }
+
+    /** Whether a staff session for this tenant belongs on the given host. */
+    public function servesStaffHost(string $host): bool
+    {
+        return $this->staffUseCentralHost()
+            ? in_array($host, config('tenancy.central_domains', []))
+            : $this->domains()->where('domain', $host)->exists();
+    }
+
     /**
      * A page in the borrower self-service portal (e.g. '/loans'), or null when
      * borrowers have no portal: it lives only on the tenant's own subdomain and

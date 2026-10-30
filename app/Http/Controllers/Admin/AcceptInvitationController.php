@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rules\Password;
 use Inertia\Inertia;
 use Inertia\Response;
+use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
 
 class AcceptInvitationController extends Controller
 {
@@ -51,7 +52,7 @@ class AcceptInvitationController extends Controller
      * POST /invitation/{tenant}/{token}
      * Activate the account with the chosen password and log the user in.
      */
-    public function accept(Request $request, string $tenantId, string $token): RedirectResponse
+    public function accept(Request $request, string $tenantId, string $token): SymfonyResponse
     {
         $request->validate([
             'password' => ['required', 'string', Password::min(8)->mixedCase()->numbers(), 'confirmed'],
@@ -79,13 +80,21 @@ class AcceptInvitationController extends Controller
                 'force_password_reset' => false,
             ]);
 
+            // The invitation link is on the central host. A subdomain tenant's staff
+            // can't work from there, so they sign in on their own domain instead.
+            if (! $tenant->staffUseCentralHost()) {
+                return Inertia::location($tenant->loginUrl());
+            }
+
             Auth::login($user);
             $request->session()->regenerate();
+            $request->session()->put('tenant_id', $tenant->id);
+            $request->session()->put('tenant_slug', $tenant->slug);
 
         } finally {
             // Do not end tenancy — the user is now logged in and in tenant context.
         }
 
-        return redirect()->route('dashboard')->with('success', 'Welcome! Your account is now active.');
+        return redirect()->route('portal.dashboard')->with('success', 'Welcome! Your account is now active.');
     }
 }

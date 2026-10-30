@@ -29,6 +29,11 @@ class PanelController extends Controller
         return Inertia::render('landlord/Tenants');
     }
 
+    public function tenantDetail(string $id): Response
+    {
+        return Inertia::render('landlord/TenantShow', ['tenantId' => $id]);
+    }
+
     public function planConfigs(): Response
     {
         return Inertia::render('landlord/PlanConfigs');

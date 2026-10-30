@@ -2,9 +2,11 @@
 
 use App\Http\Controllers\Api\V1\Landlord\AuthController;
 use App\Http\Controllers\Api\V1\Landlord\BillingSettingsController;
+use App\Http\Controllers\Api\V1\Landlord\ImpersonationController;
 use App\Http\Controllers\Api\V1\Landlord\PlanConfigController;
 use App\Http\Controllers\Api\V1\Landlord\PlatformSettingsController;
 use App\Http\Controllers\Api\V1\Landlord\SupportController;
+use App\Http\Controllers\Api\V1\Landlord\TenantUserController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -49,6 +51,19 @@ Route::prefix('v1/landlord')->name('landlord.')->group(function () {
         Route::post('tenants/{id}/push-reminders', [\App\Http\Controllers\Api\V1\Landlord\TenantController::class, 'pushReminders'])->name('landlord.tenants.push-reminders');
         Route::post('tenants/{id}/verify', [\App\Http\Controllers\Api\V1\Landlord\TenantController::class, 'verify'])->name('landlord.tenants.verify');
         Route::delete('tenants/{id}/verify', [\App\Http\Controllers\Api\V1\Landlord\TenantController::class, 'unverify'])->name('landlord.tenants.unverify');
+
+        // Tenant detail: overview + staff accounts
+        Route::get('tenants/{id}/overview', [TenantUserController::class, 'overview'])->name('tenants.overview');
+        Route::get('tenants/{id}/users', [TenantUserController::class, 'index'])->name('tenants.users.index');
+        Route::post('tenants/{id}/users', [TenantUserController::class, 'store'])->name('tenants.users.store');
+        Route::post('tenants/{id}/users/{userId}/suspend', [TenantUserController::class, 'suspend'])->name('tenants.users.suspend');
+        Route::post('tenants/{id}/users/{userId}/activate', [TenantUserController::class, 'activate'])->name('tenants.users.activate');
+        Route::post('tenants/{id}/users/{userId}/resend-invite', [TenantUserController::class, 'resendInvite'])->name('tenants.users.resend-invite');
+
+        // Support sessions ("sign in as")
+        Route::post('tenants/{id}/users/{userId}/impersonate', [ImpersonationController::class, 'start'])->name('tenants.users.impersonate');
+        Route::get('tenants/{id}/impersonations', [ImpersonationController::class, 'index'])->name('tenants.impersonations.index');
+        Route::post('impersonations/{sessionId}/end', [ImpersonationController::class, 'end'])->name('impersonations.end');
 
         // Tenant wallet configuration (Phase 54/55)
         Route::get('tenants/{id}/wallet', [\App\Http\Controllers\Api\V1\Landlord\TenantWalletController::class, 'show'])->name('landlord.tenants.wallet.show');

@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\EnforceImpersonationSession;
 use App\Http\Middleware\HandleInertiaRequests;
 use App\Http\Middleware\InitializeTenancy;
 use Illuminate\Foundation\Application;
@@ -35,8 +36,11 @@ return Application::configure(basePath: dirname(__DIR__))
         channels: __DIR__.'/../routes/channels.php',
         health: '/up',
         then: function () {
-            // Landlord / Super Admin API routes (central DB, no tenant context)
+            // Landlord / Super Admin API routes (central DB, no tenant context).
+            // Bearer tokens only: Sanctum checks a session before a token, so a tenant
+            // login in the same browser would otherwise replace the landlord's identity.
             \Illuminate\Support\Facades\Route::middleware('api')
+                ->withoutMiddleware([EnsureFrontendRequestsAreStateful::class])
                 ->prefix('api')
                 ->group(base_path('routes/landlord.php'));
         },
@@ -47,12 +51,27 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->web(append: [
             HandleInertiaRequests::class,
             AddLinkHeadersForPreloadedAssets::class,
+            EnforceImpersonationSession::class,
         ]);
 
         // API: SPA session auth (for Inertia admin axios calls) + tenant initialization
         $middleware->api(prepend: [EnsureFrontendRequestsAreStateful::class]);
-        $middleware->api(append: [InitializeTenancy::class]);
+        $middleware->api(append: [InitializeTenancy::class, EnforceImpersonationSession::class]);
         $middleware->throttleApi();
+
+        // Laravel runs auth ahead of ordinary middleware, which looked staff, borrowers
+        // and their tokens up in the central database and bounced them back to login.
+        $middleware->prependToPriorityList(
+            before: \Illuminate\Contracts\Auth\Middleware\AuthenticatesRequests::class,
+            prepend: InitializeTenancy::class,
+        );
+
+        // Ahead of tenancy, which drops a session that reached another tenant's host:
+        // a support session must close its audit record before that happens.
+        $middleware->prependToPriorityList(
+            before: InitializeTenancy::class,
+            prepend: EnforceImpersonationSession::class,
+        );
 
         $middleware->alias([
             'role' => \Spatie\Permission\Middleware\RoleMiddleware::class,

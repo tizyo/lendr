@@ -4,6 +4,7 @@ use App\Http\Controllers\Admin\AcceptInvitationController;
 use App\Http\Controllers\Admin\AuthController;
 use App\Http\Controllers\Admin\BillingController;
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\ImpersonationController;
 use App\Http\Controllers\Admin\SupportTicketController;
 use App\Http\Controllers\EmailAssetController;
 use App\Http\Controllers\LandingController;
@@ -47,6 +48,10 @@ Route::get('/onboarding/verify/{token}', [OnboardingController::class, 'verifyEm
 // Tenant logo for email clients (central domain — tenant uploads have no public URL)
 Route::get('/email-assets/{tenant}/logo', [EmailAssetController::class, 'tenantLogo'])->name('email.brand-logo');
 
+// Landlord support session (controller initializes tenancy manually)
+Route::get('/impersonate/{token}', [ImpersonationController::class, 'enter'])->name('impersonation.enter');
+Route::post('/impersonation/stop', [ImpersonationController::class, 'stop'])->name('impersonation.stop');
+
 // Staff invitation (central domain — controller initializes tenancy manually)
 Route::get('/invitation/{tenant}/{token}', [AcceptInvitationController::class, 'show'])->name('invitation.show');
 Route::post('/invitation/{tenant}/{token}', [AcceptInvitationController::class, 'accept'])->name('invitation.accept');
@@ -61,6 +66,7 @@ Route::prefix('landlord')->name('landlord.')->group(function () {
     Route::get('/', [PanelController::class, 'login'])->name('login');
     Route::get('/dashboard', [PanelController::class, 'dashboard'])->name('dashboard');
     Route::get('/tenants', [PanelController::class, 'tenants'])->name('tenants');
+    Route::get('/tenants/{id}', [PanelController::class, 'tenantDetail'])->name('tenant-detail');
     Route::get('/plan-configs', [PanelController::class, 'planConfigs'])->name('plan-configs');
     Route::get('/billing-settings', [PanelController::class, 'billingSettings'])->name('billing-settings');
     Route::get('/support', [PanelController::class, 'support'])->name('support');

@@ -36,7 +36,7 @@ return [
     'providers' => [
         // Tenant staff — DB connection switched by tenancy middleware
         'users' => [
-            'driver' => 'eloquent',
+            'driver' => 'active-users',
             'model' => App\Models\Tenant\User::class,
         ],
 

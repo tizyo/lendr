@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\Landlord\ImpersonationSession;
 use App\Models\Landlord\PlanConfig;
 use App\Models\Tenant\InAppNotification;
 use Illuminate\Http\Request;
@@ -54,6 +55,12 @@ class HandleInertiaRequests extends Middleware
                 'status' => tenancy()->tenant->status,
                 'trial_days_remaining' => tenancy()->tenant->trialDaysRemaining(),
                 'features' => PlanConfig::forPlan(tenancy()->tenant->plan)?->features ?? [],
+            ] : null,
+
+            // Drives the "you are signed in as" banner during a landlord support session.
+            'impersonation' => fn () => ($session = $request->attributes->get(ImpersonationSession::REQUEST_ATTRIBUTE)) ? [
+                'target_name' => $session->target_name,
+                'expires_at' => $session->expires_at?->toIso8601String(),
             ] : null,
 
             'flash' => [

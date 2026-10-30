@@ -17,6 +17,9 @@ use Symfony\Component\HttpFoundation\Response;
  */
 class InitializeTenancy
 {
+    /** Session key recording which tenant a staff login belongs to. */
+    public const SESSION_TENANT_KEY = 'auth_tenant_id';
+
     public function handle(Request $request, Closure $next): Response
     {
         $host = $request->getHost();
@@ -26,6 +29,7 @@ class InitializeTenancy
         if (! in_array($host, $centralDomains)) {
             $domain = Domain::where('domain', $host)->first();
             if ($domain) {
+                $this->dropLoginFromAnotherTenant($request, $domain->tenant_id);
                 tenancy()->initialize($domain->tenant);
             }
 
@@ -53,5 +57,23 @@ class InitializeTenancy
         }
 
         return $next($request);
+    }
+
+    /**
+     * A session cookie can span subdomains and only holds a user id, so without this
+     * a login at one tenant would sign in whoever has that id at any other tenant.
+     */
+    private function dropLoginFromAnotherTenant(Request $request, string $tenantId): void
+    {
+        if (! $request->hasSession()) {
+            return;
+        }
+
+        $session = $request->session();
+
+        if ($session->has(app('auth')->guard('web')->getName()) && $session->get(self::SESSION_TENANT_KEY) !== $tenantId) {
+            $session->invalidate();
+            $session->regenerateToken();
+        }
     }
 }

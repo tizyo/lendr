@@ -11,6 +11,19 @@
         @toggle-sidebar="sidebarCollapsed = !sidebarCollapsed"
       />
 
+      <!-- Landlord support session: not dismissible -->
+      <div v-if="impersonation"
+        class="flex items-center justify-between gap-3 px-4 py-2.5 bg-red-600 text-white text-sm">
+        <span class="min-w-0 truncate">
+          LENDR support session: signed in as <strong>{{ impersonation.target_name }}</strong>.
+          Actions are recorded. Ends at {{ impersonationEndsAt }}.
+        </span>
+        <button @click="stopImpersonating" :disabled="stopping"
+          class="text-xs font-semibold text-red-700 bg-white hover:bg-red-50 px-3 py-1 rounded-lg transition whitespace-nowrap shrink-0 disabled:opacity-60">
+          {{ stopping ? 'Ending…' : 'End session' }}
+        </button>
+      </div>
+
       <!-- Trial expiry countdown (≤7 days remaining) -->
       <div v-if="showTrialBanner"
         class="flex items-center justify-between gap-3 px-4 py-2.5 bg-gradient-to-r from-red-50 to-orange-50 border-b border-red-200 text-sm">
@@ -92,7 +105,7 @@
 
 <script setup>
 import { ref, computed } from 'vue'
-import { usePage, Link } from '@inertiajs/vue3'
+import { usePage, Link, router } from '@inertiajs/vue3'
 import Sidebar from './Sidebar.vue'
 import Topbar from './Topbar.vue'
 import FlashMessage from '../ui/FlashMessage.vue'
@@ -102,6 +115,16 @@ const mobileSidebarOpen = ref(false)
 const nudgeDismissed    = ref(false)
 
 const tenant = computed(() => usePage().props.tenant)
+
+const impersonation = computed(() => usePage().props.impersonation)
+const impersonationEndsAt = computed(() => new Date(impersonation.value?.expires_at)
+  .toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }))
+const stopping = ref(false)
+
+function stopImpersonating() {
+  stopping.value = true
+  router.post(route('impersonation.stop'), {}, { onFinish: () => { stopping.value = false } })
+}
 
 const isStarterPlan = computed(() => {
   const plan = tenant.value?.plan

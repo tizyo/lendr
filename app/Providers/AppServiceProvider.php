@@ -2,20 +2,27 @@
 
 namespace App\Providers;
 
+use App\Auth\ActiveUserProvider;
+use App\Http\Middleware\InitializeTenancy;
 use App\Mail\Listeners\ApplyPlatformSender;
 use App\Mail\Transport\PlatformTransport;
 use App\Mail\Transport\ResendTransport;
+use App\Models\Landlord\ImpersonationSession;
 use App\Models\Landlord\PlatformBranding;
+use App\Models\Tenant\User;
 use App\Services\Mail\EmailBrand;
+use Illuminate\Auth\Events\Login;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Mail\Events\MessageSending;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 use Laravel\Sanctum\Sanctum;
+use Spatie\Activitylog\Models\Activity;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -41,14 +48,38 @@ class AppServiceProvider extends ServiceProvider
         // A password-only 2FA pre-auth / setup token authenticates ONLY on the step it
         // was issued for. Without this, every auth:sanctum route (staff, borrower,
         // field, marketplace) accepted it, letting a password skip the 2FA code.
+        // A suspended staff member's tokens stop working too (see ActiveUserProvider).
         Sanctum::authenticateAccessTokensUsing(function ($token, bool $isValid): bool {
-            if (! $isValid || in_array('*', (array) $token->abilities, true)) {
-                return $isValid;
+            if (! $isValid || ($token->tokenable instanceof User && ! $token->tokenable->is_active)) {
+                return false;
+            }
+
+            if (in_array('*', (array) $token->abilities, true)) {
+                return true;
             }
 
             $ability = self::STAGE_TOKEN_ROUTES[request()->route()?->getName()] ?? null;
 
             return $ability !== null && $token->can($ability);
+        });
+
+        Auth::provider('active-users', fn ($app, array $config) => new ActiveUserProvider($app['hash'], $config['model']));
+
+        // Every staff login records its tenant, however it happened (see InitializeTenancy).
+        Event::listen(Login::class, function (Login $event) {
+            if ($event->guard === 'web') {
+                session()->put(InitializeTenancy::SESSION_TENANT_KEY, tenancy()->tenant?->id);
+            }
+        });
+
+        // During a support session the causer is the impersonated staff member, so
+        // every audit entry also records which landlord was really at the keyboard.
+        Activity::creating(function (Activity $activity) {
+            $session = request()->attributes->get(ImpersonationSession::REQUEST_ATTRIBUTE);
+
+            if ($session) {
+                $activity->properties = collect($activity->properties)->put('impersonated_by', $session->landlord_email);
+            }
         });
 
         RateLimiter::for('api', function (Request $request) {
