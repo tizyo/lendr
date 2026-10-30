@@ -15,6 +15,10 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (Schema::hasIndex('disbursement_logs', 'disbursement_logs_reference_unique')) {
+            return;
+        }
+
         Schema::table('disbursement_logs', function (Blueprint $table) {
             $table->unique('reference');
         });

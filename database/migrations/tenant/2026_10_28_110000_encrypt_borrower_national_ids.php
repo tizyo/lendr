@@ -34,13 +34,18 @@ return new class extends Migration
         }
 
         // 2. Schema: ciphertext needs a text column; uniqueness moves to the hash.
-        Schema::table('borrowers', function (Blueprint $table) {
-            $table->dropUnique(['national_id']);
-        });
+        if (Schema::hasIndex('borrowers', 'borrowers_national_id_unique')) {
+            Schema::table('borrowers', function (Blueprint $table) {
+                $table->dropUnique(['national_id']);
+            });
+        }
 
         Schema::table('borrowers', function (Blueprint $table) {
             $table->text('national_id')->nullable()->change();
-            $table->string('national_id_hash', 64)->nullable()->after('national_id');
+
+            if (! Schema::hasColumn('borrowers', 'national_id_hash')) {
+                $table->string('national_id_hash', 64)->nullable()->after('national_id');
+            }
         });
 
         // 3. Encrypt in place.
@@ -52,7 +57,9 @@ return new class extends Migration
         }
 
         Schema::table('borrowers', function (Blueprint $table) {
-            $table->unique('national_id_hash');
+            if (! Schema::hasIndex('borrowers', 'borrowers_national_id_hash_unique')) {
+                $table->unique('national_id_hash');
+            }
 
             if (Schema::hasColumn('borrowers', 'national_id_encrypted')) {
                 $table->dropColumn('national_id_encrypted'); // never used

@@ -15,8 +15,13 @@ return new class extends Migration
     {
         Schema::table('device_tokens', function (Blueprint $table) {
             $table->string('platform', 16)->default('webpush')->change();
-            $table->string('public_key', 255)->nullable()->after('token'); // p256dh
-            $table->string('auth_token', 255)->nullable()->after('public_key'); // auth secret
+
+            if (! Schema::hasColumn('device_tokens', 'public_key')) {
+                $table->string('public_key', 255)->nullable()->after('token'); // p256dh
+            }
+            if (! Schema::hasColumn('device_tokens', 'auth_token')) {
+                $table->string('auth_token', 255)->nullable()->after('public_key'); // auth secret
+            }
         });
     }
 

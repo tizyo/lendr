@@ -9,8 +9,13 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('loans', function (Blueprint $table) {
-            $table->decimal('fx_rate', 15, 6)->default(1.000000)->after('currency');
-            $table->string('base_currency', 10)->default('ZMW')->after('fx_rate');
+            // Each column is its own ALTER on MySQL, so a failed run can leave only the first.
+            if (! Schema::hasColumn('loans', 'fx_rate')) {
+                $table->decimal('fx_rate', 15, 6)->default(1.000000)->after('currency');
+            }
+            if (! Schema::hasColumn('loans', 'base_currency')) {
+                $table->string('base_currency', 10)->default('ZMW')->after('fx_rate');
+            }
         });
     }
 

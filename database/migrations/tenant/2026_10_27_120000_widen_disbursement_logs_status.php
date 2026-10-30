@@ -15,7 +15,10 @@ return new class extends Migration
     {
         Schema::table('disbursement_logs', function (Blueprint $table) {
             $table->string('status', 20)->default('initiated')->change();
-            $table->index(['loan_id', 'status']);
+
+            if (! Schema::hasIndex('disbursement_logs', 'disbursement_logs_loan_id_status_index')) {
+                $table->index(['loan_id', 'status']);
+            }
         });
     }
 

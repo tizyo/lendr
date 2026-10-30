@@ -13,6 +13,10 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (Schema::hasTable('payment_proofs')) {
+            return;
+        }
+
         Schema::create('payment_proofs', function (Blueprint $table) {
             $table->id();
             $table->foreignId('loan_id')->constrained('loans')->cascadeOnDelete();
