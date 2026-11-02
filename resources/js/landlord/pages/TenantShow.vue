@@ -91,10 +91,24 @@
       <div class="bg-white rounded-xl border border-neutral-200 overflow-hidden">
         <div class="px-6 py-4 border-b border-neutral-200 flex items-center justify-between gap-3">
           <h3 class="font-semibold text-neutral-900">Users</h3>
-          <button @click="openAdd" class="bg-primary-600 hover:bg-primary-700 text-white text-sm font-semibold px-4 py-2 rounded-lg whitespace-nowrap">
-            + Add User
-          </button>
+          <div class="flex items-center gap-2">
+            <button
+              @click="openImpersonate(activeUsers[0])"
+              :disabled="activeUsers.length === 0"
+              class="border border-indigo-200 text-indigo-700 hover:bg-indigo-50 text-sm font-semibold px-4 py-2 rounded-lg whitespace-nowrap disabled:opacity-40 disabled:hover:bg-transparent"
+            >
+              Sign in as…
+            </button>
+            <button @click="openAdd" class="bg-primary-600 hover:bg-primary-700 text-white text-sm font-semibold px-4 py-2 rounded-lg whitespace-nowrap">
+              + Add User
+            </button>
+          </div>
         </div>
+        <p v-if="activeUsers.length === 0" class="px-6 py-3 text-sm text-neutral-500 bg-neutral-50 border-b border-neutral-200">
+          You can sign in as an active staff member only.
+          <template v-if="users.some(u => u.status === 'invited')">Nobody has accepted their invitation yet; once they do, you can sign in as them.</template>
+          <template v-else>Use Add User to invite the owner; once they accept, you can sign in as them.</template>
+        </p>
         <div class="overflow-x-auto">
           <table class="min-w-full text-sm">
             <thead>
@@ -262,6 +276,12 @@
           <button @click="impersonateTarget = null" class="text-neutral-400 hover:text-neutral-600">✕</button>
         </div>
         <div class="p-6 space-y-4">
+          <div v-if="activeUsers.length > 1">
+            <label class="block text-sm font-medium text-neutral-700 mb-1">Staff member</label>
+            <select v-model="impersonateTargetId" class="w-full border border-neutral-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500">
+              <option v-for="u in activeUsers" :key="u.id" :value="u.id">{{ u.name }} · {{ u.role_label ?? 'No role' }}</option>
+            </select>
+          </div>
           <p class="text-sm text-neutral-600">
             Opens {{ tenant.name }}'s workspace in a new tab with this user's access, for up to 30 minutes.
             Anything you do there is real and is recorded against both you and this user.
@@ -293,7 +313,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { Link, router } from '@inertiajs/vue3'
 import axios from 'axios'
 import LandlordLayout from '@/landlord/components/LandlordLayout.vue'
@@ -340,6 +360,13 @@ const impersonateReason = ref('')
 const impersonateError  = ref('')
 const impersonateUrl    = ref('')
 const impersonating     = ref(false)
+
+// Only active staff can be signed in as (the server refuses anyone else).
+const activeUsers = computed(() => users.value.filter(u => u.status === 'active'))
+const impersonateTargetId = computed({
+  get: () => impersonateTarget.value?.id,
+  set: (id) => { impersonateTarget.value = activeUsers.value.find(u => u.id === id) ?? null },
+})
 
 // ─── Lifecycle ────────────────────────────────────────────────────────────────
 onMounted(async () => {
