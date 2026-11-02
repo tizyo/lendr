@@ -54,6 +54,7 @@ Route::prefix('v1/landlord')->name('landlord.')->group(function () {
 
         // Tenant detail: overview + staff accounts
         Route::get('tenants/{id}/overview', [TenantUserController::class, 'overview'])->name('tenants.overview');
+        Route::post('tenants/{id}/verify-email', [TenantUserController::class, 'verifyEmail'])->name('tenants.verify-email');
         Route::get('tenants/{id}/users', [TenantUserController::class, 'index'])->name('tenants.users.index');
         Route::post('tenants/{id}/users', [TenantUserController::class, 'store'])->name('tenants.users.store');
         Route::post('tenants/{id}/users/{userId}/suspend', [TenantUserController::class, 'suspend'])->name('tenants.users.suspend');

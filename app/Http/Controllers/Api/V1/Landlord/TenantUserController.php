@@ -6,6 +6,7 @@ use App\Enums\LoanStatus;
 use App\Enums\UserRole;
 use App\Http\Controllers\Api\V1\BaseApiController;
 use App\Mail\StaffInvitationMail;
+use App\Mail\TenantWelcomeMail;
 use App\Models\Landlord\Tenant;
 use App\Models\Tenant\Borrower;
 use App\Models\Tenant\Loan;
@@ -15,6 +16,7 @@ use App\Services\PlanFeatureService;
 use App\Traits\RunsInTenantContext;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 
@@ -55,6 +57,7 @@ class TenantUserController extends BaseApiController
                 'currency' => $tenant->currency,
                 'timezone' => $tenant->timezone,
                 'admin_email' => $tenant->admin_email,
+                'email_verified_at' => $tenant->email_verified_at?->toDateTimeString(),
                 'trial_ends_at' => $tenant->trial_ends_at?->toDateString(),
                 'created_at' => $tenant->created_at?->toDateTimeString(),
                 'domains' => $tenant->domains->pluck('domain'),
@@ -66,6 +69,44 @@ class TenantUserController extends BaseApiController
                 UserRole::cases(),
             ),
         ]);
+    }
+
+    /**
+     * POST /v1/landlord/tenants/{id}/verify-email
+     * Does what the onboarding verification link does, for owners who never got it.
+     */
+    public function verifyEmail(Request $request, string $id): JsonResponse
+    {
+        $tenant = Tenant::findOrFail($id);
+
+        if ($tenant->isEmailVerified()) {
+            return $this->error('This workspace is already verified.', 422);
+        }
+
+        $tenant->update([
+            'email_verified_at' => now(),
+            'email_verification_token' => null,
+        ]);
+
+        $this->inTenant($tenant, function () use ($request, $tenant) {
+            if ($tenant->admin_email) {
+                User::where('email', $tenant->admin_email)->whereNull('invitation_token')->update(['is_active' => true]);
+            }
+
+            activity('support')
+                ->withProperties(['landlord' => $request->user()->email])
+                ->log('LENDR support verified the workspace email');
+        });
+
+        // A mail outage must never block activation — the workspace is already live.
+        if ($tenant->admin_email) {
+            rescue(fn () => Mail::to($tenant->admin_email)->queue(new TenantWelcomeMail($tenant, $tenant->loginUrl())));
+        }
+
+        return $this->success(
+            ['email_verified_at' => $tenant->email_verified_at->toDateTimeString()],
+            'Workspace verified. Its staff can now log in.',
+        );
     }
 
     /**

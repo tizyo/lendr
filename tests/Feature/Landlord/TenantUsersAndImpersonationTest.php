@@ -190,6 +190,69 @@ it('shows a tenant overview', function () {
     expect(tenancy()->initialized)->toBeFalse();
 });
 
+// ─── Verifying a workspace's email ───────────────────────────────────────────
+
+it('lets the owner log in once a landlord verifies the workspace email', function () {
+    Mail::fake();
+    $tenant = supportTenant('growth', domain: 'a.lendr.test');
+    $tenant->update(['admin_email' => 'owner@vozara.test', 'email_verification_token' => 'lost-in-spam']);
+    // Onboarding leaves the owner inactive until the verification link is clicked.
+    supportStaff(['email' => 'owner@vozara.test', 'role' => UserRole::SuperAdmin, 'password' => 'Secret#12345', 'is_active' => false]);
+
+    asGuestBrowser()->post('http://a.lendr.test/login', ['email' => 'owner@vozara.test', 'password' => 'Secret#12345'])
+        ->assertSessionHasErrors('email');
+    $this->assertGuest('web');
+    tenancy()->end();
+
+    asLandlord()->getJson("/api/v1/landlord/tenants/{$tenant->id}/overview")
+        ->assertJsonPath('data.tenant.email_verified_at', null);
+    asLandlord()->postJson("/api/v1/landlord/tenants/{$tenant->id}/verify-email")
+        ->assertOk()
+        ->assertJsonPath('message', 'Workspace verified. Its staff can now log in.');
+
+    $tenant->refresh();
+    expect($tenant->isEmailVerified())->toBeTrue()
+        ->and($tenant->email_verification_token)->toBeNull()
+        ->and(User::where('email', 'owner@vozara.test')->value('is_active'))->toBeTrue()
+        ->and(Activity::where('description', 'LENDR support verified the workspace email')->exists())->toBeTrue();
+    Mail::assertQueued(\App\Mail\TenantWelcomeMail::class, fn ($mail) => $mail->hasTo('owner@vozara.test'));
+
+    asGuestBrowser()->post('http://a.lendr.test/login', ['email' => 'owner@vozara.test', 'password' => 'Secret#12345'])
+        ->assertRedirect('http://a.lendr.test/dashboard');
+    $this->assertAuthenticated('web');
+});
+
+it('does not reactivate a pending invitee when verifying', function () {
+    $tenant = supportTenant();
+    $tenant->update(['admin_email' => 'owner@vozara.test']);
+    supportStaff(['email' => 'owner@vozara.test', 'is_active' => false, 'invitation_token' => 'abc']);
+
+    asLandlord()->postJson("/api/v1/landlord/tenants/{$tenant->id}/verify-email")->assertOk();
+
+    expect(User::where('email', 'owner@vozara.test')->value('is_active'))->toBeFalse();
+});
+
+it('refuses to verify a workspace twice', function () {
+    $tenant = supportTenant();
+    $tenant->update(['email_verified_at' => $verified = now()->subWeek()]);
+
+    asLandlord()->postJson("/api/v1/landlord/tenants/{$tenant->id}/verify-email")
+        ->assertStatus(422);
+
+    expect($tenant->refresh()->email_verified_at->toDateString())->toBe($verified->toDateString());
+});
+
+it('refuses marketplace users verifying a workspace', function () {
+    $tenant = supportTenant();
+    $ghost = GhostUser::create(['phone' => '0977123457', 'name' => 'Repo Buyer']);
+
+    $this->withToken($ghost->createToken('marketplace')->plainTextToken)
+        ->postJson("/api/v1/landlord/tenants/{$tenant->id}/verify-email")
+        ->assertForbidden();
+
+    expect($tenant->refresh()->isEmailVerified())->toBeFalse();
+});
+
 it('lists staff with their status, without secrets', function () {
     $tenant = supportTenant();
     supportStaff(['name' => 'Active Ann']);

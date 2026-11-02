@@ -17,6 +17,17 @@
         <span class="text-xs text-neutral-400 font-mono">{{ tenant.slug }}</span>
       </div>
 
+      <!-- Unverified workspace -->
+      <div v-if="!tenant.email_verified_at" class="p-4 bg-amber-50 border border-amber-200 rounded-xl flex flex-wrap items-center justify-between gap-3">
+        <div class="text-sm text-amber-800">
+          <p class="font-semibold">Email not verified</p>
+          <p>Nobody in this workspace can log in until its email address is verified.</p>
+        </div>
+        <button @click="openVerify" class="bg-amber-600 hover:bg-amber-700 text-white text-sm font-semibold px-4 py-2 rounded-lg whitespace-nowrap">
+          Verify email
+        </button>
+      </div>
+
       <!-- Stats -->
       <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <div class="bg-white rounded-xl border border-neutral-200 p-4">
@@ -52,6 +63,11 @@
           <div>
             <dt class="text-xs text-neutral-500">Admin email</dt>
             <dd class="text-neutral-900 break-all">{{ tenant.admin_email ?? '—' }}</dd>
+          </div>
+          <div>
+            <dt class="text-xs text-neutral-500">Email verified</dt>
+            <dd v-if="tenant.email_verified_at" class="text-neutral-900">{{ formatDate(tenant.email_verified_at) }}</dd>
+            <dd v-else class="text-amber-700 font-medium">Not verified</dd>
           </div>
           <div>
             <dt class="text-xs text-neutral-500">Currency / timezone</dt>
@@ -218,6 +234,26 @@
       </div>
     </div>
 
+    <!-- Verify Email Modal -->
+    <div v-if="showVerify" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div class="bg-white rounded-xl shadow-xl w-full max-w-sm p-6">
+        <h3 class="font-semibold text-neutral-900 mb-2">Verify {{ tenant.name }}?</h3>
+        <p class="text-sm text-neutral-600 mb-4">
+          Only do this once you're sure the owner controls
+          <template v-if="tenant.admin_email"><span class="font-medium">{{ tenant.admin_email }}</span></template>
+          <template v-else>this workspace</template>.
+          Its staff will be able to log in straight away<template v-if="tenant.admin_email">, and the owner gets a welcome email</template>.
+        </p>
+        <p v-if="verifyError" class="text-sm text-red-600 mb-4">{{ verifyError }}</p>
+        <div class="flex justify-end gap-3">
+          <button @click="showVerify = false" class="px-4 py-2 text-sm text-neutral-600 hover:text-neutral-800">Cancel</button>
+          <button @click="verifyEmail" :disabled="verifying" class="px-4 py-2 text-sm bg-amber-600 hover:bg-amber-700 text-white rounded-lg font-semibold disabled:opacity-50">
+            {{ verifying ? 'Verifying…' : 'Verify email' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- Sign In As Modal -->
     <div v-if="impersonateTarget" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div class="bg-white rounded-xl shadow-xl w-full max-w-md">
@@ -281,6 +317,11 @@ const users     = ref([])
 const sessions  = ref([])
 const resending = ref(null)
 
+// Verify email
+const showVerify  = ref(false)
+const verifying   = ref(false)
+const verifyError = ref('')
+
 // Add user
 const showAdd  = ref(false)
 const adding   = ref(false)
@@ -336,6 +377,27 @@ async function fetchUsers() {
 async function fetchSessions() {
   const { data } = await axios.get(`${api}/impersonations`)
   sessions.value = data.data
+}
+
+// ─── Verify email ─────────────────────────────────────────────────────────────
+function openVerify() {
+  verifyError.value = ''
+  showVerify.value  = true
+}
+
+async function verifyEmail() {
+  verifying.value   = true
+  verifyError.value = ''
+  try {
+    const { data } = await axios.post(`${api}/verify-email`)
+    showVerify.value = false
+    notice.value     = data.message
+    await Promise.all([fetchOverview(), fetchUsers()])
+  } catch (e) {
+    verifyError.value = e.response?.data?.message ?? 'Failed to verify this workspace.'
+  } finally {
+    verifying.value = false
+  }
 }
 
 // ─── Add user ─────────────────────────────────────────────────────────────────
