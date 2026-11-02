@@ -1,9 +1,15 @@
 <?php
 
 use App\Enums\UserRole;
+use App\Jobs\ProvisionOnboardedTenant;
+use App\Mail\TenantVerificationMail;
 use App\Models\Landlord\Tenant;
+use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Mail;
 use Stancl\Tenancy\Database\Models\Domain;
+use Stancl\Tenancy\Events\TenantCreated;
 
 // ─── Cleanup: purge any tenant DB connections created during this test ────────
 afterEach(function () {
@@ -92,6 +98,36 @@ test('starter plan creates tenant and superadmin user', function () {
         ->and($user->role)->toBe(UserRole::SuperAdmin)
         ->and($user->is_active)->toBeFalse();
     tenancy()->end();
+});
+
+test('builds the workspace database after the response, not inside the request', function () {
+    // Production kills a request after 30s; a fresh tenant's migrations take longer.
+    Bus::fake();
+
+    $this->post(route('onboarding.store'), starterPayload(['slug' => 'deferred-'.uniqid()]))
+        ->assertRedirect(route('onboarding.success'));
+
+    Bus::assertDispatchedAfterResponse(ProvisionOnboardedTenant::class);
+});
+
+test('a failed build frees the workspace name and sends no verification email', function () {
+    Mail::fake();
+    Event::listen(TenantCreated::class, fn () => throw new RuntimeException('Migration failed'));
+    $payload = starterPayload(['slug' => 'failed-'.uniqid()]);
+
+    $this->post(route('onboarding.store'), $payload)->assertRedirect(route('onboarding.success'));
+
+    expect(Tenant::where('slug', $payload['slug'])->exists())->toBeFalse();
+    Mail::assertNothingSent();
+});
+
+test('a built workspace gets its verification email', function () {
+    Mail::fake();
+    $payload = starterPayload(['slug' => 'mailed-'.uniqid()]);
+
+    $this->post(route('onboarding.store'), $payload);
+
+    Mail::assertSent(TenantVerificationMail::class, fn ($mail) => $mail->hasTo($payload['admin_email']));
 });
 
 test('success page shows tenant details after onboarding', function () {

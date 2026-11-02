@@ -2,8 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Enums\UserRole;
-use App\Mail\TenantVerificationMail;
+use App\Jobs\ProvisionOnboardedTenant;
 use App\Mail\TenantWelcomeMail;
 use App\Models\Landlord\PlanConfig;
 use App\Models\Landlord\Tenant;
@@ -11,6 +10,7 @@ use App\Models\Tenant\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
@@ -120,8 +120,8 @@ class OnboardingController extends Controller
 
         $verificationToken = Str::random(64);
 
-        // Create tenant (TenancyServiceProvider creates DB + runs tenant migrations automatically).
-        $tenant = Tenant::create([
+        // Just the record: its database is built after the response (see ProvisionOnboardedTenant).
+        $tenant = Tenant::withoutEvents(fn () => Tenant::create([
             'id' => Str::uuid()->toString(),
             'name' => $data['org_name'],
             'slug' => $slug,
@@ -132,7 +132,7 @@ class OnboardingController extends Controller
             'admin_email' => $data['admin_email'],
             'email_verification_token' => $verificationToken,
             'trial_ends_at' => now()->addDays(14),
-        ]);
+        ]));
 
         $loginUrl = null;
 
@@ -147,28 +147,13 @@ class OnboardingController extends Controller
             $loginUrl = 'http://'.$domain.'/login';
         }
 
-        // Switch into tenant context and create the SuperAdmin.
-        // withoutEvents() suppresses activity log during provisioning.
-        tenancy()->initialize($tenant);
-
-        try {
-            User::withoutEvents(function () use ($data) {
-                User::create([
-                    'name' => $data['admin_name'],
-                    'email' => $data['admin_email'],
-                    'phone' => $data['admin_phone'] ?? null,
-                    'password' => $data['admin_password'],
-                    'role' => UserRole::SuperAdmin,
-                    'is_active' => false, // activated after email verification
-                ]);
-            });
-        } finally {
-            tenancy()->end();
-        }
-
-        // Send verification email (central domain URL — no tenancy context needed).
-        $verificationUrl = route('onboarding.verify', $verificationToken);
-        Mail::to($data['admin_email'])->queue(new TenantVerificationMail($tenant, $verificationUrl));
+        // Database, SuperAdmin and verification email (central domain URL).
+        ProvisionOnboardedTenant::dispatchAfterResponse($tenant->id, [
+            'name' => $data['admin_name'],
+            'email' => $data['admin_email'],
+            'phone' => $data['admin_phone'] ?? null,
+            'password' => Hash::make($data['admin_password']),
+        ], route('onboarding.verify', $verificationToken));
 
         return redirect()->route('onboarding.success')
             ->with('slug', $slug)
