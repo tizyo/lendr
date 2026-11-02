@@ -4,6 +4,8 @@
       <div class="w-8 h-8 border-4 border-primary-500 border-t-transparent rounded-full animate-spin"></div>
     </div>
 
+    <div v-else-if="loadError" class="p-4 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700">{{ loadError }}</div>
+
     <div v-else class="space-y-8">
 
       <!-- Revenue KPIs -->
@@ -146,8 +148,9 @@ import LandlordLayout from '@/landlord/components/LandlordLayout.vue'
 import { useLandlordAuth } from '@/landlord/stores/auth.js'
 
 const auth    = useLandlordAuth()
-const stats   = ref({})
-const loading = ref(true)
+const stats     = ref({})
+const loading   = ref(true)
+const loadError = ref('')
 
 // ─── Derived ──────────────────────────────────────────────────────────────────
 
@@ -196,9 +199,15 @@ onMounted(async () => {
   try {
     const { data } = await axios.get('/api/v1/landlord/stats')
     stats.value = data.data ?? {}
-  } catch {
-    auth.clearAuth()
-    router.visit(route('landlord.login'))
+  } catch (e) {
+    // Only a rejected token means signing in again; anything else must be shown,
+    // or a server error looks like the login silently failing.
+    if (e.response?.status === 401) {
+      auth.clearAuth()
+      router.visit(route('landlord.login'))
+      return
+    }
+    loadError.value = `Couldn't load the dashboard (${e.response?.status ?? 'network error'}): ${e.response?.data?.message ?? e.message}`
   } finally {
     loading.value = false
   }
