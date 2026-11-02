@@ -30,8 +30,7 @@ class OnboardingController extends Controller
 
     public function show(): Response
     {
-        $centralDomain = env('CENTRAL_DOMAIN', 'localhost');
-        $sharedPortalHost = 'app.'.$centralDomain;
+        $sharedPortalHost = parse_url(route('portal.login'), PHP_URL_HOST);
 
         $configs = PlanConfig::allKeyed();
 
@@ -69,7 +68,6 @@ class OnboardingController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $centralDomain = env('CENTRAL_DOMAIN', 'localhost');
-        $sharedPortalHost = 'app.'.$centralDomain;
 
         $usesSharedPortal = in_array($request->input('plan'), self::SHARED_PORTAL_PLANS);
 
@@ -134,18 +132,12 @@ class OnboardingController extends Controller
             'trial_ends_at' => now()->addDays(14),
         ]));
 
-        $loginUrl = null;
-
-        if ($usesSharedPortal) {
-            // Starter/Trial: shared portal, no subdomain record needed.
-            $loginUrl = 'http://'.$sharedPortalHost.'/portal/login';
-        } else {
-            // Growth/Enterprise: custom subdomain.
-            $subdomain = strtolower($data['subdomain']);
-            $domain = $subdomain.'.'.$centralDomain;
-            $tenant->domains()->create(['domain' => $domain]);
-            $loginUrl = 'http://'.$domain.'/login';
+        // Growth/Enterprise: custom subdomain (used once subdomains are served).
+        if (! $usesSharedPortal) {
+            $tenant->domains()->create(['domain' => strtolower($data['subdomain']).'.'.$centralDomain]);
         }
+
+        $loginUrl = $tenant->loginUrl();
 
         // Database, SuperAdmin and verification email (central domain URL).
         ProvisionOnboardedTenant::dispatchAfterResponse($tenant->id, [

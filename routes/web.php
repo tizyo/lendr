@@ -112,6 +112,7 @@ Route::middleware([InitializeTenancy::class])->group(function () {
     Route::middleware('guest')->group(function () {
         Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
         Route::post('/login', [AuthController::class, 'login'])->name('login.post');
+        Route::get('/login/handoff', [AuthController::class, 'claimHandoff'])->name('login.handoff');
         Route::get('/2fa/challenge', [AuthController::class, 'show2faChallenge'])->name('2fa.challenge');
         Route::post('/2fa/challenge', [AuthController::class, 'verify2fa'])->name('2fa.verify');
         Route::get('/forgot-password', [AuthController::class, 'showForgotPassword'])->name('password.request');

@@ -23,6 +23,13 @@ return [
      */
     'commands_in_current_database' => (bool) env('TENANT_COMMANDS_IN_CURRENT_DB', false),
 
+    /*
+     * Whether workspace subdomains are actually served (wildcard DNS and certificate
+     * for *.CENTRAL_DOMAIN). While off, every workspace's staff sign in and work at
+     * the shared portal, so nobody is sent to an address that doesn't resolve.
+     */
+    'subdomains' => (bool) env('TENANT_SUBDOMAINS', false),
+
     'central_domains' => [
         '127.0.0.1',
         'localhost',

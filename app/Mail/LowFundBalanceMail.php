@@ -32,7 +32,7 @@ class LowFundBalanceMail extends Mailable
     private function fundsUrl(): string
     {
         $tenant = tenancy()->tenant;
-        $base = $tenant && ! $tenant->usesSharedPortal() ? $tenant->domainUrl() : null;
+        $base = $tenant && ! $tenant->staffUseCentralHost() ? $tenant->domainUrl() : null;
 
         return $base ? $base.'/funds' : $tenant?->loginUrl() ?? url('/funds');
     }

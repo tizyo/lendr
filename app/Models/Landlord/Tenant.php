@@ -66,15 +66,13 @@ class Tenant extends BaseTenant implements TenantWithDatabase
     /** Where this tenant's staff sign in. */
     public function loginUrl(): string
     {
-        $base = $this->usesSharedPortal() ? null : $this->domainUrl();
-
-        return $base ? $base.'/login' : route('portal.login');
+        return $this->staffUseCentralHost() ? route('portal.login') : $this->domainUrl().'/login';
     }
 
     /** True when staff work on the central host (identified by session), not a subdomain. */
     public function staffUseCentralHost(): bool
     {
-        return $this->usesSharedPortal() || ! $this->domains()->exists();
+        return ! config('tenancy.subdomains') || $this->usesSharedPortal() || ! $this->domains()->exists();
     }
 
     /** Whether a staff session for this tenant belongs on the given host. */
