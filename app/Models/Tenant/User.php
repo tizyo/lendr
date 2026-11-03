@@ -136,14 +136,14 @@ class User extends Authenticatable
         return ! is_null($this->two_factor_confirmed_at);
     }
 
+    /**
+     * Only an absolute URL is usable: nothing stores staff photos on disk, and a bare
+     * path would resolve to the central public folder, where no tenant file lives.
+     */
     public function getAvatarUrlAttribute(): ?string
     {
-        if (! $this->avatar) {
-            return null;
-        }
-
-        return str_starts_with($this->avatar, 'http')
+        return $this->avatar && str_starts_with($this->avatar, 'http')
             ? $this->avatar
-            : asset('storage/'.$this->avatar);
+            : null;
     }
 }

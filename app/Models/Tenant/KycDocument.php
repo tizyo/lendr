@@ -80,11 +80,16 @@ class KycDocument extends Model
         return $this->belongsTo(User::class, 'reviewed_by');
     }
 
+    /**
+     * Uploads live on the tenant's private disk, which has no public URL, so they are
+     * streamed by the authenticated API (KycController::file). Only migrated records
+     * that already point at an external URL keep that URL.
+     */
     public function getFileUrlAttribute(): string
     {
         return str_starts_with($this->file_path, 'http')
             ? $this->file_path
-            : asset('storage/'.$this->file_path);
+            : route('api.v1.kyc.file', $this);
     }
 
     public function isExpired(): bool

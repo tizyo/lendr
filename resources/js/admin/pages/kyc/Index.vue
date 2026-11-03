@@ -70,7 +70,7 @@
             <td class="px-4 py-3 text-neutral-500 text-xs">{{ doc.expires_at ?? '—' }}</td>
             <td class="px-4 py-3">
               <div class="flex gap-2">
-                <a :href="doc.file_url" target="_blank" class="text-xs text-neutral-500 hover:text-neutral-800 hover:underline">View</a>
+                <button class="text-xs text-neutral-500 hover:text-neutral-800 hover:underline" @click="viewDocument(doc)">View</button>
                 <button
                   v-if="doc.status === 'pending'"
                   class="text-xs text-green-600 hover:underline"
@@ -162,6 +162,24 @@ const debouncedSearch = () => {
 
 const applyFilters = () => {
   router.get(route('kyc.index'), filters, { preserveState: true, replace: true })
+}
+
+// Uploads have no public URL: fetch them with the staff session and show them from memory.
+// The tab is opened first, inside the click, so pop-up blockers allow it.
+const viewDocument = async (doc) => {
+  if (new URL(doc.file_url, window.location.href).origin !== window.location.origin) {
+    window.open(doc.file_url, '_blank', 'noopener')
+    return
+  }
+
+  const tab = window.open('', '_blank')
+  try {
+    const { data } = await axios.get(doc.file_url, { responseType: 'blob' })
+    tab.location = URL.createObjectURL(data)
+  } catch (e) {
+    tab.close()
+    alert(e.response?.status === 404 ? 'This file is missing from storage.' : 'Could not open the document.')
+  }
 }
 
 const openApprove = (doc) => { approving.value = doc }

@@ -221,3 +221,29 @@ it('streams KYC documents to staff through the API instead of a public URL', fun
 
     $this->actingAs($admin)->get($url)->assertOk()->assertStreamedContent('image-bytes');
 });
+
+it('gives the KYC review page a file link that actually serves the upload', function () {
+    $admin = actingAsAdmin();
+    $doc = KycDocument::factory()->create(['file_path' => 'kyc/1/nrc.jpg', 'file_name' => 'nrc.jpg']);
+    Storage::disk('private')->put('kyc/1/nrc.jpg', 'image-bytes');
+
+    $url = $this->actingAs($admin)->get(route('kyc.index'))
+        ->assertOk()
+        ->viewData('page')['props']['documents']['data'][0]['file_url'];
+
+    expect($url)->toBe(route('api.v1.kyc.file', $doc));
+
+    $this->actingAs($admin)->get($url)->assertOk()->assertStreamedContent('image-bytes');
+});
+
+it('keeps an external KYC file URL as it is', function () {
+    $doc = KycDocument::factory()->create(['file_path' => 'https://files.example.com/nrc.jpg']);
+
+    expect($doc->file_url)->toBe('https://files.example.com/nrc.jpg');
+});
+
+it('only exposes staff avatars that are real URLs', function () {
+    expect(User::factory()->make(['avatar' => 'avatars/me.jpg'])->avatar_url)->toBeNull()
+        ->and(User::factory()->make(['avatar' => 'https://cdn.example.com/me.jpg'])->avatar_url)->toBe('https://cdn.example.com/me.jpg')
+        ->and(User::factory()->make(['avatar' => null])->avatar_url)->toBeNull();
+});
