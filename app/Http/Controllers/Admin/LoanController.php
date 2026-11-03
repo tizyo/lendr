@@ -235,11 +235,11 @@ class LoanController extends Controller
                 'approve' => auth()->user()?->can('loans.approve'),
                 'disburse' => auth()->user()?->can('loans.disburse'),
                 'deny' => auth()->user()?->can('loans.approve'),
-                'freeze' => auth()->user()?->can('loans.manage'),
+                'freeze' => auth()->user()?->can('loans.freeze'),
                 'write_off' => auth()->user()?->can('loans.write_off'),
                 'record_payment' => auth()->user()?->can('payments.create'),
-                'restructure' => auth()->user()?->can('loans.manage'),
-                'topup' => auth()->user()?->can('loans.manage'),
+                'restructure' => auth()->user()?->can('loans.edit'),
+                'topup' => auth()->user()?->can('loans.edit'),
             ],
         ]);
     }

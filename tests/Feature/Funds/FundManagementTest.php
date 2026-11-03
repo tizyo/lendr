@@ -129,7 +129,7 @@ test('an approved deposit cannot be edited', function () {
 // ─── Deposit Approval ─────────────────────────────────────────────────────────
 
 test('approving a deposit credits the fund balance', function () {
-    $user = fundUser(['funds.approve']);
+    $user = fundUser(['funds.approve_deposit']);
 
     $deposit = FundDeposit::create([
         'reference' => 'DEP-'.now()->format('Ym').'-00003',
@@ -154,7 +154,7 @@ test('approving a deposit credits the fund balance', function () {
 });
 
 test('approving a deposit creates a fund transaction record', function () {
-    $user = fundUser(['funds.approve']);
+    $user = fundUser(['funds.approve_deposit']);
 
     $deposit = FundDeposit::create([
         'reference' => 'DEP-'.now()->format('Ym').'-00004',
@@ -178,8 +178,10 @@ test('approving a deposit creates a fund transaction record', function () {
     ]);
 });
 
-test('approving requires funds.approve permission', function () {
-    $user = fundUser(); // no permission
+test('approving requires the funds.approve_deposit permission', function () {
+    actingAsAdmin(); // seeds the real roles
+    // Cashiers record deposits but may not approve them.
+    $user = User::factory()->create(['role' => UserRole::Cashier, 'is_active' => true]);
 
     $deposit = FundDeposit::create([
         'reference' => 'DEP-'.now()->format('Ym').'-00005',
@@ -198,7 +200,7 @@ test('approving requires funds.approve permission', function () {
 });
 
 test('a deposit can be rejected with a reason', function () {
-    $user = fundUser(['funds.approve']);
+    $user = fundUser(['funds.approve_deposit']);
 
     $deposit = FundDeposit::create([
         'reference' => 'DEP-'.now()->format('Ym').'-00006',
@@ -225,7 +227,7 @@ test('a deposit can be rejected with a reason', function () {
 // ─── Fund Integration ─────────────────────────────────────────────────────────
 
 test('disbursing a loan debits the fund balance', function () {
-    $user = fundUser(['loans.disburse', 'funds.approve']);
+    $user = fundUser(['loans.disburse', 'funds.approve_deposit']);
     $type = LoanType::factory()->create();
     $plan = LoanPlan::factory()->create(['loan_type_id' => $type->id]);
     $loan = Loan::factory()->approved()->create([
@@ -295,7 +297,7 @@ test('recording a payment credits the fund balance', function () {
 // ─── Transactions Ledger ─────────────────────────────────────────────────────
 
 test('transaction ledger is paginated and filterable by type', function () {
-    $user = fundUser(['funds.approve']);
+    $user = fundUser(['funds.approve_deposit']);
 
     // Approve two deposits to generate transactions
     foreach (['00020', '00021'] as $seq) {

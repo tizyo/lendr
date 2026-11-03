@@ -95,7 +95,7 @@ class FundDepositController extends BaseApiController
      */
     public function approve(Request $request, FundDeposit $deposit): JsonResponse
     {
-        if (! auth()->user()?->can('funds.approve')) {
+        if (! auth()->user()?->can('funds.approve_deposit')) {
             return $this->error('Forbidden.', 403);
         }
 

@@ -8,7 +8,7 @@ class StoreLoanTypeRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->can('settings.manage') ?? false;
+        return $this->user()?->can('loan_products.create') ?? false;
     }
 
     /**

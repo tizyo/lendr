@@ -9,7 +9,7 @@ class UpdateLoanTypeRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->can('settings.manage') ?? false;
+        return $this->user()?->can('loan_products.edit') ?? false;
     }
 
     public function rules(): array

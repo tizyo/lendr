@@ -21,7 +21,7 @@
         </div>
         <div class="flex gap-2 flex-wrap">
           <button
-            v-if="can('borrowers.update')"
+            v-if="can('borrowers.blacklist')"
             @click="showBlacklistModal = true"
             class="btn-secondary text-sm"
             :class="borrower.is_blacklisted ? 'text-green-700' : 'text-red-700'"
@@ -275,7 +275,7 @@
 
         <!-- ── Notes Tab ── -->
         <div v-show="activeTab === 'notes'" class="space-y-4">
-          <div v-if="can('borrowers.update')" class="lendr-card p-4">
+          <div v-if="can('borrowers.edit')" class="lendr-card p-4">
             <textarea
               v-model="noteText"
               rows="3"
