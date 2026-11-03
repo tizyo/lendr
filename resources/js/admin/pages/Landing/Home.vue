@@ -11,7 +11,7 @@
         <div>
           <div class="inline-flex items-center gap-2 bg-blue-600/20 text-blue-300 text-xs font-semibold px-3 py-1.5 rounded-full border border-blue-500/30 mb-6">
             <span class="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse"></span>
-            Zambia's #1 Loan Management Platform
+            Built for Zambian lenders
           </div>
           <h1 class="text-4xl md:text-5xl lg:text-6xl font-black leading-tight mb-6">
             The best loan<br>management system<br>
@@ -89,13 +89,11 @@
       </div>
     </section>
 
-    <!-- ─── Trusted by — scrolling marquee ───────────────────────────────────── -->
-    <section class="bg-neutral-50 border-y border-neutral-200 py-6 overflow-hidden">
-      <p class="text-center text-xs font-semibold text-neutral-400 uppercase tracking-widest mb-4">Trusted by lenders across Zambia</p>
-      <div class="relative flex">
-        <div class="flex gap-12 animate-marquee whitespace-nowrap">
-          <span v-for="(name, i) in [...marqueeNames, ...marqueeNames]" :key="i" class="text-neutral-400 font-bold text-sm tracking-wide shrink-0">{{ name }}</span>
-        </div>
+    <!-- ─── Payment integrations ─────────────────────────────────────────────── -->
+    <section class="bg-neutral-50 border-y border-neutral-200 py-6">
+      <p class="text-center text-xs font-semibold text-neutral-500 uppercase tracking-widest mb-4">Disburse and collect through</p>
+      <div class="flex flex-wrap justify-center gap-x-12 gap-y-3 px-4">
+        <span v-for="name in paymentProviders" :key="name" class="text-neutral-500 font-bold text-sm tracking-wide">{{ name }}</span>
       </div>
     </section>
 
@@ -174,7 +172,7 @@
         <div class="text-center mb-12">
           <p class="text-blue-400 font-semibold text-sm uppercase tracking-widest mb-3">WHY LENDR?</p>
           <h2 class="text-3xl md:text-4xl font-black">We've overcome every challenge<br class="hidden md:block"> to empower your success</h2>
-          <p class="text-white/60 mt-3 max-w-xl mx-auto">Having encountered nearly every issue a lender might face, we offer comprehensive solutions that guarantee growth.</p>
+          <p class="text-white/60 mt-3 max-w-xl mx-auto">From the first application to the final repayment, LENDR handles the hard parts of lending so your team can focus on growth.</p>
         </div>
         <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
           <div v-for="why in whyLendr" :key="why.title" class="bg-white/5 border border-white/10 rounded-2xl p-6 hover:border-blue-500/30 transition">
@@ -234,28 +232,19 @@
       </div>
     </section>
 
-    <!-- ─── Testimonials ──────────────────────────────────────────────────────── -->
+    <!-- ─── Data protection ───────────────────────────────────────────────────── -->
     <section class="bg-neutral-50 py-20 px-4 sm:px-6 lg:px-8">
       <div class="max-w-7xl mx-auto">
         <div class="text-center mb-12">
-          <p class="text-blue-600 font-semibold text-sm uppercase tracking-widest mb-3">Lenders love LENDR</p>
-          <h2 class="text-3xl md:text-4xl font-black">Don't just take our word for it</h2>
-          <p class="text-neutral-500 mt-3">Hear what our lenders say about LENDR</p>
+          <p class="text-blue-600 font-semibold text-sm uppercase tracking-widest mb-3">Security</p>
+          <h2 class="text-3xl md:text-4xl font-black">Built to be trusted with your borrowers' data</h2>
+          <p class="text-neutral-500 mt-3">Lending runs on personal information. LENDR is designed to keep it yours.</p>
         </div>
-        <div class="grid md:grid-cols-3 gap-6">
-          <div v-for="t in testimonials" :key="t.name" class="bg-white border border-neutral-200 rounded-2xl p-6 shadow-sm hover:shadow-md transition">
-            <div class="flex gap-0.5 mb-4">
-              <svg v-for="i in 5" :key="i" class="w-4 h-4 text-yellow-400" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
-            </div>
-            <p class="text-neutral-600 text-sm leading-relaxed mb-5 italic">"{{ t.quote }}"</p>
-            <div class="flex items-center gap-3">
-              <div class="w-9 h-9 rounded-full flex items-center justify-center font-bold text-sm text-white" :class="t.avatarColor">{{ t.name[0] }}</div>
-              <div>
-                <p class="font-semibold text-sm text-neutral-900">{{ t.name }}</p>
-                <p class="text-xs text-neutral-400">{{ t.role }}</p>
-              </div>
-              <span class="ml-auto text-lg">🇿🇲</span>
-            </div>
+        <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
+          <div v-for="item in safeguards" :key="item.title" class="bg-white border border-neutral-200 rounded-2xl p-6 shadow-sm">
+            <div class="w-11 h-11 bg-blue-50 rounded-xl flex items-center justify-center text-2xl mb-4">{{ item.icon }}</div>
+            <h3 class="font-bold text-neutral-900 mb-2">{{ item.title }}</h3>
+            <p class="text-sm text-neutral-500 leading-relaxed">{{ item.desc }}</p>
           </div>
         </div>
       </div>
@@ -409,17 +398,13 @@ const recentLoans = [
   { name: 'Grace B.',   amount: 'K 8,000', status: 'Approved', statusClass: 'bg-green-100 text-green-700' },
 ]
 
-const marqueeNames = [
-  'Kwacha Finance', 'ZedLend', 'CopperBelt Credit', 'SinoLoan Zambia',
-  'Victoria Microfinance', 'Lusaka Capital', 'ZamCredit', 'Chibombo SACCO',
-  'Ndola MFI', 'Livingstone Loans', 'Kafue Cooperative', 'EagleMoney',
-]
+const paymentProviders = ['Airtel Money', 'MTN MoMo', 'Zamtel Kwacha', 'PawaPay', 'Flutterwave']
 
 const stats = [
-  { value: '500+',   label: 'Active Loans Managed Daily'  },
-  { value: '98%',    label: 'Repayment Collection Rate'   },
-  { value: '30 min', label: 'Average Time to First Loan'  },
-  { value: '5×',     label: 'Cheaper Than Building Yours' },
+  { value: '5',        label: 'Mobile Money & Payment Integrations' },
+  { value: '14 days',  label: 'Free Trial, No Card Required'        },
+  { value: 'Isolated', label: 'Database for Every Lender'           },
+  { value: 'PWA',      label: 'Borrower App, No App Store Needed'   },
 ]
 
 const lifecycleTabs = [
@@ -501,10 +486,11 @@ const pwaFeatures = [
   'Works offline for last-synced data',
 ]
 
-const testimonials = [
-  { quote: 'LENDR significantly expedited our entry into the retail lending market. Their solution not only shortened our time to market but also at a significantly reduced cost.', name: 'Mwamba Chileshe', role: 'CEO, Copperbelt Microfinance',    avatarColor: 'bg-blue-600'   },
-  { quote: 'With LENDR we were able to launch in 20% of the time and at a fraction of the cost it would have taken us to build our own stack. The mobile money integration is seamless.', name: 'Thandiwe Banda', role: 'Founder, ZedLend Finance',         avatarColor: 'bg-purple-600' },
-  { quote: "The LENDR support team is truly exceptional. The borrower PWA has transformed how our clients interact with us — repayment rates have improved noticeably.", name: 'Patrick Nkonde', role: 'Director, Kafue Cooperative Credit', avatarColor: 'bg-green-600'  },
+const safeguards = [
+  { icon: '🗄️', title: 'Your own database',        desc: 'Every lender gets a separate, isolated database. Your borrowers never share a table with anyone else\'s.' },
+  { icon: '🔐', title: 'Two-factor sign-in',       desc: 'Staff can protect their accounts with an authenticator-app code on top of their password.' },
+  { icon: '🪪', title: 'Encrypted national IDs',   desc: 'NRC numbers are encrypted at rest, so a copy of the database doesn\'t reveal them.' },
+  { icon: '📜', title: 'Full audit trail',         desc: 'Changes to borrowers, loans and payments are logged with who made them and when.' },
 ]
 
 const industries = [
@@ -538,10 +524,4 @@ const faqs = reactive([
 .tab-fade-enter-active, .tab-fade-leave-active { transition: opacity 0.2s ease, transform 0.2s ease; }
 .tab-fade-enter-from { opacity: 0; transform: translateY(6px); }
 .tab-fade-leave-to   { opacity: 0; transform: translateY(-6px); }
-
-@keyframes marquee {
-  0%   { transform: translateX(0); }
-  100% { transform: translateX(-50%); }
-}
-.animate-marquee { animation: marquee 28s linear infinite; }
 </style>

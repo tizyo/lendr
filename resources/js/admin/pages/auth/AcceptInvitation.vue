@@ -4,9 +4,7 @@
 
       <!-- Logo / Brand -->
       <div class="text-center mb-8">
-        <div class="inline-flex items-center justify-center w-14 h-14 bg-emerald-600 rounded-2xl shadow-lg mb-4">
-          <span class="text-white font-black text-xl">L</span>
-        </div>
+        <img src="/brand/lendr-logo.png" alt="LENDR" class="h-10 w-auto mx-auto mb-5" />
         <h1 class="text-2xl font-bold text-neutral-900">Activate your account</h1>
         <p class="text-sm text-neutral-500 mt-1">
           You've been invited to <span class="font-semibold text-emerald-700">{{ orgName }}</span>

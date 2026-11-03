@@ -2,7 +2,7 @@
   <div class="min-h-screen bg-neutral-900 flex items-center justify-center p-4">
     <div class="w-full max-w-sm">
       <div class="text-center mb-8">
-        <h1 class="text-2xl font-bold text-white">LENDR</h1>
+        <h1><img src="/brand/lendr-logo-white.png" alt="LENDR" class="h-10 w-auto mx-auto" /></h1>
         <p class="text-neutral-400 text-sm mt-1">Platform Administration</p>
       </div>
 

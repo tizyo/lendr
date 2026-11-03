@@ -3,12 +3,7 @@
     <div class="w-full max-w-md">
       <!-- Logo -->
       <div class="text-center mb-8">
-        <div class="inline-flex items-center gap-3 mb-2">
-          <div class="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-lg">
-            <span class="text-primary-700 font-black text-lg">L</span>
-          </div>
-          <span class="text-white font-black text-3xl tracking-tight">LENDR</span>
-        </div>
+        <img src="/brand/lendr-logo-white.png" alt="LENDR" class="h-11 w-auto mx-auto mb-3" />
         <p class="text-primary-200 text-sm">Loan Management Platform</p>
       </div>
 

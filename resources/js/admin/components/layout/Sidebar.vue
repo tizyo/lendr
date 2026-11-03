@@ -5,13 +5,14 @@
   >
     <!-- Logo -->
     <div class="flex items-center gap-3 px-4 py-5 border-b border-neutral-800">
-      <div class="w-8 h-8 bg-primary-600 rounded-lg flex items-center justify-center shrink-0">
-        <span class="font-black text-sm">L</span>
+      <!-- Official mark on a white tile: its navy would disappear against the dark sidebar -->
+      <div class="w-8 h-8 bg-white rounded-lg flex items-center justify-center shrink-0">
+        <img src="/brand/lendr-mark.svg" alt="LENDR" class="w-6 h-6" />
       </div>
       <Transition name="slide-fade">
-        <div v-if="!collapsed">
-          <span class="font-black text-lg tracking-tight">LENDR</span>
-          <p v-if="tenant" class="text-neutral-400 text-xs leading-none mt-0.5 truncate">{{ tenant.name }}</p>
+        <div v-if="!collapsed" class="min-w-0">
+          <img src="/brand/lendr-logo-white.png" alt="LENDR" class="h-5 w-auto" />
+          <p v-if="tenant" class="text-neutral-400 text-xs leading-none mt-1 truncate">{{ tenant.name }}</p>
         </div>
       </Transition>
     </div>

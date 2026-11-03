@@ -3,8 +3,8 @@
     <!-- Sidebar -->
     <aside class="w-60 shrink-0 bg-neutral-900 text-white flex flex-col">
       <div class="px-6 py-5 border-b border-neutral-800">
-        <p class="text-xs text-neutral-400 uppercase tracking-widest mb-0.5">Platform</p>
-        <h1 class="text-lg font-bold text-white">LENDR Admin</h1>
+        <h1><img src="/brand/lendr-logo-white.png" alt="LENDR" class="h-6 w-auto" /></h1>
+        <p class="text-xs text-neutral-400 uppercase tracking-widest mt-1.5">Platform Admin</p>
       </div>
 
       <nav class="flex-1 px-3 py-4 space-y-1">

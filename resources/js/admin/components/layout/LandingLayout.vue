@@ -6,9 +6,8 @@
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
 
         <!-- Logo -->
-        <a href="/" class="text-white font-black text-xl tracking-tight flex items-center gap-2">
-          <span class="w-7 h-7 bg-blue-600 rounded-lg flex items-center justify-center text-white text-sm font-black">L</span>
-          LENDR
+        <a href="/" class="flex items-center" aria-label="LENDR home">
+          <img src="/brand/lendr-logo-white.png" alt="LENDR" class="h-8 w-auto" />
         </a>
 
         <!-- Desktop links -->
@@ -93,10 +92,7 @@
 
           <!-- Brand -->
           <div class="col-span-2">
-            <div class="flex items-center gap-2 mb-4">
-              <span class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-black">L</span>
-              <span class="text-white font-black text-lg">LENDR</span>
-            </div>
+            <img src="/brand/lendr-logo-white.png" alt="LENDR" class="h-9 w-auto mb-4" />
             <p class="text-sm leading-relaxed mb-4 max-w-xs">The loan management system for smart Zambian lenders. Start, launch and scale your lending business.</p>
             <div class="flex gap-3 mb-4">
               <a href="#" aria-label="LinkedIn"  class="w-8 h-8 bg-white/10 rounded-lg flex items-center justify-center hover:bg-blue-600 transition text-xs font-bold">in</a>
