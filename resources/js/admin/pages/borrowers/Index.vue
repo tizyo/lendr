@@ -59,6 +59,7 @@
                   <div>
                     <div class="flex items-center gap-1">
                       <p class="font-medium text-neutral-900">{{ b.full_name }}</p>
+                      <span v-if="b.borrower_type === 'corporate'" class="lendr-badge-neutral ml-1">Corporate</span>
                       <!-- Borrower verification tier badge -->
                       <span v-if="b.verification_tier" :title="tierLabel(b.verification_tier)">
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" :class="['w-3.5 h-3.5', tierColor(b.verification_tier)]">

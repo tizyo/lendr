@@ -4,6 +4,7 @@ use App\Http\Controllers\Admin\AcceptInvitationController;
 use App\Http\Controllers\Admin\AuthController;
 use App\Http\Controllers\Admin\BillingController;
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\DismissBannerController;
 use App\Http\Controllers\Admin\ImpersonationController;
 use App\Http\Controllers\Admin\SupportTicketController;
 use App\Http\Controllers\EmailAssetController;
@@ -136,6 +137,9 @@ Route::middleware([InitializeTenancy::class])->group(function () {
     Route::middleware(['auth', 'tenant.status'])->group(function () {
         Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
         Route::get('/portal/dashboard', [DashboardController::class, 'index'])->name('portal.dashboard');
+        Route::post('/banners/{banner}/dismiss', DismissBannerController::class)
+            ->whereIn('banner', DismissBannerController::BANNERS)
+            ->name('banners.dismiss');
 
         require __DIR__.'/admin/borrowers.php';
         require __DIR__.'/admin/loans.php';

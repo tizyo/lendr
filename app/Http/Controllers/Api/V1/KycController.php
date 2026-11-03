@@ -47,10 +47,7 @@ class KycController extends BaseApiController
     public function upload(Request $request, Borrower $borrower): JsonResponse
     {
         $request->validate([
-            'document_type' => ['required', 'string', Rule::in([
-                'national_id_front', 'national_id_back', 'passport',
-                'drivers_licence', 'utility_bill', 'bank_statement', 'selfie', 'other',
-            ])],
+            'document_type' => ['required', 'string', Rule::in(KycDocument::TYPES)],
             'file' => ['required', 'file', 'mimes:jpg,jpeg,png,pdf,webp', 'max:10240'],
             'expires_at' => ['nullable', 'date', 'after:today'],
         ]);
@@ -116,10 +113,7 @@ class KycController extends BaseApiController
     public function borrowerUpload(Request $request): JsonResponse
     {
         $request->validate([
-            'document_type' => ['required', 'string', Rule::in([
-                'national_id_front', 'national_id_back', 'passport',
-                'drivers_licence', 'utility_bill', 'bank_statement', 'selfie', 'other',
-            ])],
+            'document_type' => ['required', 'string', Rule::in(KycDocument::TYPES)],
             'file' => ['required', 'file', 'mimes:jpg,jpeg,png,pdf,webp', 'max:10240'],
             'expires_at' => ['nullable', 'date', 'after:today'],
         ]);

@@ -18,7 +18,7 @@
 
         <div v-if="selectedBorrower" class="flex items-start justify-between bg-neutral-50 rounded-lg p-4 mb-3">
           <div>
-            <p class="font-semibold text-neutral-900">{{ selectedBorrower.full_name ?? (selectedBorrower.first_name + ' ' + selectedBorrower.last_name) }}</p>
+            <p class="font-semibold text-neutral-900">{{ borrowerName(selectedBorrower) }}</p>
             <p class="text-sm text-neutral-500">{{ selectedBorrower.borrower_number }} · {{ selectedBorrower.phone }}</p>
             <div class="flex gap-2 mt-1">
               <span v-if="selectedBorrower.is_blacklisted" class="text-xs text-red-600 font-medium">⚠ Blacklisted</span>
@@ -47,7 +47,7 @@
                 @click="selectBorrower(b)"
                 class="w-full text-left px-4 py-3 hover:bg-neutral-50 border-b border-neutral-50 last:border-0"
               >
-                <p class="font-medium text-neutral-900">{{ b.first_name }} {{ b.last_name }}</p>
+                <p class="font-medium text-neutral-900">{{ borrowerName(b) }}</p>
                 <p class="text-xs text-neutral-500">{{ b.borrower_number }} · {{ b.phone }}</p>
               </button>
             </div>
@@ -197,6 +197,9 @@ const submitting = ref(false)
 const borrowerSearch = ref('')
 const borrowerResults = ref([])
 const selectedBorrower = ref(props.borrower || null)
+
+// Corporate borrowers have no last name, so never join the parts blindly.
+const borrowerName = (b) => b.full_name || [b.first_name, b.last_name].filter(Boolean).join(' ')
 const calculation = ref(null)
 let calcTimeout = null
 

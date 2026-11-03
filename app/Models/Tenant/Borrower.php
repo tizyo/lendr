@@ -18,8 +18,33 @@ class Borrower extends Authenticatable
 {
     use HasApiTokens, HasFactory, LogsActivity, Notifiable, SoftDeletes;
 
+    public const TYPE_INDIVIDUAL = 'individual';
+
+    public const TYPE_CORPORATE = 'corporate';
+
+    /** Legal forms a corporate borrower can take (value => label). */
+    public const BUSINESS_TYPES = [
+        'sole_trader' => 'Sole Trader',
+        'partnership' => 'Partnership',
+        'private_limited' => 'Private Limited Company',
+        'public_limited' => 'Public Limited Company',
+        'cooperative' => 'Cooperative',
+        'ngo' => 'NGO / Non-profit',
+        'other' => 'Other',
+    ];
+
     protected $fillable = [
         'borrower_number',
+        'borrower_type',
+        'company_name',
+        'trading_name',
+        'business_type',
+        'industry',
+        'incorporation_date',
+        'contact_person_name',
+        'contact_person_position',
+        'contact_person_phone',
+        'contact_person_email',
         'first_name',
         'last_name',
         'other_names',
@@ -67,6 +92,7 @@ class Borrower extends Authenticatable
             // uniqueness rule use national_id_hash instead (see nationalIdHash()).
             'national_id' => 'encrypted',
             'date_of_birth' => 'date',
+            'incorporation_date' => 'date',
             'is_active' => 'boolean',
             'is_blacklisted' => 'boolean',
             'kyc_verified' => 'boolean',
@@ -81,6 +107,14 @@ class Borrower extends Authenticatable
         static::saving(function (self $borrower) {
             if ($borrower->isDirty('national_id')) {
                 $borrower->national_id_hash = self::nationalIdHash($borrower->national_id);
+            }
+
+            // Statements, SMS, CRB checks, search and the PWA greeting all read first_name.
+            // A company has no first name, so it carries the company name there.
+            if ($borrower->isCorporate()) {
+                $borrower->first_name = $borrower->company_name;
+                $borrower->last_name = null;
+                $borrower->other_names = null;
             }
         });
     }
@@ -106,7 +140,7 @@ class Borrower extends Authenticatable
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()
-            ->logOnly(['first_name', 'last_name', 'phone', 'email', 'is_active', 'is_blacklisted', 'kyc_verified'])
+            ->logOnly(['borrower_type', 'company_name', 'first_name', 'last_name', 'phone', 'email', 'is_active', 'is_blacklisted', 'kyc_verified'])
             ->logOnlyDirty()
             ->dontSubmitEmptyLogs();
     }
@@ -140,9 +174,18 @@ class Borrower extends Authenticatable
 
     // ─── Computed ──────────────────────────────────────
 
+    public function isCorporate(): bool
+    {
+        return $this->borrower_type === self::TYPE_CORPORATE;
+    }
+
     public function getFullNameAttribute(): string
     {
-        return trim("{$this->first_name} {$this->other_names} {$this->last_name}");
+        if ($this->isCorporate()) {
+            return (string) $this->company_name;
+        }
+
+        return trim(preg_replace('/\s+/', ' ', "{$this->first_name} {$this->other_names} {$this->last_name}"));
     }
 
     public function getTotalBorrowedAttribute(): string

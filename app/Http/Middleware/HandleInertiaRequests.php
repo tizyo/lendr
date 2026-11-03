@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Http\Controllers\Admin\DismissBannerController;
 use App\Models\Landlord\ImpersonationSession;
 use App\Models\Landlord\PlanConfig;
 use App\Models\Tenant\InAppNotification;
@@ -62,6 +63,11 @@ class HandleInertiaRequests extends Middleware
                 'target_name' => $session->target_name,
                 'expires_at' => $session->expires_at?->toIso8601String(),
             ] : null,
+
+            // Plan banners the user has closed this sign-in (see DismissBannerController).
+            'dismissed_banners' => fn () => array_keys($request->hasSession()
+                ? $request->session()->get(DismissBannerController::SESSION_KEY, [])
+                : []),
 
             'flash' => [
                 'success' => fn () => $request->session()->get('success'),

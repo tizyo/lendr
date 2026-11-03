@@ -37,6 +37,22 @@ class BorrowerFactory extends Factory
         ];
     }
 
+    public function corporate(): static
+    {
+        return $this->state(fn () => [
+            'borrower_type' => Borrower::TYPE_CORPORATE,
+            'company_name' => fake()->company().' Ltd',
+            'business_type' => 'private_limited',
+            'company_reg_number' => fake()->unique()->numerify('1202000#####'),
+            'contact_person_name' => fake()->name(),
+            'gender' => null,
+            'date_of_birth' => null,
+            'national_id' => null,
+            'occupation' => null,
+            'employer' => null,
+        ]);
+    }
+
     public function blacklisted(): static
     {
         return $this->state(['is_blacklisted' => true, 'blacklist_reason' => 'Previous default']);

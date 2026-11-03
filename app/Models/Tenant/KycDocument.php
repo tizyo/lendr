@@ -85,6 +85,13 @@ class KycDocument extends Model
      * streamed by the authenticated API (KycController::file). Only migrated records
      * that already point at an external URL keep that URL.
      */
+    /** Document types that can be uploaded. The last four are for corporate borrowers. */
+    public const TYPES = [
+        'national_id_front', 'national_id_back', 'passport', 'drivers_licence',
+        'utility_bill', 'bank_statement', 'selfie', 'other',
+        'certificate_of_incorporation', 'tpin_certificate', 'board_resolution', 'director_id',
+    ];
+
     public function getFileUrlAttribute(): string
     {
         return str_starts_with($this->file_path, 'http')

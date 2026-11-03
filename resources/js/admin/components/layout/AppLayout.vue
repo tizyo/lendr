@@ -42,7 +42,7 @@
             class="text-xs font-semibold text-red-900 bg-red-200 hover:bg-red-300 px-3 py-1 rounded-lg transition whitespace-nowrap">
             Upgrade now
           </a>
-          <button @click="trialNudgeDismissed = true" class="text-red-400 hover:text-red-600 transition">
+          <button @click="dismiss('trial')" aria-label="Dismiss" class="text-red-400 hover:text-red-600 transition">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
             </svg>
@@ -51,7 +51,7 @@
       </div>
 
       <!-- Starter plan upgrade nudge -->
-      <div v-if="isStarterPlan && !nudgeDismissed"
+      <div v-if="isStarterPlan && !isDismissed('upgrade')"
         class="flex items-center justify-between gap-3 px-4 py-2.5 bg-gradient-to-r from-amber-50 to-orange-50 border-b border-amber-200 text-sm">
         <div class="flex items-center gap-2 min-w-0">
           <svg class="w-4 h-4 text-amber-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -68,7 +68,7 @@
             class="text-xs font-semibold text-amber-900 bg-amber-200 hover:bg-amber-300 px-3 py-1 rounded-lg transition whitespace-nowrap">
             Upgrade plan
           </a>
-          <button @click="nudgeDismissed = true"
+          <button @click="dismiss('upgrade')" aria-label="Dismiss"
             class="text-amber-400 hover:text-amber-600 transition">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
@@ -106,13 +106,24 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { usePage, Link, router } from '@inertiajs/vue3'
+import axios from 'axios'
 import Sidebar from './Sidebar.vue'
 import Topbar from './Topbar.vue'
 import FlashMessage from '../ui/FlashMessage.vue'
 
 const sidebarCollapsed  = ref(false)
 const mobileSidebarOpen = ref(false)
-const nudgeDismissed    = ref(false)
+
+// Closed banners stay closed for the rest of the sign-in: the session remembers them,
+// and this page hides them straight away instead of waiting for the next visit.
+const closedHere = ref([])
+const isDismissed = (banner) =>
+  closedHere.value.includes(banner) || (usePage().props.dismissed_banners ?? []).includes(banner)
+
+function dismiss(banner) {
+  closedHere.value.push(banner)
+  axios.post(route('banners.dismiss', banner)).catch(() => {})
+}
 
 const tenant = computed(() => usePage().props.tenant)
 
@@ -133,9 +144,7 @@ const isStarterPlan = computed(() => {
 
 const trialDaysRemaining = computed(() => tenant.value?.trial_days_remaining ?? 0)
 const isOnTrial          = computed(() => tenant.value?.status === 'trial')
-const showTrialBanner    = computed(() => isOnTrial.value && trialDaysRemaining.value <= 7 && !trialNudgeDismissed.value)
-
-const trialNudgeDismissed = ref(false)
+const showTrialBanner    = computed(() => isOnTrial.value && trialDaysRemaining.value <= 7 && !isDismissed('trial'))
 </script>
 
 <style scoped>

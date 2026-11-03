@@ -25,6 +25,10 @@
         <option value="utility_bill">Utility Bill</option>
         <option value="bank_statement">Bank Statement</option>
         <option value="selfie">Selfie</option>
+        <option value="certificate_of_incorporation">Certificate of Incorporation</option>
+        <option value="tpin_certificate">TPIN Certificate</option>
+        <option value="board_resolution">Board Resolution</option>
+        <option value="director_id">Director ID</option>
         <option value="other">Other</option>
       </select>
       <select v-model="filters.status" class="input sm:w-36" @change="applyFilters">

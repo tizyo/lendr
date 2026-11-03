@@ -21,6 +21,8 @@ class BorrowerController extends Controller
             ->when($request->search, fn ($q, $s) => $q->where(function ($q) use ($s) {
                 $q->where('first_name', 'like', "%{$s}%")
                     ->orWhere('last_name', 'like', "%{$s}%")
+                    ->orWhere('trading_name', 'like', "%{$s}%")
+                    ->orWhere('company_reg_number', 'like', "%{$s}%")
                     ->orWhere('phone', 'like', "%{$s}%")
                     ->orWhere('borrower_number', 'like', "%{$s}%")
                     ->orWhere('email', 'like', "%{$s}%");
@@ -41,6 +43,7 @@ class BorrowerController extends Controller
             ->through(fn ($b) => [
                 'id' => $b->id,
                 'borrower_number' => $b->borrower_number,
+                'borrower_type' => $b->borrower_type,
                 'full_name' => $b->full_name,
                 'phone' => $b->phone,
                 'email' => $b->email,
@@ -63,7 +66,7 @@ class BorrowerController extends Controller
 
     public function create(): Response
     {
-        return Inertia::render('borrowers/Create');
+        return Inertia::render('borrowers/Create', ['businessTypes' => Borrower::BUSINESS_TYPES]);
     }
 
     public function store(StoreBorrowerRequest $request): RedirectResponse
@@ -76,7 +79,7 @@ class BorrowerController extends Controller
             );
         }
 
-        $data = $request->validated();
+        $data = $request->borrowerData();
         $data['borrower_number'] = $this->generateBorrowerNumber();
 
         $borrower = Borrower::create($data);
@@ -100,6 +103,9 @@ class BorrowerController extends Controller
             'borrower' => [
                 ...$borrower->toArray(),
                 'full_name' => $borrower->full_name,
+                'business_type_label' => Borrower::BUSINESS_TYPES[$borrower->business_type] ?? null,
+                'date_of_birth' => $borrower->date_of_birth?->toDateString(),
+                'incorporation_date' => $borrower->incorporation_date?->toDateString(),
                 'total_borrowed' => number_format((float) $borrower->total_borrowed, 2),
                 'outstanding_balance' => number_format((float) $borrower->outstanding_balance, 2),
                 'loans' => $borrower->loans->map(fn ($l) => [
@@ -132,12 +138,19 @@ class BorrowerController extends Controller
 
     public function edit(Borrower $borrower): Response
     {
-        return Inertia::render('borrowers/Edit', ['borrower' => $borrower]);
+        return Inertia::render('borrowers/Edit', [
+            'borrower' => [
+                ...$borrower->toArray(),
+                'date_of_birth' => $borrower->date_of_birth?->toDateString(),
+                'incorporation_date' => $borrower->incorporation_date?->toDateString(),
+            ],
+            'businessTypes' => Borrower::BUSINESS_TYPES,
+        ]);
     }
 
     public function update(UpdateBorrowerRequest $request, Borrower $borrower): RedirectResponse
     {
-        $borrower->update($request->validated());
+        $borrower->update($request->borrowerData());
 
         return redirect()
             ->route('borrowers.show', $borrower)

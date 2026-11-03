@@ -11,6 +11,7 @@
           <div>
             <div class="flex items-center gap-2 flex-wrap">
               <h1 class="text-2xl font-bold text-neutral-900">{{ borrower.full_name }}</h1>
+              <span v-if="isCorporate" class="lendr-badge-neutral">Corporate</span>
               <span v-if="borrower.is_blacklisted" class="lendr-badge-danger">Blacklisted</span>
               <span v-else-if="!borrower.is_active" class="lendr-badge-neutral">Inactive</span>
               <span v-if="borrower.kyc_verified" class="lendr-badge-info">KYC Verified</span>
@@ -92,8 +93,40 @@
           </div>
         </div>
 
+        <!-- Company details -->
+        <div v-if="isCorporate" class="lendr-card p-5">
+          <h2 class="text-sm font-semibold text-neutral-800 mb-4">Company Details</h2>
+          <dl class="space-y-3">
+            <InfoRow label="Trading Name" :value="borrower.trading_name" />
+            <InfoRow label="Business Type" :value="borrower.business_type_label" />
+            <InfoRow label="Industry" :value="borrower.industry" />
+            <InfoRow label="PACRA Reg. No." :value="borrower.company_reg_number" />
+            <InfoRow label="TPIN" :value="borrower.tpin_number" />
+            <InfoRow label="Incorporated" :value="borrower.incorporation_date" />
+            <InfoRow label="Phone" :value="borrower.phone" />
+            <InfoRow label="Alt Phone" :value="borrower.phone_alt" />
+            <InfoRow label="Email" :value="borrower.email" />
+            <InfoRow label="City" :value="borrower.city" />
+            <InfoRow label="Province" :value="borrower.province" />
+            <InfoRow label="Address" :value="borrower.address" />
+          </dl>
+          <div class="mt-4 pt-4 border-t border-neutral-100">
+            <h3 class="text-xs font-semibold text-neutral-500 uppercase mb-3">Contact Person</h3>
+            <dl class="space-y-3">
+              <InfoRow label="Name" :value="borrower.contact_person_name" />
+              <InfoRow label="Position" :value="borrower.contact_person_position" />
+              <InfoRow label="Phone" :value="borrower.contact_person_phone" />
+              <InfoRow label="Email" :value="borrower.contact_person_email" />
+            </dl>
+          </div>
+          <div v-if="borrower.is_blacklisted" class="mt-4 pt-4 border-t border-neutral-100">
+            <h3 class="text-xs font-semibold text-red-500 uppercase mb-1">Blacklist Reason</h3>
+            <p class="text-sm text-neutral-700">{{ borrower.blacklist_reason || 'No reason provided.' }}</p>
+          </div>
+        </div>
+
         <!-- Personal details -->
-        <div class="lendr-card p-5">
+        <div v-else class="lendr-card p-5">
           <h2 class="text-sm font-semibold text-neutral-800 mb-4">Personal Details</h2>
           <dl class="space-y-3">
             <InfoRow label="Phone" :value="borrower.phone" />
@@ -364,6 +397,7 @@ import InfoRow from '@/admin/components/ui/InfoRow.vue'
 
 const props = defineProps({ borrower: Object })
 const page  = usePage()
+const isCorporate = computed(() => props.borrower.borrower_type === 'corporate')
 
 function can(permission) {
   return page.props.auth?.user?.permissions?.includes(permission)
