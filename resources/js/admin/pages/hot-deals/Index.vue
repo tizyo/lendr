@@ -214,6 +214,7 @@
 </template>
 
 <script setup>
+import { pushToast } from '@/admin/composables/useToast.js'
 import { ref, computed, onMounted } from 'vue'
 import AppLayout from '@/admin/components/layout/AppLayout.vue'
 import axios from 'axios'
@@ -292,7 +293,7 @@ async function toggleDeal(deal) {
     await axios.post(`/api/v1/hot-deals/${deal.id}/toggle`)
     await fetchDeals()
   } catch (e) {
-    alert(e?.response?.data?.message ?? 'Failed to update status.')
+    pushToast('error', e?.response?.data?.message ?? 'Failed to update status.')
   }
 }
 
@@ -302,7 +303,7 @@ async function deleteDeal(deal) {
     await axios.delete(`/api/v1/hot-deals/${deal.id}`)
     await fetchDeals()
   } catch (e) {
-    alert(e?.response?.data?.message ?? 'Failed to delete.')
+    pushToast('error', e?.response?.data?.message ?? 'Failed to delete.')
   }
 }
 

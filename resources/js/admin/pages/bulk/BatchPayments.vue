@@ -98,6 +98,7 @@
 </template>
 
 <script setup>
+import { pushToast } from '@/admin/composables/useToast.js'
 import { ref } from 'vue'
 import AppLayout from '@/admin/components/layout/AppLayout.vue'
 import axios from 'axios'
@@ -137,7 +138,7 @@ async function upload() {
     result.value = data
     file.value   = null
   } catch (e) {
-    alert(e.response?.data?.message ?? 'Upload failed.')
+    pushToast('error', e.response?.data?.message ?? 'Upload failed.')
   } finally {
     uploading.value = false
   }

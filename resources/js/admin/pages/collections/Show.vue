@@ -285,6 +285,7 @@
 </template>
 
 <script setup>
+import { pushToast } from '@/admin/composables/useToast.js'
 import { ref, reactive } from 'vue'
 import { Link } from '@inertiajs/vue3'
 import AppLayout from '@/admin/components/layout/AppLayout.vue'
@@ -333,7 +334,7 @@ async function submitLog() {
     logList.value.unshift(data.log)
     closeModal()
   } catch (e) {
-    alert(e.response?.data?.message ?? 'Failed to save activity.')
+    pushToast('error', e.response?.data?.message ?? 'Failed to save activity.')
   } finally {
     submitting.value = false
   }

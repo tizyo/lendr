@@ -182,6 +182,7 @@
 </template>
 
 <script setup>
+import { pushToast } from '@/admin/composables/useToast.js'
 import { ref, computed, onMounted } from 'vue'
 import AppLayout from '@/admin/components/layout/AppLayout.vue'
 import axios from 'axios'
@@ -248,7 +249,7 @@ async function confirmSlot(slot) {
     await axios.post(`/api/v1/featured-items/${slot.id}/confirm`)
     await fetchSlots()
   } catch (e) {
-    alert(e?.response?.data?.message ?? 'Failed to confirm.')
+    pushToast('error', e?.response?.data?.message ?? 'Failed to confirm.')
   }
 }
 
@@ -258,7 +259,7 @@ async function removeSlot(slot) {
     await axios.delete(`/api/v1/featured-items/${slot.id}`)
     await fetchSlots()
   } catch (e) {
-    alert(e?.response?.data?.message ?? 'Failed to remove.')
+    pushToast('error', e?.response?.data?.message ?? 'Failed to remove.')
   }
 }
 

@@ -206,6 +206,7 @@
 </template>
 
 <script setup>
+import { pushToast } from '@/admin/composables/useToast.js'
 import { ref, computed, onMounted } from 'vue'
 import AppLayout from '@/admin/components/layout/AppLayout.vue'
 import axios from 'axios'
@@ -289,7 +290,7 @@ async function submitInterest() {
     interests.value.push({ ...interestForm.value, status: 'pending', user: 'You' })
     interestForm.value = { amount_offered: '', interest_rate: '', message: '' }
   } catch (e) {
-    alert(e.response?.data?.message ?? 'Failed to submit interest.')
+    pushToast('error', e.response?.data?.message ?? 'Failed to submit interest.')
   } finally {
     submitting.value = false
   }
@@ -301,7 +302,7 @@ async function confirmWithdraw() {
     await axios.put(`/api/v1/marketplace/listings/${props.id}/withdraw`)
     listing.value.status = 'withdrawn'
   } catch (e) {
-    alert(e.response?.data?.message ?? 'Failed to withdraw listing.')
+    pushToast('error', e.response?.data?.message ?? 'Failed to withdraw listing.')
   }
 }
 </script>

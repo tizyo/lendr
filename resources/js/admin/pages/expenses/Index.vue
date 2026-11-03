@@ -201,6 +201,7 @@
 </template>
 
 <script setup>
+import { pushToast } from '@/admin/composables/useToast.js'
 import { reactive, ref } from 'vue'
 import { Link, router } from '@inertiajs/vue3'
 import AppLayout from '@/admin/components/layout/AppLayout.vue'
@@ -257,7 +258,7 @@ const submitExpense = async () => {
     Object.assign(form, { expense_category_id: '', title: '', description: '', amount: '', payment_method: '', vendor: '', receipt_reference: '' })
     router.reload()
   } catch (e) {
-    alert(e.response?.data?.message ?? 'Failed to create expense.')
+    pushToast('error', e.response?.data?.message ?? 'Failed to create expense.')
   } finally {
     saving.value = false
   }
@@ -273,7 +274,7 @@ const confirmApprove = async () => {
     approving.value = null
     router.reload()
   } catch (e) {
-    alert(e.response?.data?.message ?? 'Failed to approve expense.')
+    pushToast('error', e.response?.data?.message ?? 'Failed to approve expense.')
   } finally {
     saving.value = false
   }
@@ -287,7 +288,7 @@ const confirmReject = async () => {
     rejecting.value = null
     router.reload()
   } catch (e) {
-    alert(e.response?.data?.message ?? 'Failed to reject expense.')
+    pushToast('error', e.response?.data?.message ?? 'Failed to reject expense.')
   } finally {
     saving.value = false
   }

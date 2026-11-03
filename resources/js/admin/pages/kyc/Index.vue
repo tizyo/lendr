@@ -136,6 +136,7 @@
 </template>
 
 <script setup>
+import { pushToast } from '@/admin/composables/useToast.js'
 import { reactive, ref } from 'vue'
 import { Link, router } from '@inertiajs/vue3'
 import AppLayout from '@/admin/components/layout/AppLayout.vue'
@@ -182,7 +183,7 @@ const viewDocument = async (doc) => {
     tab.location = URL.createObjectURL(data)
   } catch (e) {
     tab.close()
-    alert(e.response?.status === 404 ? 'This file is missing from storage.' : 'Could not open the document.')
+    pushToast('error', e.response?.status === 404 ? 'This file is missing from storage.' : 'Could not open the document.')
   }
 }
 
@@ -196,7 +197,7 @@ const confirmApprove = async () => {
     approving.value = null
     router.reload()
   } catch (e) {
-    alert(e.response?.data?.message ?? 'Failed to approve document.')
+    pushToast('error', e.response?.data?.message ?? 'Failed to approve document.')
   } finally {
     saving.value = false
   }
@@ -213,7 +214,7 @@ const confirmReject = async () => {
     rejecting.value = null
     router.reload()
   } catch (e) {
-    alert(e.response?.data?.message ?? 'Failed to reject document.')
+    pushToast('error', e.response?.data?.message ?? 'Failed to reject document.')
   } finally {
     saving.value = false
   }

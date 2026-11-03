@@ -36,7 +36,8 @@ Route::get('/docs', [LandingController::class, 'docs'])->name('docs');
 // ─── Public Repo Marketplace (no tenant context required) ─────────────────
 Route::prefix('app')->name('pwa.public.')->group(function () {
     Route::get('/repo', [AppController::class, 'repoBrowse'])->name('repo.browse');
-    Route::get('/repo/{id}', [AppController::class, 'repoShow'])->name('repo.show');
+    // Numeric only, or this would swallow /app/repo/cart and /app/repo/enquiries below.
+    Route::get('/repo/{id}', [AppController::class, 'repoShow'])->whereNumber('id')->name('repo.show');
     Route::get('/repo/auth/login', [AppController::class, 'ghostLogin'])->name('repo.auth.login');
     Route::get('/repo/auth/verify', [AppController::class, 'ghostVerify'])->name('repo.auth.verify');
 });

@@ -312,6 +312,7 @@
 </template>
 
 <script setup>
+import { pushToast } from '@/admin/composables/useToast.js'
 import { ref, reactive, computed } from 'vue'
 import { Link } from '@inertiajs/vue3'
 import axios from 'axios'
@@ -463,7 +464,7 @@ async function generate() {
     reportRows.value    = res.data.data.rows ?? []
     reportSummary.value = res.data.data.summary ?? null
   } catch (e) {
-    alert(e.response?.data?.message ?? 'Failed to generate report.')
+    pushToast('error', e.response?.data?.message ?? 'Failed to generate report.')
     reportRows.value = []
   } finally {
     generating.value = false

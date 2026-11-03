@@ -16,14 +16,6 @@
         </button>
       </div>
 
-      <!-- Flash messages -->
-      <div v-if="flash.success" class="rounded-md bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 px-4 py-3 text-sm text-green-800 dark:text-green-300">
-        {{ flash.success }}
-      </div>
-      <div v-if="flash.error" class="rounded-md bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 px-4 py-3 text-sm text-red-800 dark:text-red-300">
-        {{ flash.error }}
-      </div>
-
       <!-- Types list -->
       <div v-if="types.length === 0" class="rounded-lg border border-dashed border-gray-300 dark:border-gray-600 p-10 text-center">
         <TagIcon class="mx-auto h-10 w-10 text-gray-400" />
@@ -422,13 +414,14 @@ import {
 } from '@heroicons/vue/24/outline'
 import axios from 'axios'
 import { usePage } from '@inertiajs/vue3'
+import { useToast } from '@/admin/composables/useToast.js'
 
 const props = defineProps({
   types: { type: Array, default: () => [] },
 })
 
-const page   = usePage()
-const flash  = reactive({ success: '', error: '' })
+const page  = usePage()
+const toast = useToast()
 
 // ─── Local state (avoid Inertia reload for CRUD) ─────────────────────────────
 const localTypes = ref(props.types.map(t => ({ ...t, plans: [...t.plans] })))
@@ -448,8 +441,7 @@ function interestTypeLabel(v) {
   return { flat: 'Flat rate', reducing_balance: 'Reducing balance', compound: 'Compound' }[v] ?? v
 }
 function showFlash(type, msg) {
-  flash[type] = msg
-  setTimeout(() => { flash[type] = '' }, 4000)
+  toast[type](msg)
 }
 
 // ─── Type Drawer ─────────────────────────────────────────────────────────────

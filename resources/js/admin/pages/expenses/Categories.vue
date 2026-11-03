@@ -16,14 +16,6 @@
         </button>
       </div>
 
-      <!-- Flash -->
-      <div v-if="flash.success" class="rounded-md bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 px-4 py-3 text-sm text-green-800 dark:text-green-300">
-        {{ flash.success }}
-      </div>
-      <div v-if="flash.error" class="rounded-md bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 px-4 py-3 text-sm text-red-800 dark:text-red-300">
-        {{ flash.error }}
-      </div>
-
       <!-- Tabs -->
       <div class="flex gap-1 border-b border-gray-200 dark:border-gray-700">
         <button
@@ -377,6 +369,7 @@ import {
   ArrowPathIcon, ExclamationTriangleIcon, RectangleStackIcon,
 } from '@heroicons/vue/24/outline'
 import axios from 'axios'
+import { useToast } from '@/admin/composables/useToast.js'
 
 const props = defineProps({
   categories:       { type: Array, default: () => [] },
@@ -392,14 +385,13 @@ const tabs = [
 const activeTab   = ref('categories')
 const currentYear = new Date().getFullYear()
 
-const flash           = reactive({ success: '', error: '' })
+const toast           = useToast()
 const localCategories = ref(props.categories.map(c => ({ ...c })))
 const localBudgets    = ref(props.budgets.map(b => ({ ...b })))
 const localApprovals  = ref(props.approvalSettings.map(s => ({ ...s })))
 
 function showFlash(type, msg) {
-  flash[type] = msg
-  setTimeout(() => { flash[type] = '' }, 4000)
+  toast[type](msg)
 }
 
 function fmtAmount(n) {

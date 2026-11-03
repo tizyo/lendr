@@ -113,6 +113,7 @@
 </template>
 
 <script setup>
+import { pushToast } from '@/admin/composables/useToast.js'
 import { computed, ref } from 'vue'
 import { Link, router } from '@inertiajs/vue3'
 import AppLayout from '@/admin/components/layout/AppLayout.vue'
@@ -143,7 +144,7 @@ const confirmReverse = async () => {
     showReverse.value = false
     router.visit(route('payments.index'))
   } catch (e) {
-    alert(e.response?.data?.message ?? 'Failed to reverse payment.')
+    pushToast('error', e.response?.data?.message ?? 'Failed to reverse payment.')
   } finally {
     saving.value = false
   }

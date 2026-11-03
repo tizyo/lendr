@@ -157,6 +157,7 @@
 </template>
 
 <script setup>
+import { pushToast } from '@/admin/composables/useToast.js'
 import { ref } from 'vue'
 import { Link, router } from '@inertiajs/vue3'
 import AppLayout from '@/admin/components/layout/AppLayout.vue'
@@ -195,7 +196,7 @@ const submitForApproval = async () => {
     await axios.post(route('api.v1.expenses.submit', props.expense.id))
     router.reload()
   } catch (e) {
-    alert(e.response?.data?.message ?? 'Failed to submit expense.')
+    pushToast('error', e.response?.data?.message ?? 'Failed to submit expense.')
   } finally {
     saving.value = false
   }
@@ -208,7 +209,7 @@ const confirmApprove = async () => {
     showApprove.value = false
     router.reload()
   } catch (e) {
-    alert(e.response?.data?.message ?? 'Failed to approve expense.')
+    pushToast('error', e.response?.data?.message ?? 'Failed to approve expense.')
   } finally {
     saving.value = false
   }
@@ -222,7 +223,7 @@ const confirmReject = async () => {
     showReject.value = false
     router.reload()
   } catch (e) {
-    alert(e.response?.data?.message ?? 'Failed to reject expense.')
+    pushToast('error', e.response?.data?.message ?? 'Failed to reject expense.')
   } finally {
     saving.value = false
   }

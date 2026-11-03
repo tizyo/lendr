@@ -835,6 +835,7 @@
 </template>
 
 <script setup>
+import { pushToast } from '@/admin/composables/useToast.js'
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { Link, router } from '@inertiajs/vue3'
 import axios from 'axios'
@@ -892,7 +893,7 @@ function openAction(type) {
 async function confirmAction() {
   const cfg = actionConfig[actionModal.value.type]
   if (cfg.required && !actionModal.value.notes.trim()) {
-    alert('Please provide a reason.')
+    pushToast('warning', 'Please provide a reason.')
     return
   }
   actionModal.value.submitting = true
@@ -905,7 +906,7 @@ async function confirmAction() {
     actionModal.value.show = false
     router.reload({ only: ['loan'] })
   } catch (e) {
-    alert(e.response?.data?.message ?? 'Action failed.')
+    pushToast('error', e.response?.data?.message ?? 'Action failed.')
     actionModal.value.submitting = false
   }
 }
@@ -923,7 +924,7 @@ const disburseSubmitting = ref(false)
 
 async function confirmDisburse() {
   if (!disburseForm.value.disbursement_method || !disburseForm.value.disbursement_date) {
-    alert('Disbursement method and date are required.')
+    pushToast('warning', 'Disbursement method and date are required.')
     return
   }
   disburseSubmitting.value = true
@@ -932,7 +933,7 @@ async function confirmDisburse() {
     showDisburse.value = false
     router.reload({ only: ['loan'] })
   } catch (e) {
-    alert(e.response?.data?.message ?? 'Disbursement failed.')
+    pushToast('error', e.response?.data?.message ?? 'Disbursement failed.')
     disburseSubmitting.value = false
   }
 }
@@ -1016,7 +1017,7 @@ async function confirmUpload() {
     documents.value.unshift(data.data)
     uploadFile.value = null
   } catch (e) {
-    alert(e.response?.data?.message ?? 'Upload failed.')
+    pushToast('error', e.response?.data?.message ?? 'Upload failed.')
   } finally {
     uploading.value = false
   }
@@ -1028,13 +1029,13 @@ async function deleteDocument(doc) {
     await axios.delete(route('api.v1.loans.documents.destroy', { loan: props.loan.id, document: doc.id }))
     documents.value = documents.value.filter(d => d.id !== doc.id)
   } catch (e) {
-    alert(e.response?.data?.message ?? 'Delete failed.')
+    pushToast('error', e.response?.data?.message ?? 'Delete failed.')
   }
 }
 
 async function confirmPayment() {
   if (!paymentForm.value.amount || !paymentForm.value.payment_method) {
-    alert('Amount and payment method are required.')
+    pushToast('warning', 'Amount and payment method are required.')
     return
   }
   paymentSubmitting.value = true
@@ -1045,7 +1046,7 @@ async function confirmPayment() {
     paymentForm.value.reference = ''
     router.reload({ only: ['loan'] })
   } catch (e) {
-    alert(e.response?.data?.message ?? 'Payment failed.')
+    pushToast('error', e.response?.data?.message ?? 'Payment failed.')
     paymentSubmitting.value = false
   }
 }
@@ -1110,7 +1111,7 @@ async function deleteGuarantor(g) {
     await axios.delete(route('api.v1.guarantors.destroy', g.id))
     guarantors.value = guarantors.value.filter(x => x.id !== g.id)
   } catch (e) {
-    alert(e.response?.data?.message ?? 'Delete failed.')
+    pushToast('error', e.response?.data?.message ?? 'Delete failed.')
   }
 }
 
@@ -1158,7 +1159,7 @@ async function deleteCollateral(c) {
     await axios.delete(route('api.v1.collateral.destroy', c.id))
     collateralItems.value = collateralItems.value.filter(x => x.id !== c.id)
   } catch (e) {
-    alert(e.response?.data?.message ?? 'Delete failed.')
+    pushToast('error', e.response?.data?.message ?? 'Delete failed.')
   }
 }
 
@@ -1203,7 +1204,7 @@ async function approveTopup(t) {
     if (idx !== -1) topups.value[idx] = data.data
     router.reload({ only: ['loan'] })
   } catch (e) {
-    alert(e.response?.data?.message ?? 'Approval failed.')
+    pushToast('error', e.response?.data?.message ?? 'Approval failed.')
   }
 }
 
@@ -1213,7 +1214,7 @@ function openRejectTopup(t) {
 
 async function confirmRejectTopup() {
   if (!rejectTopupModal.value.reason.trim()) {
-    alert('Please provide a rejection reason.')
+    pushToast('warning', 'Please provide a rejection reason.')
     return
   }
   rejectTopupModal.value.submitting = true
@@ -1226,7 +1227,7 @@ async function confirmRejectTopup() {
     if (idx !== -1) topups.value[idx] = data.data
     rejectTopupModal.value.show = false
   } catch (e) {
-    alert(e.response?.data?.message ?? 'Rejection failed.')
+    pushToast('error', e.response?.data?.message ?? 'Rejection failed.')
     rejectTopupModal.value.submitting = false
   }
 }

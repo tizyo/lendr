@@ -40,7 +40,6 @@ Route::get('/marketplace/products', [AppController::class, 'publicProducts'])->n
 
 // Repo marketplace — public browsing (no auth required)
 Route::get('/repo', [AppController::class, 'repoBrowse'])->name('repo.browse');
-Route::get('/repo/{id}', [AppController::class, 'repoShow'])->name('repo.show');
 
 // Repo marketplace — ghost user auth
 Route::get('/repo/auth/login', [AppController::class, 'ghostLogin'])->name('repo.auth.login');
@@ -49,6 +48,9 @@ Route::get('/repo/auth/verify', [AppController::class, 'ghostVerify'])->name('re
 // Repo marketplace — ghost user cart (auth required at client level)
 Route::get('/repo/cart', [AppController::class, 'repoCart'])->name('repo.cart');
 Route::get('/repo/enquiries', [AppController::class, 'repoMyEnquiries'])->name('repo.my-enquiries');
+
+// Last, and numeric only: /repo/{id} would otherwise swallow /repo/cart and /repo/enquiries.
+Route::get('/repo/{id}', [AppController::class, 'repoShow'])->whereNumber('id')->name('repo.show');
 
 // Loan application, detail & payment (P16/P20)
 Route::get('/loans/apply', [AppController::class, 'loanApply'])->name('loans.apply');

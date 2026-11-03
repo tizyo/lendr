@@ -4,8 +4,9 @@ use App\Http\Controllers\Admin\LoanController;
 use App\Http\Controllers\Admin\PdfController;
 use Illuminate\Support\Facades\Route;
 
-Route::resource('loans', LoanController::class)->only(['index', 'show'])->middleware('permission:loans.view');
+// create before show: /loans/{loan} would otherwise match /loans/create and 404.
 Route::resource('loans', LoanController::class)->only(['create', 'store'])->middleware('permission:loans.create');
+Route::resource('loans', LoanController::class)->only(['index', 'show'])->middleware('permission:loans.view');
 
 Route::prefix('loans/{loan}')->name('loans.')->middleware('permission:loans.view')->group(function () {
     Route::get('pdf/application', [PdfController::class, 'loanApplication'])->name('pdf.application');

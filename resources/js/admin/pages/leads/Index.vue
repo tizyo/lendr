@@ -124,6 +124,7 @@
 </template>
 
 <script setup>
+import { pushToast } from '@/admin/composables/useToast.js'
 import { ref, onMounted } from 'vue'
 import axios from 'axios'
 
@@ -205,7 +206,7 @@ async function convertLead(lead) {
     })
     await loadLeads()
   } catch (e) {
-    alert(e.response?.data?.message ?? 'Conversion failed.')
+    pushToast('error', e.response?.data?.message ?? 'Conversion failed.')
   }
 }
 

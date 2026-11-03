@@ -92,4 +92,7 @@ return Application::configure(basePath: dirname(__DIR__))
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         SentryIntegration::handles($exceptions);
+
+        // Branded error screens (tenant colours inside a workspace, LENDR's elsewhere).
+        $exceptions->respond(fn ($response, $e, $request) => \App\Support\ErrorPage::respond($response, $e, $request));
     })->create();

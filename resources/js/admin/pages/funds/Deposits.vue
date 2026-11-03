@@ -183,6 +183,7 @@
 </template>
 
 <script setup>
+import { pushToast } from '@/admin/composables/useToast.js'
 import { ref, reactive } from 'vue'
 import { Link, router } from '@inertiajs/vue3'
 import AppLayout from '@/admin/components/layout/AppLayout.vue'
@@ -229,7 +230,7 @@ const submitDeposit = async () => {
     Object.assign(form, { source: '', amount: '', payment_method: 'bank_transfer', bank_reference: '', notes: '' })
     router.reload()
   } catch (e) {
-    alert(e.response?.data?.message ?? 'Failed to save deposit.')
+    pushToast('error', e.response?.data?.message ?? 'Failed to save deposit.')
   } finally {
     saving.value = false
   }
@@ -245,7 +246,7 @@ const confirmApprove = async () => {
     approving.value = null
     router.reload()
   } catch (e) {
-    alert(e.response?.data?.message ?? 'Failed to approve deposit.')
+    pushToast('error', e.response?.data?.message ?? 'Failed to approve deposit.')
   } finally {
     saving.value = false
   }
@@ -259,7 +260,7 @@ const confirmReject = async () => {
     rejecting.value = null
     router.reload()
   } catch (e) {
-    alert(e.response?.data?.message ?? 'Failed to reject deposit.')
+    pushToast('error', e.response?.data?.message ?? 'Failed to reject deposit.')
   } finally {
     saving.value = false
   }
