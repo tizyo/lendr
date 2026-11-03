@@ -18,22 +18,30 @@
 
     <!-- Navigation -->
     <nav class="flex-1 overflow-y-auto py-4 px-2 space-y-0.5 sidebar-scroll">
-      <template v-for="group in navGroups" :key="group.label">
-        <!-- Group label -->
-        <p
-          v-if="!collapsed && group.label"
-          class="px-3 py-2 text-xs font-semibold text-neutral-500 uppercase tracking-wider"
-        >
-          {{ group.label }}
-        </p>
+      <template v-for="section in navSections" :key="section.name">
+        <!-- A section of one is a plain link -->
+        <NavItem v-if="section.items.length === 1" :item="section.items[0]" :collapsed="collapsed" />
 
-        <!-- Nav items -->
-        <NavItem
-          v-for="item in group.items"
-          :key="item.name"
-          :item="item"
-          :collapsed="collapsed"
-        />
+        <div v-else>
+          <button
+            type="button"
+            @click="toggleSection(section)"
+            :aria-expanded="isOpen(section)"
+            :title="collapsed ? section.name : undefined"
+            class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition w-full"
+            :class="containsActive(section) ? 'text-white' : 'text-neutral-400 hover:text-white hover:bg-neutral-800'"
+          >
+            <component :is="navIcon(section.icon)" class="w-5 h-5 shrink-0" />
+            <template v-if="!collapsed">
+              <span class="truncate flex-1 text-left">{{ section.name }}</span>
+              <ChevronRightIcon class="w-4 h-4 shrink-0 text-neutral-500 transition-transform duration-200" :class="isOpen(section) ? 'rotate-90' : ''" />
+            </template>
+          </button>
+
+          <div v-if="isOpen(section) && !collapsed" class="mt-0.5 space-y-0.5">
+            <NavItem v-for="item in section.items" :key="item.route" :item="item" nested />
+          </div>
+        </div>
       </template>
     </nav>
 
@@ -52,99 +60,61 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { ref, computed } from 'vue'
 import { usePage } from '@inertiajs/vue3'
+import { ChevronRightIcon } from '@heroicons/vue/24/outline'
 import NavItem from './NavItem.vue'
+import { navSections, navIcon, activeNavRoute } from './navigation.js'
 
 const props = defineProps({ collapsed: Boolean })
-defineEmits(['toggle'])
+const emit = defineEmits(['toggle'])
 
 const page = usePage()
 const tenant = computed(() => page.props.tenant)
 
-const navGroups = [
-  {
-    label: '',
-    items: [
-      { name: 'Dashboard', route: 'dashboard', icon: 'home' },
-    ],
-  },
-  {
-    label: 'Lending',
-    items: [
-      { name: 'Borrowers', route: 'borrowers.index', icon: 'users' },
-      { name: 'KYC Review', route: 'kyc.index', icon: 'shield-check' },
-      { name: 'Loans', route: 'loans.index', icon: 'credit-card' },
-      { name: 'Payments', route: 'payments.index', icon: 'banknotes' },
-      { name: 'Bank Deposits', route: 'payments.bank-deposits', icon: 'banknotes' },
-      { name: 'Collections', route: 'collections.index', icon: 'phone' },
-    ],
-  },
-  {
-    label: 'Finance',
-    items: [
-      { name: 'Fund Management', route: 'funds.index', icon: 'building-library' },
-      { name: 'Expenses', route: 'expenses.index', icon: 'receipt-percent' },
-      { name: 'Expense Categories', route: 'expense-categories.index', icon: 'rectangle-stack' },
-      { name: 'GL Ledger', route: 'gl-ledger.index', icon: 'book-open' },
-      { name: 'Reports', route: 'reports.index', icon: 'chart-bar' },
-      { name: 'Analytics', route: 'analytics.index', icon: 'presentation-chart-line' },
-      { name: 'Financial Statements', route: 'financial-statements.index', icon: 'document-chart-bar' },
-      { name: 'Interest Accrual', route: 'interest-accrual.index', icon: 'calculator' },
-      { name: 'Penalties', route: 'penalties.index', icon: 'exclamation-triangle' },
-      { name: 'IFRS9 Provisioning', route: 'provisioning.index', icon: 'shield-exclamation' },
-      { name: 'Reconciliation', route: 'reconciliation.index', icon: 'arrows-right-left' },
-      { name: 'Investors', route: 'investors.index', icon: 'banknotes' },
-    ],
-  },
-  {
-    label: 'Products',
-    items: [
-      { name: 'Loan Types', route: 'loan-types.index', icon: 'tag' },
-      { name: 'Marketplace', route: 'marketplace.index', icon: 'shopping-bag' },
-      { name: 'Repo Items', route: 'marketplace.repo-items', icon: 'archive-box' },
-      { name: 'Featured Items', route: 'featured-items.index', icon: 'star' },
-      { name: 'Hot Deals', route: 'hot-deals.index', icon: 'fire' },
-      { name: 'Insurance', route: 'insurance.index', icon: 'shield-check' },
-      { name: 'Savings', route: 'savings.index', icon: 'banknotes' },
-      { name: 'Loan Groups', route: 'loan-groups.index', icon: 'user-group' },
-    ],
-  },
-  {
-    label: 'Operations',
-    items: [
-      { name: 'Approvals', route: 'approvals.index', icon: 'clipboard-document-check' },
-      { name: 'Write-offs', route: 'writeoffs.index', icon: 'x-circle' },
-      { name: 'Collection Cases', route: 'collection-cases.index', icon: 'exclamation-triangle' },
-      { name: 'Campaigns', route: 'campaigns.index', icon: 'megaphone' },
-      { name: 'Leads (CRM)', route: 'leads.index', icon: 'funnel' },
-      { name: 'CRB', route: 'crb.index', icon: 'identification' },
-    ],
-  },
-  {
-    label: 'Bulk Operations',
-    items: [
-      { name: 'Import Borrowers', route: 'bulk.import-borrowers', icon: 'arrow-up-tray' },
-      { name: 'Bulk Loans',       route: 'bulk.loans',            icon: 'queue-list' },
-      { name: 'Batch Payments',   route: 'bulk.payments',         icon: 'banknotes' },
-    ],
-  },
-  {
-    label: 'Admin',
-    items: [
-      { name: 'Staff Targets', route: 'staff-targets.index', icon: 'trophy' },
-      { name: 'Commissions', route: 'commissions.index', icon: 'currency-dollar' },
-      { name: 'API Clients', route: 'api-clients.index', icon: 'code-bracket' },
-      { name: 'Billing', route: 'billing.index', icon: 'credit-card' },
-      { name: 'Staff', route: 'staff.index', icon: 'user-group' },
-      { name: 'Branches', route: 'branches.index', icon: 'building-office-2' },
-      { name: 'Exchange Rates', route: 'exchange-rates.index', icon: 'currency-dollar' },
-      { name: 'Audit Log', route: 'audit-log.index', icon: 'clipboard-document-list' },
-      { name: 'Settings', route: 'settings.index', icon: 'cog-6-tooth' },
-      { name: 'Support', route: 'support.index', icon: 'lifebuoy' },
-    ],
-  },
-]
+function containsActive(section) {
+  const active = activeNavRoute()
+  return section.items.some(item => item.route === active)
+}
+
+// Open groups survive page visits, and the current page's group opens on arrival.
+const STORAGE_KEY = 'lendr.nav.open'
+const openSections = ref(readOpenSections())
+
+function readOpenSections() {
+  let saved = []
+  try {
+    saved = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '[]')
+  } catch { /* storage unavailable */ }
+
+  const current = navSections.find(containsActive)?.name
+
+  return current && !saved.includes(current) ? [...saved, current] : saved
+}
+
+function isOpen(section) {
+  return openSections.value.includes(section.name)
+}
+
+function toggleSection(section) {
+  const open = isOpen(section)
+
+  // In the icon-only sidebar a group can't show its items, so widen it and open it.
+  if (props.collapsed) {
+    emit('toggle')
+    if (open) {
+      return
+    }
+  }
+
+  openSections.value = open
+    ? openSections.value.filter(name => name !== section.name)
+    : [...openSections.value, section.name]
+
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(openSections.value))
+  } catch { /* storage unavailable: still works on this page */ }
+}
 </script>
 
 <style scoped>
