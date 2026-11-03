@@ -80,7 +80,7 @@ class ErrorPage
             ? rescue(fn () => DB::table('settings')->whereIn('key', ['company_name', 'primary_color'])->pluck('value', 'key'), collect(), false)
             : collect();
 
-        $color = self::hex($settings->get('primary_color')) ?? self::LENDR_COLOR;
+        $color = DocumentBrand::hex($settings->get('primary_color')) ?? self::LENDR_COLOR;
         $logo = $tenant ? rescue(fn () => TenantLogo::url(), null, false) : null;
         $name = trim((string) $settings->get('company_name'));
 
@@ -90,8 +90,8 @@ class ErrorPage
             'is_tenant' => $tenant !== null && $logo !== null,
             'color' => $color,
             // Text on a brand-coloured button: dark on pale brands, white otherwise.
-            'on_color' => self::luminance($color) > 0.55 ? '#111827' : '#FFFFFF',
-            'tint' => self::mix($color, '#FFFFFF', 0.08),
+            'on_color' => DocumentBrand::luminance($color) > 0.55 ? '#111827' : '#FFFFFF',
+            'tint' => DocumentBrand::mix($color, '#FFFFFF', 0.08),
         ];
     }
 
@@ -104,27 +104,5 @@ class ErrorPage
         $signedIn = rescue(fn () => auth()->check(), false, false);
 
         return $signedIn ? url('/dashboard') : url('/');
-    }
-
-    private static function hex(?string $value): ?string
-    {
-        return preg_match('/^#[0-9a-fA-F]{6}$/', (string) $value) ? strtoupper($value) : null;
-    }
-
-    private static function luminance(string $hex): float
-    {
-        [$r, $g, $b] = array_map(fn ($c) => hexdec($c) / 255, str_split(ltrim($hex, '#'), 2));
-
-        return 0.2126 * $r + 0.7152 * $g + 0.0722 * $b;
-    }
-
-    private static function mix(string $hex, string $with, float $weight): string
-    {
-        $a = array_map('hexdec', str_split(ltrim($hex, '#'), 2));
-        $b = array_map('hexdec', str_split(ltrim($with, '#'), 2));
-
-        return sprintf('#%02X%02X%02X', ...array_map(
-            fn ($x, $y) => (int) round($x * $weight + $y * (1 - $weight)), $a, $b,
-        ));
     }
 }

@@ -44,13 +44,14 @@
         </ul>
       </div>
 
-      <a href="mailto:sales@lendr.app?subject=Upgrade request — {{ tenantName }}&body=Hi, I would like to upgrade {{ tenantName }} to a paid plan and restore access."
+      <!-- Billing stays reachable when the trial has ended, so payment restores access. -->
+      <Link :href="route('billing.index')"
         class="inline-flex items-center gap-2 bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white font-semibold px-8 py-3 rounded-xl shadow-lg shadow-emerald-200 transition text-sm mb-4">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
         </svg>
         Upgrade &amp; Restore Access
-      </a>
+      </Link>
 
       <div>
         <Link :href="logoutRoute" method="post" as="button"

@@ -38,10 +38,10 @@
           </span>
         </div>
         <div class="flex items-center gap-3 shrink-0">
-          <a href="mailto:sales@lendr.app?subject=Upgrade request"
+          <Link :href="route('billing.index', { plan: 'growth' })"
             class="text-xs font-semibold text-red-900 bg-red-200 hover:bg-red-300 px-3 py-1 rounded-lg transition whitespace-nowrap">
             Upgrade now
-          </a>
+          </Link>
           <button @click="dismiss('trial')" aria-label="Dismiss" class="text-red-400 hover:text-red-600 transition">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
@@ -64,10 +64,10 @@
           </span>
         </div>
         <div class="flex items-center gap-3 shrink-0">
-          <a href="mailto:sales@lendr.app?subject=Upgrade request"
+          <Link :href="route('billing.index', { plan: 'growth' })"
             class="text-xs font-semibold text-amber-900 bg-amber-200 hover:bg-amber-300 px-3 py-1 rounded-lg transition whitespace-nowrap">
             Upgrade plan
-          </a>
+          </Link>
           <button @click="dismiss('upgrade')" aria-label="Dismiss"
             class="text-amber-400 hover:text-amber-600 transition">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

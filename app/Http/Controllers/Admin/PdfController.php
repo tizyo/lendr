@@ -3,61 +3,33 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\Landlord\PlatformBranding;
 use App\Models\Tenant\Borrower;
 use App\Models\Tenant\Loan;
 use App\Models\Tenant\Payment;
+use App\Services\LoanCalculatorService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Response;
 
+/**
+ * Staff-facing PDF documents. Every template extends resources/views/pdf/layout,
+ * which brands the document with the lender's own name, registration details,
+ * logo and colour (App\Support\DocumentBrand) and a small "Powered by LENDR" footer.
+ */
 class PdfController extends Controller
 {
-    private function companyInfo(): array
-    {
-        $b = PlatformBranding::defaults();
-
-        return [
-            'company' => $b['company_name'],
-            'address' => $b['address'],
-            'phone' => $b['phone'],
-            'email' => $b['email'],
-            'website' => $b['website'],
-            'logo_url' => $b['logo_url'],
-            'branding' => $b,
-            'currency' => tenancy()->tenant?->currency ?? 'ZMW',
-            'invoice_footer' => $b['invoice_footer'],
-        ];
-    }
+    public function __construct(private readonly LoanCalculatorService $calculator) {}
 
     public function loanApplication(Loan $loan): Response
     {
-        $loan->load([
-            'borrower',
-            'loanType:id,name',
-            'loanPlan:id,name',
-            'createdBy:id,name',
-        ]);
-
+        $loan->load(['borrower', 'loanType:id,name', 'loanPlan:id,name', 'createdBy:id,name']);
         $borrower = $loan->borrower;
 
         $loanData = [
-            'loan_number' => $loan->loan_number,
-            'loan_type' => $loan->loanType->name,
-            'loan_plan' => $loan->loanPlan->name,
-            'currency' => tenancy()->tenant?->currency ?? 'ZMW',
-            'principal_amount' => number_format((float) $loan->principal_amount, 2),
-            'tenure' => $loan->tenure,
-            'tenure_type' => $loan->tenure_type,
-            'repayment_schedule' => $loan->repayment_schedule,
-            'application_date' => $loan->application_date?->format('d M Y'),
-            'loan_purpose' => $loan->loan_purpose,
-            'collateral_description' => $loan->collateral_description,
-            'guarantor_name' => $loan->guarantor_name,
-            'guarantor_phone' => $loan->guarantor_phone,
-            'guarantor_relationship' => $loan->guarantor_relationship,
+            ...$this->loanBasics($loan),
             'created_by' => $loan->createdBy?->name,
             'borrower' => [
                 'name' => $borrower->full_name,
+                'borrower_type' => $borrower->borrower_type,
                 'borrower_number' => $borrower->borrower_number,
                 'date_of_birth' => $borrower->date_of_birth?->format('d M Y'),
                 'gender' => $borrower->gender,
@@ -72,102 +44,58 @@ class PdfController extends Controller
                 'next_of_kin_name' => $borrower->next_of_kin_name,
                 'next_of_kin_phone' => $borrower->next_of_kin_phone,
                 'next_of_kin_relationship' => $borrower->next_of_kin_relationship,
+                // Corporate borrowers
+                'trading_name' => $borrower->trading_name,
+                'business_type' => Borrower::BUSINESS_TYPES[$borrower->business_type] ?? null,
+                'industry' => $borrower->industry,
+                'company_reg_number' => $borrower->company_reg_number,
+                'tpin_number' => $borrower->tpin_number,
+                'incorporation_date' => $borrower->incorporation_date?->format('d M Y'),
+                'contact_person_name' => $borrower->contact_person_name,
+                'contact_person_position' => $borrower->contact_person_position,
+                'contact_person_phone' => $borrower->contact_person_phone,
             ],
         ];
 
-        $info = $this->companyInfo();
-
-        $pdf = Pdf::loadView('pdf.loan-application', [
-            'loan' => $loanData,
-            'company' => $info['company'],
-            'address' => $info['address'],
-            'phone' => $info['phone'],
-            'email' => $info['email'],
-            'website' => $info['website'],
-            'logo_url' => $info['logo_url'],
-            'invoice_footer' => $info['invoice_footer'],
-            'generatedAt' => now()->format('d M Y H:i'),
-        ])->setPaper('a4', 'portrait');
-
-        return $pdf->download("loan-application-{$loan->loan_number}.pdf");
+        return $this->download('pdf.loan-application', ['loan' => $loanData], "loan-application-{$loan->loan_number}.pdf");
     }
 
     public function loanAgreement(Loan $loan): Response
     {
-        $loan->load([
-            'borrower:id,first_name,last_name,borrower_number,phone,city',
-            'loanType:id,name',
-            'loanPlan:id,name',
-            'approvedBy:id,name',
-            'schedule',
-        ]);
+        $loan->load(['borrower', 'loanType:id,name', 'loanPlan', 'approvedBy:id,name', 'schedule']);
 
-        $schedule = $loan->schedule->map(fn ($s) => [
-            'instalment_number' => $s->instalment_number,
-            'due_date' => $s->due_date->format('d M Y'),
-            'total_due' => number_format((float) $s->total_due, 2),
-            'total_paid' => number_format((float) $s->total_paid, 2),
-            'outstanding' => number_format((float) $s->outstanding, 2),
-            'is_paid' => $s->is_paid,
-            'days_overdue' => $s->days_overdue,
-        ])->toArray();
+        [$schedule, $projected] = $this->scheduleRows($loan);
 
         $loanData = [
-            'loan_number' => $loan->loan_number,
-            'loan_type' => $loan->loanType->name,
-            'loan_plan' => $loan->loanPlan->name,
-            'currency' => tenancy()->tenant?->currency ?? 'ZMW',
-            'principal_amount' => number_format((float) $loan->principal_amount, 2),
-            'interest_amount' => number_format((float) $loan->interest_amount, 2),
-            'processing_fee' => number_format((float) $loan->processing_fee, 2),
-            'insurance_fee' => number_format((float) $loan->insurance_fee, 2),
-            'total_payable' => number_format((float) $loan->total_payable, 2),
+            ...$this->loanBasics($loan),
+            'interest_amount' => $this->money($loan->interest_amount),
+            'processing_fee' => $this->money($loan->processing_fee),
+            'insurance_fee' => $this->money($loan->insurance_fee),
+            'total_payable' => $this->money($loan->total_payable),
             'interest_rate' => $loan->interest_rate,
             'interest_type' => $loan->interest_type,
-            'tenure' => $loan->tenure,
-            'tenure_type' => $loan->tenure_type,
-            'repayment_schedule' => $loan->repayment_schedule,
-            'application_date' => $loan->application_date?->format('d M Y'),
             'approval_date' => $loan->approval_date?->format('d M Y'),
             'disbursement_date' => $loan->disbursement_date?->format('d M Y'),
             'first_repayment_date' => $loan->first_repayment_date?->format('d M Y'),
             'maturity_date' => $loan->maturity_date?->format('d M Y'),
-            'loan_purpose' => $loan->loan_purpose,
-            'collateral_description' => $loan->collateral_description,
-            'guarantor_name' => $loan->guarantor_name,
-            'guarantor_phone' => $loan->guarantor_phone,
-            'guarantor_relationship' => $loan->guarantor_relationship,
             'approved_by' => $loan->approvedBy?->name,
             'borrower' => [
                 'name' => $loan->borrower->full_name,
                 'borrower_number' => $loan->borrower->borrower_number,
                 'phone' => $loan->borrower->phone,
                 'city' => $loan->borrower->city,
+                'kyc_verified' => (bool) $loan->borrower->kyc_verified,
             ],
             'schedule' => $schedule,
+            'schedule_projected' => $projected,
         ];
 
-        $info = $this->companyInfo();
-
-        $pdf = Pdf::loadView('pdf.loan-agreement', [
-            'loan' => $loanData,
-            'company' => $info['company'],
-            'address' => $info['address'],
-            'phone' => $info['phone'],
-            'email' => $info['email'],
-            'website' => $info['website'],
-            'logo_url' => $info['logo_url'],
-            'invoice_footer' => $info['invoice_footer'],
-            'generatedAt' => now()->format('d M Y H:i'),
-        ])->setPaper('a4', 'portrait');
-
-        return $pdf->download("loan-agreement-{$loan->loan_number}.pdf");
+        return $this->download('pdf.loan-agreement', ['loan' => $loanData], "loan-agreement-{$loan->loan_number}.pdf");
     }
 
     public function paymentReceipt(Payment $payment): Response
     {
         $payment->load(['loan.borrower', 'loan.loanType:id,name', 'recordedBy:id,name']);
-        $info = $this->companyInfo();
 
         $paymentData = [
             'receipt_number' => $payment->receipt_number,
@@ -175,108 +103,62 @@ class PdfController extends Controller
             'borrower_name' => $payment->loan->borrower->full_name,
             'borrower_number' => $payment->loan->borrower->borrower_number,
             'loan_type' => $payment->loan->loanType->name,
-            'amount' => number_format((float) $payment->amount, 2),
-            'principal_allocated' => number_format((float) $payment->principal_allocated, 2),
-            'interest_allocated' => number_format((float) $payment->interest_allocated, 2),
-            'penalty_allocated' => number_format((float) $payment->penalty_allocated, 2),
+            'amount' => $this->money($payment->amount),
+            'principal_allocated' => $this->money($payment->principal_allocated),
+            'interest_allocated' => $this->money($payment->interest_allocated),
+            'penalty_allocated' => $this->money($payment->penalty_allocated),
             'payment_method' => $payment->payment_method->label(),
             'payment_date' => $payment->payment_date->format('d M Y'),
             'reference' => $payment->reference,
             'notes' => $payment->notes,
             'recorded_by' => $payment->recordedBy?->name,
+            'loan_balance' => $this->money($payment->loan->outstanding_balance),
         ];
 
-        $pdf = Pdf::loadView('pdf.payment-receipt', [
-            'payment' => $paymentData,
-            'company' => $info['company'],
-            'address' => $info['address'],
-            'phone' => $info['phone'],
-            'email' => $info['email'],
-            'website' => $info['website'],
-            'logo_url' => $info['logo_url'],
-            'invoice_footer' => $info['invoice_footer'],
-            'currency' => $info['currency'],
-            'generatedAt' => now()->format('d M Y H:i'),
-        ])->setPaper('a4', 'portrait');
-
-        return $pdf->download("receipt-{$payment->receipt_number}.pdf");
+        return $this->download('pdf.payment-receipt', ['payment' => $paymentData], "receipt-{$payment->receipt_number}.pdf");
     }
 
     public function repaymentSchedule(Loan $loan): Response
     {
-        $loan->load([
-            'borrower:id,first_name,last_name,borrower_number',
-            'loanType:id,name',
-            'loanPlan:id,name',
-            'schedule',
-        ]);
-        $info = $this->companyInfo();
-
-        $schedule = $loan->schedule->map(fn ($s) => [
-            'instalment_number' => $s->instalment_number,
-            'due_date' => $s->due_date->format('d M Y'),
-            'total_due' => number_format((float) $s->total_due, 2),
-            'total_paid' => number_format((float) $s->total_paid, 2),
-            'outstanding' => number_format((float) $s->outstanding, 2),
-            'is_paid' => $s->is_paid,
-            'days_overdue' => $s->days_overdue,
-        ])->toArray();
+        $loan->load(['borrower:id,first_name,last_name,borrower_type,company_name,borrower_number', 'loanType:id,name', 'loanPlan:id,name', 'schedule']);
 
         $loanData = [
-            'loan_number' => $loan->loan_number,
-            'loan_type' => $loan->loanType->name,
-            'loan_plan' => $loan->loanPlan->name,
+            ...$this->loanBasics($loan),
             'status_label' => $loan->status->label(),
-            'currency' => tenancy()->tenant?->currency ?? 'ZMW',
-            'principal_amount' => number_format((float) $loan->principal_amount, 2),
-            'total_payable' => number_format((float) $loan->total_payable, 2),
-            'total_paid' => number_format((float) $loan->total_paid, 2),
-            'outstanding_balance' => number_format((float) $loan->outstanding_balance, 2),
-            'penalty_balance' => number_format((float) $loan->penalty_balance, 2),
+            'total_payable' => $this->money($loan->total_payable),
+            'total_paid' => $this->money($loan->total_paid),
+            'outstanding_balance' => $this->money($loan->outstanding_balance),
+            'penalty_balance' => $this->money($loan->penalty_balance),
             'interest_rate' => $loan->interest_rate,
             'interest_type' => $loan->interest_type,
-            'repayment_schedule' => $loan->repayment_schedule,
-            'tenure' => $loan->tenure,
-            'tenure_type' => $loan->tenure_type,
             'first_repayment_date' => $loan->first_repayment_date?->format('d M Y'),
             'maturity_date' => $loan->maturity_date?->format('d M Y'),
             'borrower' => [
                 'name' => $loan->borrower->full_name,
                 'borrower_number' => $loan->borrower->borrower_number,
             ],
-            'schedule' => $schedule,
+            'schedule' => $loan->schedule->map(fn ($s) => [
+                'instalment_number' => $s->instalment_number,
+                'due_date' => $s->due_date->format('d M Y'),
+                'principal_due' => $this->money($s->principal_due),
+                'interest_due' => $this->money($s->interest_due),
+                'total_due' => $this->money($s->total_due),
+                'total_paid' => $this->money($s->total_paid),
+                'outstanding' => $this->money($s->outstanding),
+                'is_paid' => $s->is_paid,
+                'days_overdue' => $s->days_overdue,
+            ])->all(),
         ];
 
-        $pdf = Pdf::loadView('pdf.repayment-schedule', [
-            'loan' => $loanData,
-            'company' => $info['company'],
-            'address' => $info['address'],
-            'phone' => $info['phone'],
-            'email' => $info['email'],
-            'logo_url' => $info['logo_url'],
-            'invoice_footer' => $info['invoice_footer'],
-            'currency' => $info['currency'],
-            'generatedAt' => now()->format('d M Y H:i'),
-        ])->setPaper('a4', 'portrait');
-
-        return $pdf->download("schedule-{$loan->loan_number}.pdf");
+        return $this->download('pdf.repayment-schedule', ['loan' => $loanData], "schedule-{$loan->loan_number}.pdf");
     }
 
     public function disbursementLetter(Loan $loan): Response
     {
-        $loan->load([
-            'borrower:id,first_name,last_name,borrower_number,phone,email,city',
-            'loanType:id,name',
-            'loanPlan:id,name',
-            'disbursedBy:id,name',
-        ]);
-        $info = $this->companyInfo();
+        $loan->load(['borrower', 'loanType:id,name', 'loanPlan:id,name', 'disbursedBy:id,name']);
 
         $loanData = [
-            'loan_number' => $loan->loan_number,
-            'loan_type' => $loan->loanType->name,
-            'currency' => tenancy()->tenant?->currency ?? 'ZMW',
-            'principal_amount' => number_format((float) $loan->principal_amount, 2),
+            ...$this->loanBasics($loan),
             'disbursement_method' => $loan->disbursement_method?->label(),
             'disbursement_account' => $loan->disbursement_account,
             'disbursement_date' => $loan->disbursement_date?->format('d M Y'),
@@ -284,9 +166,6 @@ class PdfController extends Controller
             'maturity_date' => $loan->maturity_date?->format('d M Y'),
             'interest_rate' => $loan->interest_rate,
             'interest_type' => $loan->interest_type,
-            'tenure' => $loan->tenure,
-            'tenure_type' => $loan->tenure_type,
-            'loan_purpose' => $loan->loan_purpose,
             'disbursed_by' => $loan->disbursedBy?->name,
             'borrower' => [
                 'name' => $loan->borrower->full_name,
@@ -297,64 +176,38 @@ class PdfController extends Controller
             ],
         ];
 
-        $pdf = Pdf::loadView('pdf.disbursement-letter', [
-            'loan' => $loanData,
-            'company' => $info['company'],
-            'address' => $info['address'],
-            'phone' => $info['phone'],
-            'email' => $info['email'],
-            'website' => $info['website'],
-            'logo_url' => $info['logo_url'],
-            'invoice_footer' => $info['invoice_footer'],
-            'generatedAt' => now()->format('d M Y H:i'),
-        ])->setPaper('a4', 'portrait');
-
-        return $pdf->download("disbursement-{$loan->loan_number}.pdf");
+        return $this->download('pdf.disbursement-letter', ['loan' => $loanData], "disbursement-{$loan->loan_number}.pdf");
     }
 
     public function accountStatement(Borrower $borrower): Response
     {
-        $borrower->load([
-            'loans' => fn ($q) => $q->with(['loanType:id,name', 'payments.recordedBy:id,name']),
-        ]);
-        $info = $this->companyInfo();
+        $borrower->load(['loans' => fn ($q) => $q->with(['loanType:id,name', 'payments'])]);
+        $currency = tenancy()->tenant?->currency ?? 'ZMW';
 
-        $totalDisbursed = 0;
-        $totalPaid = 0;
-        $outstanding = 0;
-
-        $loans = $borrower->loans->map(function ($loan) use (&$totalDisbursed, &$totalPaid, &$outstanding, $info) {
-            $totalDisbursed += (float) $loan->principal_amount;
-            $totalPaid += (float) $loan->total_paid;
-            $outstanding += (float) $loan->outstanding_balance;
-
-            $payments = $loan->payments->map(fn ($p) => [
+        $loans = $borrower->loans->map(fn ($loan) => [
+            'loan_number' => $loan->loan_number,
+            'loan_type' => $loan->loanType->name,
+            'status' => $loan->status->value,
+            'status_label' => $loan->status->label(),
+            'currency' => $currency,
+            'principal_amount' => $this->money($loan->principal_amount),
+            'total_payable' => $this->money($loan->total_payable),
+            'total_paid' => $this->money($loan->total_paid),
+            'outstanding_balance' => $this->money($loan->outstanding_balance),
+            'application_date' => $loan->application_date?->format('d M Y'),
+            'disbursement_date' => $loan->disbursement_date?->format('d M Y'),
+            'maturity_date' => $loan->maturity_date?->format('d M Y'),
+            'payments' => $loan->payments->map(fn ($p) => [
                 'receipt_number' => $p->receipt_number,
                 'payment_date' => $p->payment_date->format('d M Y'),
                 'payment_method' => $p->payment_method->label(),
-                'amount' => number_format((float) $p->amount, 2),
-                'principal_allocated' => number_format((float) $p->principal_allocated, 2),
-                'interest_allocated' => number_format((float) $p->interest_allocated, 2),
-            ])->toArray();
+                'amount' => $this->money($p->amount),
+                'principal_allocated' => $this->money($p->principal_allocated),
+                'interest_allocated' => $this->money($p->interest_allocated),
+            ])->all(),
+        ])->all();
 
-            return [
-                'loan_number' => $loan->loan_number,
-                'loan_type' => $loan->loanType->name,
-                'status' => $loan->status->value,
-                'status_label' => $loan->status->label(),
-                'currency' => $info['currency'],
-                'principal_amount' => number_format((float) $loan->principal_amount, 2),
-                'total_payable' => number_format((float) $loan->total_payable, 2),
-                'total_paid' => number_format((float) $loan->total_paid, 2),
-                'outstanding_balance' => number_format((float) $loan->outstanding_balance, 2),
-                'application_date' => $loan->application_date?->format('d M Y'),
-                'disbursement_date' => $loan->disbursement_date?->format('d M Y'),
-                'maturity_date' => $loan->maturity_date?->format('d M Y'),
-                'payments' => $payments,
-            ];
-        })->toArray();
-
-        $pdf = Pdf::loadView('pdf.account-statement', [
+        return $this->download('pdf.account-statement', [
             'borrower' => [
                 'name' => $borrower->full_name,
                 'borrower_number' => $borrower->borrower_number,
@@ -366,20 +219,89 @@ class PdfController extends Controller
             ],
             'loans' => $loans,
             'summary' => [
-                'total_disbursed' => $totalDisbursed,
-                'total_paid' => $totalPaid,
-                'outstanding' => $outstanding,
+                'total_disbursed' => $borrower->loans->sum(fn ($l) => (float) $l->principal_amount),
+                'total_paid' => $borrower->loans->sum(fn ($l) => (float) $l->total_paid),
+                'outstanding' => $borrower->loans->sum(fn ($l) => (float) $l->outstanding_balance),
             ],
-            'company' => $info['company'],
-            'address' => $info['address'],
-            'phone' => $info['phone'],
-            'email' => $info['email'],
-            'logo_url' => $info['logo_url'],
-            'invoice_footer' => $info['invoice_footer'],
-            'currency' => $info['currency'],
-            'generatedAt' => now()->format('d M Y H:i'),
-        ])->setPaper('a4', 'portrait');
+            'currency' => $currency,
+        ], "statement-{$borrower->borrower_number}.pdf");
+    }
 
-        return $pdf->download("statement-{$borrower->borrower_number}.pdf");
+    // ─── Helpers ──────────────────────────────────────────────────────────────
+
+    /** Fields every loan document shows. */
+    private function loanBasics(Loan $loan): array
+    {
+        return [
+            'loan_number' => $loan->loan_number,
+            'loan_type' => $loan->loanType?->name ?? '—',
+            'loan_plan' => $loan->loanPlan?->name ?? '—',
+            'currency' => tenancy()->tenant?->currency ?? 'ZMW',
+            'principal_amount' => $this->money($loan->principal_amount),
+            'tenure' => $loan->tenure,
+            'tenure_type' => $loan->tenure_type,
+            'repayment_schedule' => $loan->repayment_schedule,
+            'application_date' => $loan->application_date?->format('d M Y'),
+            'loan_purpose' => $loan->loan_purpose,
+            'collateral_description' => $loan->collateral_description,
+            'guarantor_name' => $loan->guarantor_name,
+            'guarantor_phone' => $loan->guarantor_phone,
+            'guarantor_relationship' => $loan->guarantor_relationship,
+        ];
+    }
+
+    /**
+     * The loan's instalments. Before disbursement there are none yet, so an agreement
+     * shows the schedule the loan would get if paid out today, marked as projected.
+     *
+     * @return array{0: list<array<string, mixed>>, 1: bool}
+     */
+    private function scheduleRows(Loan $loan): array
+    {
+        if ($loan->schedule->isNotEmpty()) {
+            return [$loan->schedule->map(fn ($s) => [
+                'instalment_number' => $s->instalment_number,
+                'due_date' => $s->due_date->format('d M Y'),
+                'principal_due' => $this->money($s->principal_due),
+                'interest_due' => $this->money($s->interest_due),
+                'total_due' => $this->money($s->total_due),
+                'is_paid' => $s->is_paid,
+                'days_overdue' => $s->days_overdue,
+            ])->all(), false];
+        }
+
+        if (! $loan->loanPlan) {
+            return [[], false];
+        }
+
+        $rows = rescue(fn () => $this->calculator->generateSchedule(
+            $loan->loanPlan,
+            (float) $loan->principal_amount,
+            (int) $loan->tenure,
+            now()->toDateString(),
+            (float) $loan->interest_amount,
+        ), [], false);
+
+        return [array_map(fn ($r) => [
+            'instalment_number' => $r['instalment_number'],
+            'due_date' => \Illuminate\Support\Carbon::parse($r['due_date'])->format('d M Y'),
+            'principal_due' => $this->money($r['principal_due']),
+            'interest_due' => $this->money($r['interest_due']),
+            'total_due' => $this->money($r['total_due']),
+            'is_paid' => false,
+            'days_overdue' => 0,
+        ], $rows), $rows !== []];
+    }
+
+    private function money(mixed $value): string
+    {
+        return number_format((float) $value, 2);
+    }
+
+    private function download(string $view, array $data, string $filename): Response
+    {
+        return Pdf::loadView($view, [...$data, 'generatedAt' => now()->format('d M Y H:i')])
+            ->setPaper('a4', 'portrait')
+            ->download($filename);
     }
 }

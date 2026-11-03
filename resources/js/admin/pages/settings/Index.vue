@@ -68,6 +68,36 @@
         </div>
 
         <div class="lendr-card p-6 space-y-4">
+          <h2 class="text-base font-semibold text-neutral-800 mb-1">Registration &amp; Documents</h2>
+          <p class="text-xs text-neutral-400 -mt-1 mb-2">
+            Printed in the header of loan agreements, receipts, statements and other documents, with your logo from the Branding tab.
+            Leave any you don't have empty.
+          </p>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="label">PACRA registration number</label>
+              <input v-model="form.company_registration_number" type="text" class="input w-full" placeholder="e.g. 120200012345" />
+            </div>
+            <div>
+              <label class="label">TPIN</label>
+              <input v-model="form.company_tpin" type="text" class="input w-full" placeholder="e.g. 1002003004" />
+            </div>
+            <div>
+              <label class="label">Lending licence number</label>
+              <input v-model="form.company_licence_number" type="text" class="input w-full" placeholder="e.g. Bank of Zambia licence no." />
+            </div>
+            <div>
+              <label class="label">Website</label>
+              <input v-model="form.company_website" type="text" class="input w-full" placeholder="e.g. www.yourcompany.co.zm" />
+            </div>
+          </div>
+          <div>
+            <label class="label">Document footer note</label>
+            <input v-model="form.document_footer" type="text" maxlength="160" class="input w-full" placeholder="e.g. Licensed by the Bank of Zambia" />
+          </div>
+        </div>
+
+        <div class="lendr-card p-6 space-y-4">
           <h2 class="text-base font-semibold text-neutral-800 mb-1">Bank Account for Repayments</h2>
           <p class="text-xs text-neutral-400 -mt-1 mb-2">
             Shown to borrowers in the app under "Pay by bank deposit", with their loan number as the payment reference.
@@ -399,6 +429,11 @@ const form = reactive({
   company_phone:          s.company_phone          || '',
   company_email:          s.company_email          || '',
   company_address:        s.company_address        || '',
+  company_registration_number: s.company_registration_number || '',
+  company_tpin:           s.company_tpin           || '',
+  company_licence_number: s.company_licence_number || '',
+  company_website:        s.company_website        || '',
+  document_footer:        s.document_footer        || '',
   fund_low_balance_threshold: s.fund_low_balance_threshold || '',
   bank_name:              s.bank_name              || '',
   bank_account_name:      s.bank_account_name      || '',

@@ -1,231 +1,147 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
- | {{ $loan['loan_number'] }}</title>
-<style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { font-family: DejaVu Sans, sans-serif; font-size: 11px; color: #1f2937; background: #fff; line-height: 1.5; }
+@extends('pdf.layout')
 
-  /* Header */
-  .header { background: linear-gradient(135deg, #059669 0%, #047857 100%); color: #fff; padding: 28px 40px; display: flex; justify-content: space-between; align-items: flex-start; }
-  .header-left h1 { font-size: 22px; font-weight: 700; letter-spacing: -0.3px; }
-  .header-left p { font-size: 11px; opacity: 0.85; margin-top: 3px; }
-  .header-right { text-align: right; }
-  .header-right .doc-type { font-size: 14px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; opacity: 0.95; }
-  .header-right .ref { font-size: 10px; opacity: 0.8; margin-top: 4px; }
+@php($cur = $loan['currency'] ?? 'ZMW')
+@php($lender = ($brand ??= \App\Support\DocumentBrand::current())['name'])
+@php($b = $loan['borrower'])
+@php($corporate = ($b['borrower_type'] ?? 'individual') === 'corporate')
 
-  /* Divider stripe */
-  .stripe { height: 4px; background: linear-gradient(90deg, #10b981, #34d399, #6ee7b7); }
+@section('title', 'Loan Application')
+@section('ref', 'Loan Application '.$loan['loan_number'])
 
-  /* Content area */
-  .content { padding: 28px 40px; }
+@section('meta')
+  Application No. <strong>{{ $loan['loan_number'] }}</strong><br>
+  Date <strong>{{ $loan['application_date'] ?? '—' }}</strong><br>
+  <span class="pill pill-brand">{{ $corporate ? 'CORPORATE' : 'INDIVIDUAL' }}</span>
+@endsection
 
-  /* Section title */
-  .section-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: #059669; border-bottom: 1.5px solid #d1fae5; padding-bottom: 5px; margin-bottom: 12px; margin-top: 20px; }
+@section('content')
+  <p class="muted small" style="margin-top: 12px;">
+    Records the request submitted for assessment. This is not a loan offer; approved applicants receive a separate Loan Agreement.
+  </p>
 
-  /* Info grid */
-  .info-grid { display: table; width: 100%; }
-  .info-row { display: table-row; }
-  .info-label { display: table-cell; width: 38%; color: #6b7280; font-size: 10px; padding: 3px 0; vertical-align: top; }
-  .info-value { display: table-cell; font-weight: 600; font-size: 10.5px; color: #111827; padding: 3px 0; }
+  <table class="stats">
+    <tr>
+      <td><div class="stat-label">Amount requested</div><div class="stat-value brand">{{ $cur }} {{ $loan['principal_amount'] }}</div></td>
+      <td><div class="stat-label">Product</div><div class="stat-value" style="font-size: 10px;">{{ $loan['loan_type'] }}<br><span class="muted" style="font-weight: normal;">{{ $loan['loan_plan'] }}</span></div></td>
+      <td><div class="stat-label">Tenure</div><div class="stat-value">{{ $loan['tenure'] }} {{ $loan['tenure_type'] }}</div></td>
+      <td><div class="stat-label">Repayments</div><div class="stat-value">{{ ucfirst(str_replace('_', '-', $loan['repayment_schedule'] ?? '—')) }}</div></td>
+    </tr>
+  </table>
 
-  /* Two column layout */
-  .two-col { width: 100%; display: table; border-spacing: 16px 0; margin: 0 -8px; }
-  .col { display: table-cell; width: 50%; vertical-align: top; padding: 0 8px; }
-
-  /* Amount highlight box */
-  .amount-box { background: #ecfdf5; border: 1.5px solid #6ee7b7; border-radius: 6px; padding: 12px 16px; margin: 12px 0; }
-  .amount-box .label { font-size: 10px; color: #059669; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
-  .amount-box .value { font-size: 18px; font-weight: 700; color: #065f46; margin-top: 2px; }
-
-  /* Checklist */
-  .checklist { width: 100%; border-collapse: collapse; margin-top: 8px; }
-  .checklist th { background: #f0fdf4; color: #065f46; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; padding: 8px 10px; text-align: left; border: 1px solid #d1fae5; }
-  .checklist td { padding: 8px 10px; border: 1px solid #e5e7eb; font-size: 10.5px; color: #374151; }
-  .checklist .box { display: inline-block; width: 11px; height: 11px; border: 1.3px solid #6b7280; border-radius: 2px; }
-
-  /* Signatures */
-  .sig-section { margin-top: 32px; display: table; width: 100%; }
-  .sig-col { display: table-cell; width: 45%; vertical-align: bottom; padding-right: 40px; }
-  .sig-line { border-top: 1.5px solid #374151; margin-top: 36px; padding-top: 6px; }
-  .sig-name { font-weight: 700; font-size: 10.5px; }
-  .sig-role { color: #6b7280; font-size: 10px; }
-
-  /* Declaration */
-  .declaration { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 5px; padding: 12px 16px; margin-top: 8px; font-size: 9.5px; color: #374151; line-height: 1.7; }
-
-  /* Notice */
-  .notice { background: #fffbeb; border: 1px solid #fde68a; border-radius: 5px; padding: 10px 14px; margin-top: 20px; font-size: 9.5px; color: #92400e; line-height: 1.6; }
-
-  /* Footer */
-  .footer { margin-top: 24px; border-top: 1px solid #e5e7eb; padding-top: 10px; text-align: center; font-size: 9px; color: #9ca3af; }
-</style>
-</head>
-<body>
-
-<div class="header">
-  <div class="header-left">
-    @if(!empty($logo_url))
-      <img src="{{ $logo_url }}" alt="{{ $company }}" style="height:48px; max-width:160px; object-fit:contain; margin-bottom:6px; display:block;">
-    @else
-      <h1>{{ $company }}</h1>
-    @endif
-    @if(!empty($address))<p>{{ $address }}</p>@endif
-    @if(!empty($phone))<p>{{ $phone }}</p>@endif
-    @if(!empty($email))<p>{{ $email }}</p>@endif
-  </div>
-  <div class="header-right">
-    <div class="doc-type">Loan Application</div>
-    <div class="ref">Ref: {{ $loan['loan_number'] }}</div>
-    <div class="ref">Date: {{ $generatedAt }}</div>
-  </div>
-</div>
-<div class="stripe"></div>
-
-<div class="content">
-
-  <p style="font-size:12px; font-weight:700; color:#065f46; margin-bottom:4px;">LOAN APPLICATION FORM</p>
-  <p style="font-size:10px; color:#6b7280;">To be completed in full by the applicant and countersigned by the receiving loan officer. This form is not a loan offer or agreement — it records the request submitted for assessment.</p>
-
-  <div class="section-title">Applicant Personal Details</div>
-  <div class="two-col">
-    <div class="col">
-      <div class="info-grid">
-        <div class="info-row"><span class="info-label">Full Name</span><span class="info-value">{{ $loan['borrower']['name'] }}</span></div>
-        <div class="info-row"><span class="info-label">Borrower No.</span><span class="info-value">{{ $loan['borrower']['borrower_number'] }}</span></div>
-        <div class="info-row"><span class="info-label">Date of Birth</span><span class="info-value">{{ $loan['borrower']['date_of_birth'] ?? '—' }}</span></div>
-        <div class="info-row"><span class="info-label">Gender</span><span class="info-value">{{ $loan['borrower']['gender'] ?? '—' }}</span></div>
-        <div class="info-row"><span class="info-label">National ID</span><span class="info-value">{{ $loan['borrower']['national_id'] ?? '—' }}</span></div>
-      </div>
-    </div>
-    <div class="col">
-      <div class="info-grid">
-        <div class="info-row"><span class="info-label">Phone</span><span class="info-value">{{ $loan['borrower']['phone'] }}</span></div>
-        <div class="info-row"><span class="info-label">Email</span><span class="info-value">{{ $loan['borrower']['email'] ?? '—' }}</span></div>
-        <div class="info-row"><span class="info-label">Address</span><span class="info-value">{{ $loan['borrower']['address'] ?? '—' }}</span></div>
-        <div class="info-row"><span class="info-label">City / Province</span><span class="info-value">{{ $loan['borrower']['city'] ?? '—' }}@if($loan['borrower']['province'] ?? null), {{ $loan['borrower']['province'] }}@endif</span></div>
-      </div>
-    </div>
-  </div>
-
-  <div class="section-title">Employment &amp; Income</div>
-  <div class="two-col">
-    <div class="col">
-      <div class="info-grid">
-        <div class="info-row"><span class="info-label">Occupation</span><span class="info-value">{{ $loan['borrower']['occupation'] ?? '—' }}</span></div>
-      </div>
-    </div>
-    <div class="col">
-      <div class="info-grid">
-        <div class="info-row"><span class="info-label">Employer</span><span class="info-value">{{ $loan['borrower']['employer'] ?? '—' }}</span></div>
-      </div>
-    </div>
-  </div>
-
-  <div class="section-title">Next of Kin</div>
-  <div class="info-grid">
-    <div class="info-row"><span class="info-label">Full Name</span><span class="info-value">{{ $loan['borrower']['next_of_kin_name'] ?? '—' }}</span></div>
-    <div class="info-row"><span class="info-label">Phone</span><span class="info-value">{{ $loan['borrower']['next_of_kin_phone'] ?? '—' }}</span></div>
-    <div class="info-row"><span class="info-label">Relationship</span><span class="info-value">{{ $loan['borrower']['next_of_kin_relationship'] ?? '—' }}</span></div>
-  </div>
-
-  <div class="section-title">Loan Requested</div>
-  <div class="two-col">
-    <div class="col">
-      <div class="amount-box">
-        <div class="label">Amount Requested</div>
-        <div class="value">{{ $loan['currency'] ?? 'ZMW' }} {{ $loan['principal_amount'] }}</div>
-      </div>
-      <div class="info-grid">
-        <div class="info-row"><span class="info-label">Loan Type</span><span class="info-value">{{ $loan['loan_type'] }}</span></div>
-        <div class="info-row"><span class="info-label">Loan Plan</span><span class="info-value">{{ $loan['loan_plan'] }}</span></div>
-      </div>
-    </div>
-    <div class="col">
-      <div class="info-grid">
-        <div class="info-row"><span class="info-label">Requested Tenure</span><span class="info-value">{{ $loan['tenure'] }} {{ $loan['tenure_type'] }}</span></div>
-        <div class="info-row"><span class="info-label">Repayment Frequency</span><span class="info-value">{{ ucfirst($loan['repayment_schedule'] ?? '—') }}</span></div>
-        <div class="info-row"><span class="info-label">Application Date</span><span class="info-value">{{ $loan['application_date'] }}</span></div>
-      </div>
-    </div>
-  </div>
-
-  @if($loan['loan_purpose'])
-  <div class="section-title">Purpose of Loan</div>
-  <p style="font-size:10.5px; color:#111827;">{{ $loan['loan_purpose'] }}</p>
-  @endif
-
-  @if($loan['collateral_description'] || $loan['guarantor_name'])
-  <div class="section-title">Collateral &amp; Guarantor</div>
-  <div class="two-col">
-    <div class="col">
-      <div class="info-grid">
-        <div class="info-row"><span class="info-label">Collateral</span><span class="info-value">{{ $loan['collateral_description'] ?? 'None offered' }}</span></div>
-      </div>
-    </div>
-    <div class="col">
-      @if($loan['guarantor_name'])
-      <div class="info-grid">
-        <div class="info-row"><span class="info-label">Guarantor Name</span><span class="info-value">{{ $loan['guarantor_name'] }}</span></div>
-        <div class="info-row"><span class="info-label">Guarantor Phone</span><span class="info-value">{{ $loan['guarantor_phone'] ?? '—' }}</span></div>
-        <div class="info-row"><span class="info-label">Relationship</span><span class="info-value">{{ $loan['guarantor_relationship'] ?? '—' }}</span></div>
-      </div>
-      @endif
-    </div>
-  </div>
-  @endif
-
-  <div class="section-title">Documents Sighted at Intake</div>
-  <table class="checklist">
-    <thead>
+  @if($corporate)
+    <table class="cols">
       <tr>
-        <th style="width:12%;">Sighted</th>
-        <th>Document</th>
+        <td>
+          <div class="section">Company</div>
+          <table class="kv">
+            <tr><td class="k">Registered name</td><td class="v">{{ $b['name'] }}</td></tr>
+            @if(!empty($b['trading_name']))<tr><td class="k">Trading as</td><td class="v">{{ $b['trading_name'] }}</td></tr>@endif
+            <tr><td class="k">Borrower No.</td><td class="v">{{ $b['borrower_number'] }}</td></tr>
+            <tr><td class="k">Business type</td><td class="v">{{ $b['business_type'] ?? '—' }}</td></tr>
+            <tr><td class="k">Industry</td><td class="v">{{ $b['industry'] ?? '—' }}</td></tr>
+            <tr><td class="k">PACRA No.</td><td class="v">{{ $b['company_reg_number'] ?? '—' }}</td></tr>
+            <tr><td class="k">TPIN</td><td class="v">{{ $b['tpin_number'] ?? '—' }}</td></tr>
+            <tr><td class="k">Incorporated</td><td class="v">{{ $b['incorporation_date'] ?? '—' }}</td></tr>
+          </table>
+        </td>
+        <td class="gap"></td>
+        <td>
+          <div class="section">Contact</div>
+          <table class="kv">
+            <tr><td class="k">Phone</td><td class="v">{{ $b['phone'] }}</td></tr>
+            <tr><td class="k">Email</td><td class="v">{{ $b['email'] ?? '—' }}</td></tr>
+            <tr><td class="k">Address</td><td class="v">{{ collect([$b['address'] ?? null, $b['city'] ?? null, $b['province'] ?? null])->filter()->implode(', ') ?: '—' }}</td></tr>
+            <tr><td class="k">Contact person</td><td class="v">{{ $b['contact_person_name'] ?? '—' }}@if(!empty($b['contact_person_position'])), {{ $b['contact_person_position'] }}@endif</td></tr>
+            <tr><td class="k">Their phone</td><td class="v">{{ $b['contact_person_phone'] ?? '—' }}</td></tr>
+          </table>
+        </td>
       </tr>
-    </thead>
+    </table>
+  @else
+    <table class="cols">
+      <tr>
+        <td>
+          <div class="section">Applicant</div>
+          <table class="kv">
+            <tr><td class="k">Full name</td><td class="v">{{ $b['name'] }}</td></tr>
+            <tr><td class="k">Borrower No.</td><td class="v">{{ $b['borrower_number'] }}</td></tr>
+            <tr><td class="k">NRC</td><td class="v">{{ $b['national_id'] ?? '—' }}</td></tr>
+            <tr><td class="k">Date of birth</td><td class="v">{{ $b['date_of_birth'] ?? '—' }}</td></tr>
+            <tr><td class="k">Gender</td><td class="v">{{ ucfirst($b['gender'] ?? '—') }}</td></tr>
+            <tr><td class="k">Occupation</td><td class="v">{{ $b['occupation'] ?? '—' }}</td></tr>
+            <tr><td class="k">Employer</td><td class="v">{{ $b['employer'] ?? '—' }}</td></tr>
+          </table>
+        </td>
+        <td class="gap"></td>
+        <td>
+          <div class="section">Contact &amp; next of kin</div>
+          <table class="kv">
+            <tr><td class="k">Phone</td><td class="v">{{ $b['phone'] }}</td></tr>
+            <tr><td class="k">Email</td><td class="v">{{ $b['email'] ?? '—' }}</td></tr>
+            <tr><td class="k">Address</td><td class="v">{{ collect([$b['address'] ?? null, $b['city'] ?? null, $b['province'] ?? null])->filter()->implode(', ') ?: '—' }}</td></tr>
+            <tr><td class="k">Next of kin</td><td class="v">{{ $b['next_of_kin_name'] ?? '—' }}@if(!empty($b['next_of_kin_relationship'])) ({{ $b['next_of_kin_relationship'] }})@endif</td></tr>
+            <tr><td class="k">Their phone</td><td class="v">{{ $b['next_of_kin_phone'] ?? '—' }}</td></tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  @endif
+
+  <table class="cols">
+    <tr>
+      <td>
+        <div class="section">Purpose &amp; collateral</div>
+        <table class="kv">
+          <tr><td class="k">Purpose</td><td class="v">{{ $loan['loan_purpose'] ?: '—' }}</td></tr>
+          <tr><td class="k">Collateral</td><td class="v">{{ $loan['collateral_description'] ?: 'None offered' }}</td></tr>
+        </table>
+      </td>
+      <td class="gap"></td>
+      <td>
+        <div class="section">Guarantor</div>
+        <table class="kv">
+          <tr><td class="k">Name</td><td class="v">{{ $loan['guarantor_name'] ?: '—' }}</td></tr>
+          <tr><td class="k">Phone</td><td class="v">{{ $loan['guarantor_phone'] ?: '—' }}</td></tr>
+          <tr><td class="k">Relationship</td><td class="v">{{ $loan['guarantor_relationship'] ?: '—' }}</td></tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+
+  <div class="section">Documents sighted at intake</div>
+  <table class="grid">
+    <thead><tr><th style="width: 9%;">✓</th><th>Document</th></tr></thead>
     <tbody>
-      <tr><td><span class="box"></span></td><td>National ID / Passport (original + copy)</td></tr>
-      <tr><td><span class="box"></span></td><td>Proof of address (utility bill, lease, or equivalent)</td></tr>
-      <tr><td><span class="box"></span></td><td>Proof of income (payslip, bank statement, or business records)</td></tr>
-      <tr><td><span class="box"></span></td><td>Passport-size photograph</td></tr>
-      <tr><td><span class="box"></span></td><td>Guarantor ID (if applicable)</td></tr>
+      @foreach($corporate
+          ? ['Certificate of Incorporation (PACRA)', 'TPIN certificate', 'Board resolution authorising the loan', 'Directors’ NRCs / passports', 'Bank statements (last 6 months)']
+          : ['NRC / passport (original and copy)', 'Proof of address (utility bill, lease or similar)', 'Proof of income (payslip, bank statement or business records)', 'Passport-size photograph', 'Guarantor NRC (if applicable)'] as $doc)
+        <tr class="{{ $loop->even ? 'alt' : '' }}"><td>☐</td><td>{{ $doc }}</td></tr>
+      @endforeach
     </tbody>
   </table>
 
-  <div class="section-title">Declaration &amp; Consent</div>
-  <div class="declaration">
-    I declare that the information provided in this application is true and complete to the best of my knowledge, and I understand that any false statement may result in rejection of this application or termination of any resulting loan.
-    I consent to {{ $company }} verifying this information, including with credit reference bureaus and third parties, for the purpose of assessing this application and managing the loan if approved.
-    I understand that submission of this form does not guarantee approval and that final terms are subject to {{ $company }}'s assessment and the loan agreement issued upon approval.
-  </div>
+  <div class="section">Declaration &amp; consent</div>
+  <p class="terms">
+    I declare that the information in this application is true and complete. I consent to {{ $lender }} verifying it, including with credit
+    reference bureaus, to assess this application and manage any resulting loan. I understand that submitting this form does not guarantee
+    approval and that final terms are set in the loan agreement issued on approval.
+  </p>
 
-  <div class="sig-section">
-    <div class="sig-col">
-      <div class="sig-line">
-        <div class="sig-name">{{ $loan['borrower']['name'] }}</div>
-        <div class="sig-role">Applicant Signature &amp; Date</div>
-      </div>
-    </div>
-    <div class="sig-col">
-      <div class="sig-line">
-        <div class="sig-name">{{ $loan['created_by'] ?? 'Loan Officer' }}</div>
-        <div class="sig-role">Received By (Loan Officer) &amp; Date</div>
-      </div>
-    </div>
-  </div>
-
-  <div class="notice">
-    <strong>Notice:</strong> This form records a loan request only and is not a loan offer. Approved applicants will receive a separate Loan Agreement setting out final terms for signature.
-  </div>
-
-  <div class="footer">
-    @if(!empty($invoice_footer))
-      {{ $invoice_footer }}<br>
-    @endif
-    &copy; {{ date('Y') }} {{ $company }}. This document was generated on {{ $generatedAt }}. | Loan Application — {{ $loan['loan_number'] }}
-  </div>
-
-</div>
-</body>
-</html>
+  <table class="sig">
+    <tr>
+      <td>
+        <div class="sig-line">
+          <div class="sig-name">{{ $corporate ? ($b['contact_person_name'] ?? $b['name']) : $b['name'] }}</div>
+          <div class="muted small">{{ $corporate ? 'For '.$b['name'].' · signature & date' : 'Applicant · signature & date' }}</div>
+        </div>
+      </td>
+      <td class="gap"></td>
+      <td>
+        <div class="sig-line">
+          <div class="sig-name">{{ $loan['created_by'] ?? 'Loan officer' }}</div>
+          <div class="muted small">Received by · signature &amp; date</div>
+        </div>
+      </td>
+    </tr>
+  </table>
+@endsection

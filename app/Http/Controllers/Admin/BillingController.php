@@ -19,7 +19,7 @@ class BillingController extends Controller
     /**
      * GET /billing — tenant subscription overview.
      */
-    public function index(): Response
+    public function index(Request $request): Response
     {
         $tenant = tenancy()->tenant;
         $subscription = $this->billing->activeSubscription($tenant);
@@ -55,6 +55,8 @@ class BillingController extends Controller
                 'price_zmw' => $p->price_zmw,
                 'is_custom_price' => $p->is_custom_price,
             ])->values(),
+            // From an upgrade prompt (?plan=growth): open the plan picker on that plan.
+            'preselect' => is_string($request->query('plan')) && isset($plans[$request->query('plan')]) ? $request->query('plan') : null,
         ]);
     }
 

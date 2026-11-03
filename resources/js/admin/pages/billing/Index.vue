@@ -176,14 +176,15 @@ const props = defineProps({
   subscription: Object,
   invoices:     { type: Array, default: () => [] },
   plans:        { type: Array, default: () => [] },
+  preselect:    { type: String, default: null },
 })
 
 const page        = usePage()
 const tenant      = computed(() => page.props.tenant)
 const csrfToken   = computed(() => document.cookie.match(/XSRF-TOKEN=([^;]+)/)?.[1] ?? '')
 
-const showUpgrade    = ref(false)
-const selectedPlan   = ref(null)
+const showUpgrade    = ref(!!props.preselect)
+const selectedPlan   = ref(props.preselect)
 const annualBilling  = ref(false)
 const checkoutLoading = ref(false)
 

@@ -99,7 +99,7 @@ class ESignatureService
         $agreement->update([
             'status' => 'signed',
             'otp_hash' => null,
-            'signed_by_name' => $borrower->first_name.' '.$borrower->last_name,
+            'signed_by_name' => $borrower->full_name,
             'signed_by_phone' => $borrower->phone,
             'signing_ip' => $ip,
             'signing_device' => $ua,
@@ -178,7 +178,7 @@ class ESignatureService
             'guarantor_relationship' => $loan->guarantor_relationship,
             'approved_by' => null,
             'borrower' => [
-                'name' => $borrower ? ($borrower->first_name.' '.$borrower->last_name) : '—',
+                'name' => $borrower?->full_name ?? '—',
                 'borrower_number' => $borrower?->borrower_number ?? '—',
                 'phone' => $borrower?->phone ?? '—',
                 'city' => $borrower?->city ?? '—',

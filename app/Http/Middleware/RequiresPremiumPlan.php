@@ -2,14 +2,14 @@
 
 namespace App\Http\Middleware;
 
+use App\Support\PlanUpgrade;
 use Closure;
 use Illuminate\Http\Request;
-use Inertia\Inertia;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
  * Gate PWA and other premium features to Growth/Enterprise tenants only.
- * Starter/Trial tenants are shown an upgrade prompt instead.
+ * Starter/Trial tenants are shown the upgrade page instead.
  */
 class RequiresPremiumPlan
 {
@@ -20,19 +20,10 @@ class RequiresPremiumPlan
         $tenant = tenancy()->tenant;
 
         // No tenant context (shouldn't happen for PWA routes) — pass through.
-        if (! $tenant) {
+        if (! $tenant || in_array($tenant->plan, self::PREMIUM_PLANS)) {
             return $next($request);
         }
 
-        if (in_array($tenant->plan, self::PREMIUM_PLANS)) {
-            return $next($request);
-        }
-
-        // Starter / Trial — return upgrade prompt page.
-        return Inertia::render('upgrade/PremiumRequired', [
-            'feature' => 'Borrower Self-Service PWA',
-            'currentPlan' => ucfirst($tenant->plan),
-            'tenantName' => $tenant->name,
-        ])->toResponse($request)->setStatusCode(402);
+        return PlanUpgrade::page($request, 'pwa');
     }
 }

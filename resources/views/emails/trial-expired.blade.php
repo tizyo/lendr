@@ -1,7 +1,7 @@
 @extends('emails.layout')
 
 @php($supportEmail = $brand['email'] ?: 'support@lendr.app')
-@php($upgradeUrl = 'mailto:'.$supportEmail.'?subject='.rawurlencode('Upgrade request — '.$tenant->name))
+@php($upgradeUrl = route('billing.index', ['plan' => 'growth']))
 
 @section('title', 'Your trial has ended — '.$brand['name'])
 @section('preheader', 'Your '.$tenant->name.' workspace is paused. Your data is safe for 30 days — upgrade to restore access.')

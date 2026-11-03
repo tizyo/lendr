@@ -1,124 +1,117 @@
 <template>
-  <div class="min-h-screen bg-gradient-to-br from-neutral-50 to-emerald-50/20 flex items-center justify-center p-4">
-    <div class="w-full max-w-lg text-center">
-
-      <!-- Lock icon -->
-      <div class="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-amber-400 to-orange-500 rounded-3xl shadow-lg shadow-orange-200 mb-6">
-        <svg class="w-9 h-9 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-            d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
-        </svg>
-      </div>
-
-      <h1 class="text-2xl font-bold text-neutral-900 mb-2">Premium Feature</h1>
-      <p class="text-neutral-500 text-sm mb-1">
-        <span class="font-semibold text-emerald-700">{{ feature }}</span> is not available on your current plan.
-      </p>
-      <p class="text-neutral-400 text-xs mb-8">
-        {{ tenantName }} is on the <span class="font-medium text-neutral-600">{{ currentPlan }}</span> plan.
-        Upgrade to unlock this feature.
-      </p>
-
-      <!-- Plan comparison cards -->
-      <div class="grid grid-cols-2 gap-4 mb-8 text-left">
-
-        <!-- Current (Starter) -->
-        <div class="bg-white rounded-2xl border border-neutral-200 p-5">
-          <div class="flex items-center justify-between mb-3">
-            <span class="text-xs font-semibold text-neutral-500 uppercase tracking-wide">{{ currentPlan }}</span>
-            <span class="text-xs bg-neutral-100 text-neutral-600 px-2 py-0.5 rounded-full font-medium">Current</span>
-          </div>
-          <p class="text-xl font-bold text-neutral-800 mb-4">Free</p>
-          <ul class="space-y-2 text-xs text-neutral-500">
-            <li class="flex items-center gap-2">
-              <svg class="w-3.5 h-3.5 text-emerald-500 shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
-              </svg>
-              Up to 100 borrowers
-            </li>
-            <li class="flex items-center gap-2">
-              <svg class="w-3.5 h-3.5 text-emerald-500 shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
-              </svg>
-              Staff web portal
-            </li>
-            <li class="flex items-center gap-2 opacity-40">
-              <svg class="w-3.5 h-3.5 text-red-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-              </svg>
-              Borrower PWA
-            </li>
-            <li class="flex items-center gap-2 opacity-40">
-              <svg class="w-3.5 h-3.5 text-red-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-              </svg>
-              Custom subdomain
-            </li>
-          </ul>
-        </div>
-
-        <!-- Growth (upgrade target) -->
-        <div class="bg-gradient-to-br from-emerald-600 to-emerald-700 rounded-2xl p-5 text-white relative overflow-hidden">
-          <div class="absolute top-0 right-0 w-20 h-20 bg-white/10 rounded-bl-full"></div>
-          <div class="flex items-center justify-between mb-3">
-            <span class="text-xs font-semibold text-emerald-200 uppercase tracking-wide">Growth</span>
-            <span class="text-xs bg-white/20 text-white px-2 py-0.5 rounded-full font-medium">Recommended</span>
-          </div>
-          <p class="text-xl font-bold text-white mb-4">$49<span class="text-sm font-normal text-emerald-200">/mo</span></p>
-          <ul class="space-y-2 text-xs text-emerald-100">
-            <li class="flex items-center gap-2">
-              <svg class="w-3.5 h-3.5 text-white shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
-              </svg>
-              Up to 1,000 borrowers
-            </li>
-            <li class="flex items-center gap-2">
-              <svg class="w-3.5 h-3.5 text-white shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
-              </svg>
-              Custom subdomain
-            </li>
-            <li class="flex items-center gap-2 font-semibold text-white">
-              <svg class="w-3.5 h-3.5 text-white shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
-              </svg>
-              Borrower PWA ✦
-            </li>
-            <li class="flex items-center gap-2">
-              <svg class="w-3.5 h-3.5 text-white shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
-              </svg>
-              Mobile money
-            </li>
-          </ul>
-        </div>
-      </div>
-
-      <!-- CTA -->
-      <a href="mailto:sales@lendr.app?subject=Upgrade request — {{ tenantName }}&body=Hi, I would like to upgrade {{ tenantName }} from {{ currentPlan }} to Growth plan."
-        class="inline-flex items-center gap-2 bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white font-semibold px-8 py-3 rounded-xl shadow-lg shadow-emerald-200 transition text-sm mb-4">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
-        </svg>
-        Request Upgrade
-      </a>
-
+  <AppLayout>
+    <template #header>
       <div>
-        <Link :href="route('dashboard')" class="text-sm text-neutral-400 hover:text-neutral-600 transition">
-          ← Back to dashboard
-        </Link>
+        <p class="text-xs font-semibold uppercase tracking-widest text-primary-600">Upgrade required</p>
+        <h1 class="text-2xl font-bold text-neutral-900 dark:text-white mt-1">{{ feature }}</h1>
+        <p class="text-sm text-neutral-500 mt-1">
+          {{ feature }} isn't included in your <strong class="font-semibold text-neutral-700 dark:text-neutral-300">{{ current?.label ?? 'current' }}</strong> plan.
+          <template v-if="recommended">Upgrade to <strong class="font-semibold text-neutral-700 dark:text-neutral-300">{{ recommended.label }}</strong> to switch it on for {{ tenantName }}.</template>
+        </p>
+      </div>
+    </template>
+
+    <div class="max-w-4xl">
+      <!-- Plan comparison -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+        <!-- Current plan -->
+        <section v-if="current" class="lendr-card p-6 flex flex-col">
+          <div class="flex items-center justify-between">
+            <h2 class="text-sm font-semibold uppercase tracking-wide text-neutral-500">{{ current.label }}</h2>
+            <span class="lendr-badge-neutral">Your plan</span>
+          </div>
+          <p class="mt-3 text-3xl font-bold text-neutral-900 dark:text-white">
+            {{ price(current) }}<span v-if="perMonth(current)" class="text-sm font-medium text-neutral-500"> / month</span>
+          </p>
+          <p class="mt-1 text-sm text-neutral-500 min-h-[2.5rem]">{{ current.description }}</p>
+          <PlanDetails :plan="current" :highlight="featureKey" class="mt-5" />
+        </section>
+
+        <!-- Recommended plan -->
+        <section v-if="recommended" class="relative rounded-xl p-6 flex flex-col bg-white dark:bg-neutral-900 ring-2 ring-primary-600 shadow-lg shadow-primary-600/10">
+          <div class="flex items-center justify-between">
+            <h2 class="text-sm font-semibold uppercase tracking-wide text-primary-700 dark:text-primary-400">{{ recommended.label }}</h2>
+            <span class="inline-flex items-center gap-1 rounded-full bg-primary-600 px-2.5 py-0.5 text-xs font-semibold text-white">
+              <SparklesIcon class="w-3.5 h-3.5" /> Recommended
+            </span>
+          </div>
+          <p class="mt-3 text-3xl font-bold text-neutral-900 dark:text-white">
+            {{ price(recommended) }}<span v-if="perMonth(recommended)" class="text-sm font-medium text-neutral-500"> / month</span>
+          </p>
+          <p class="mt-1 text-sm text-neutral-500 min-h-[2.5rem]">{{ recommended.description }}</p>
+          <PlanDetails :plan="recommended" :highlight="featureKey" class="mt-5" />
+
+          <div class="mt-6 pt-5 border-t border-neutral-100 dark:border-neutral-800">
+            <Link
+              v-if="!recommended.is_custom_price"
+              :href="route('billing.index', { plan: recommended.key })"
+              class="btn-primary w-full justify-center py-2.5"
+            >
+              <ArrowTrendingUpIcon class="w-4 h-4" />
+              Upgrade to {{ recommended.label }}
+            </Link>
+            <Link v-else :href="route('support.index')" class="btn-primary w-full justify-center py-2.5">
+              <ChatBubbleLeftRightIcon class="w-4 h-4" />
+              Talk to us about {{ recommended.label }}
+            </Link>
+          </div>
+        </section>
+
+        <!-- No plan includes it: point to support -->
+        <section v-if="!recommended" class="lendr-card p-6 flex flex-col justify-center text-center">
+          <ChatBubbleLeftRightIcon class="w-10 h-10 mx-auto text-primary-600" />
+          <h2 class="mt-3 text-base font-semibold text-neutral-900 dark:text-white">Need {{ feature }}?</h2>
+          <p class="mt-1 text-sm text-neutral-500">It isn't part of a standard plan yet. Tell us what you need and we'll help.</p>
+          <Link :href="route('support.index')" class="btn-primary mx-auto mt-5">Contact support</Link>
+        </section>
       </div>
 
+      <div class="mt-6 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
+        <Link :href="route('billing.index')" class="font-medium text-primary-600 hover:text-primary-700">Compare all plans →</Link>
+        <button type="button" class="text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300" @click="goBack">← Go back</button>
+      </div>
     </div>
-  </div>
+  </AppLayout>
 </template>
 
 <script setup>
+import { h } from 'vue'
 import { Link } from '@inertiajs/vue3'
+import AppLayout from '@/admin/components/layout/AppLayout.vue'
+import { CheckIcon, XMarkIcon } from '@heroicons/vue/20/solid'
+import { SparklesIcon, ArrowTrendingUpIcon, ChatBubbleLeftRightIcon } from '@heroicons/vue/24/outline'
 
-defineProps({
-  feature:     { type: String, default: 'This feature' },
-  currentPlan: { type: String, default: 'Starter' },
-  tenantName:  { type: String, default: '' },
+const props = defineProps({
+  feature: { type: String, default: 'This feature' },
+  featureKey: { type: String, default: '' },
+  tenantName: { type: String, default: '' },
+  current: { type: Object, default: null },
+  recommended: { type: Object, default: null },
 })
+
+const kwacha = new Intl.NumberFormat('en-ZM', { maximumFractionDigits: 0 })
+const price = (plan) => plan.is_custom_price ? 'Custom' : plan.price_zmw > 0 ? `K ${kwacha.format(plan.price_zmw)}` : 'Free'
+const perMonth = (plan) => !plan.is_custom_price && plan.price_zmw > 0
+
+const goBack = () => (window.history.length > 1 ? window.history.back() : window.location.assign(route('dashboard')))
+
+// Limits, then features with a tick or cross; the feature being asked for stands out.
+const PlanDetails = (p) => h('div', { class: 'space-y-5' }, [
+  h('dl', { class: 'grid grid-cols-2 gap-3' }, p.plan.limits.map((l) =>
+    h('div', { class: 'rounded-lg bg-neutral-50 dark:bg-neutral-800 px-3 py-2' }, [
+      h('dt', { class: 'text-xs text-neutral-500' }, l.label),
+      h('dd', { class: 'text-sm font-semibold text-neutral-900 dark:text-white' }, l.value),
+    ]),
+  )),
+  h('ul', { class: 'space-y-2' }, p.plan.features.map((f) =>
+    h('li', {
+      class: ['flex items-center gap-2 text-sm', f.included ? 'text-neutral-700 dark:text-neutral-300' : 'text-neutral-400 dark:text-neutral-500',
+        f.key === p.highlight ? 'font-semibold' : ''],
+    }, [
+      h(f.included ? CheckIcon : XMarkIcon, { class: ['w-4 h-4 shrink-0', f.included ? 'text-emerald-500' : 'text-neutral-300 dark:text-neutral-600'] }),
+      f.label,
+    ]),
+  )),
+])
+PlanDetails.props = ['plan', 'highlight']
 </script>
