@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Account Statement — {{ $borrower['borrower_number'] }}</title>
+ | {{ $borrower['borrower_number'] }}</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body { font-family: DejaVu Sans, sans-serif; font-size: 11px; color: #1f2937; background: #fff; line-height: 1.5; }

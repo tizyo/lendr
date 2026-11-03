@@ -9,7 +9,7 @@ import { useUiStore } from '@/admin/stores/ui.js'
 const appName = import.meta.env.VITE_APP_NAME || 'LENDR'
 
 createInertiaApp({
-    title: (title) => `${title} — ${appName}`,
+    title: (title) => (title ? `${title} | ${appName}` : appName),
     resolve: (name) => {
         const adminPages    = import.meta.glob('./admin/pages/**/*.vue')
         const landlordPages = import.meta.glob('./landlord/pages/**/*.vue')
