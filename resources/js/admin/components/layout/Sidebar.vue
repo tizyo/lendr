@@ -4,16 +4,13 @@
     :class="collapsed ? 'w-16' : 'w-64'"
   >
     <!-- Logo -->
-    <div class="flex items-center gap-3 px-4 py-5 border-b border-neutral-800">
-      <!-- Official mark on a white tile: its navy would disappear against the dark sidebar -->
-      <div class="w-8 h-8 bg-white rounded-lg flex items-center justify-center shrink-0">
-        <img src="/brand/lendr-mark.svg" alt="LENDR" class="w-6 h-6" />
+    <div class="px-4 py-5 border-b border-neutral-800" :class="collapsed ? 'flex justify-center' : ''">
+      <!-- One logo: the wordmark, cropped to its mark when the sidebar is icon-only -->
+      <div class="overflow-hidden" :class="collapsed ? 'w-7' : ''">
+        <img src="/brand/lendr-logo-white.png" alt="LENDR" class="h-8 w-auto max-w-none" />
       </div>
       <Transition name="slide-fade">
-        <div v-if="!collapsed" class="min-w-0">
-          <img src="/brand/lendr-logo-white.png" alt="LENDR" class="h-5 w-auto" />
-          <p v-if="tenant" class="text-neutral-400 text-xs leading-none mt-1 truncate">{{ tenant.name }}</p>
-        </div>
+        <p v-if="tenant && !collapsed" class="text-neutral-400 text-xs leading-none mt-2 truncate">{{ tenant.name }}</p>
       </Transition>
     </div>
 
@@ -78,23 +75,27 @@ function containsActive(section) {
   return section.items.some(item => item.route === active)
 }
 
-// Open groups survive page visits, and the current page's group opens on arrival.
+// One group open at a time. The current page's group opens on arrival; otherwise
+// the group last opened stays open across page visits.
 const STORAGE_KEY = 'lendr.nav.open'
-const openSections = ref(readOpenSections())
+const openSection = ref(readOpenSection())
 
-function readOpenSections() {
-  let saved = []
-  try {
-    saved = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '[]')
-  } catch { /* storage unavailable */ }
-
+function readOpenSection() {
   const current = navSections.find(containsActive)?.name
+  if (current) {
+    return current
+  }
 
-  return current && !saved.includes(current) ? [...saved, current] : saved
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY)
+    return navSections.some(s => s.name === saved) ? saved : null
+  } catch {
+    return null // storage unavailable
+  }
 }
 
 function isOpen(section) {
-  return openSections.value.includes(section.name)
+  return openSection.value === section.name
 }
 
 function toggleSection(section) {
@@ -108,12 +109,15 @@ function toggleSection(section) {
     }
   }
 
-  openSections.value = open
-    ? openSections.value.filter(name => name !== section.name)
-    : [...openSections.value, section.name]
+  // Opening a group closes whichever was open before.
+  openSection.value = open ? null : section.name
 
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(openSections.value))
+    if (openSection.value) {
+      localStorage.setItem(STORAGE_KEY, openSection.value)
+    } else {
+      localStorage.removeItem(STORAGE_KEY)
+    }
   } catch { /* storage unavailable: still works on this page */ }
 }
 </script>
