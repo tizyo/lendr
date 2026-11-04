@@ -50,7 +50,6 @@ class NotificationTemplate extends Model
             '{{amount}}' => 'Loan or payment amount',
             '{{due_date}}' => 'Next due date',
             '{{outstanding}}' => 'Outstanding balance',
-            '{{branch_name}}' => 'Branch name',
             '{{company_name}}' => 'Company / tenant name',
             '{{otp}}' => 'One-time password (OTP)',
         ];

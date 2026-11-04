@@ -55,6 +55,23 @@ class ESignatureService
      */
     public function sendOtp(LoanAgreement $agreement, string $ip = '', string $ua = ''): string
     {
+        $borrower = $agreement->loan->borrower;
+
+        // The borrower proves it is them by reading back a code sent to their own phone.
+        // It used to be generated and never sent (or, in debug mode, shown to staff).
+        if (blank($borrower?->phone)) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'otp' => 'The borrower has no mobile number on file to send the signing code to.',
+            ]);
+        }
+
+        // One code a minute: a fresh code each click would let codes be sprayed at a phone.
+        if ($agreement->status === 'otp_sent' && $agreement->otp_expires_at?->gt(now()->addMinutes(self::OTP_TTL_MINUTES - 1))) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'otp' => 'A code was sent less than a minute ago. Wait a moment before sending another.',
+            ]);
+        }
+
         $otp = (string) random_int(100000, 999999);
 
         $agreement->update([
@@ -64,8 +81,12 @@ class ESignatureService
             'otp_attempts' => 0,
         ]);
 
-        $borrower = $agreement->loan->borrower;
-        $this->audit($agreement, 'otp_sent', $borrower->phone ?? 'unknown', $ip, $ua, [
+        app(\App\Services\SMS\SmsService::class)->send(
+            $borrower->phone,
+            "Your code to sign loan agreement {$agreement->loan->loan_number} is {$otp}. Valid for ".self::OTP_TTL_MINUTES.' minutes. Only share it with the loan officer signing you up.',
+        );
+
+        $this->audit($agreement, 'otp_sent', $borrower->phone, $ip, $ua, [
             'phone' => $borrower->phone,
         ]);
 

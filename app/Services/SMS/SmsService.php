@@ -8,7 +8,6 @@ use App\Services\SMS\Drivers\ClickatellDriver;
 use App\Services\SMS\Drivers\NullDriver;
 use App\Services\SMS\Drivers\SmsToDriver;
 use App\Services\SMS\Drivers\TwilioDriver;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 /**
@@ -73,9 +72,7 @@ class SmsService
                 return null;
             }
 
-            $settings = DB::table('settings')
-                ->whereIn('key', ['sms_gateway', 'sms_api_key', 'sms_sender_name', 'sms_username'])
-                ->pluck('value', 'key');
+            $settings = \App\Support\TenantSettings::many(['sms_gateway', 'sms_api_key', 'sms_sender_name', 'sms_username']);
 
             $gateway = $settings->get('sms_gateway');
             $apiKey = $settings->get('sms_api_key', '');

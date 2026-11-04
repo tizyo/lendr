@@ -97,9 +97,8 @@ class AuthController extends Controller
             ]);
         }
 
-        if ($user->force_password_reset) {
-            return redirect()->route('password.reset.forced');
-        }
+        // A forced password change happens after sign-in (and after 2FA): EnforceStaffSecurity
+        // holds the user on their profile until they've chosen a new password.
 
         if ($user->hasRole2faEnabled()) {
             $request->session()->put('2fa_user_id', $user->id);
@@ -256,7 +255,7 @@ class AuthController extends Controller
             ! $tenant->isEmailVerified() => 'This workspace is not yet active. Please check your email and verify your account first.',
             $tenant->status === 'suspended' => 'This workspace has been suspended. Please contact support to reinstate your account.',
             $tenant->status === 'cancelled' => 'This workspace has been cancelled.',
-            $tenant->isTrialExpired() => 'Your free trial has expired. Please contact support to upgrade your account.',
+            // An ended trial still signs in: CheckTenantStatus shows the plan page, so the admin can pay.
             default => null,
         };
 

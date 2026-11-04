@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Services\Mail\TenantMailService;
 use App\Services\TenantLogo;
+use App\Support\TenantSettings;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -13,17 +14,21 @@ use Inertia\Response;
 
 class SettingController extends Controller
 {
-    private const MASKED_KEYS = ['smtp_password', 'sms_api_key', 'mobile_money_secret'];
-
     public function index(): Response
     {
         $settings = DB::table('settings')->get()->keyBy('key')->map(function ($row) {
-            return in_array($row->key, self::MASKED_KEYS) ? '••••••••' : $row->value;
+            // A saved secret shows as the mask (sent back = unchanged); an empty one shows empty.
+            return TenantSettings::isSecret($row->key) && filled($row->value) ? TenantSettings::MASK : $row->value;
         });
 
         return Inertia::render('settings/Index', [
             'settings' => $settings,
             'logoUrl' => TenantLogo::url(),
+            // What each lender pastes into its mobile-money providers' dashboards.
+            'webhookUrls' => tenant('id') ? collect(\App\Http\Controllers\Webhook\ProviderWebhookController::HANDLERS)
+                ->keys()
+                ->mapWithKeys(fn ($provider) => [$provider => route('api.v1.webhooks.tenant', ['provider' => $provider, 'tenant' => tenant('id')])])
+                : (object) [],
         ]);
     }
 
@@ -49,16 +54,8 @@ class SettingController extends Controller
     {
         $data = $request->validate(['settings' => ['required', 'array']]);
 
-        foreach ($data['settings'] as $key => $value) {
-            if (in_array($key, self::MASKED_KEYS) && $value === '••••••••') {
-                continue;
-            }
-
-            DB::table('settings')->updateOrInsert(
-                ['key' => $key],
-                ['value' => $value, 'updated_at' => now()],
-            );
-        }
+        // Validates, encrypts secrets, keeps Enterprise-only providers to Enterprise.
+        TenantSettings::save($data['settings']);
 
         return back()->with('success', 'Settings saved.');
     }

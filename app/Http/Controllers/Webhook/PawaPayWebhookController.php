@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Webhook;
 
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -18,7 +17,7 @@ class PawaPayWebhookController extends BaseWebhookController
 
     protected function verifySignature(Request $request): bool
     {
-        $secret = DB::table('settings')->where('key', 'pawapay_webhook_secret')->value('value');
+        $secret = \App\Support\TenantSettings::get('pawapay_webhook_secret');
 
         if (! $secret) {
             Log::warning('[Webhook:pawapay] No webhook secret configured — rejecting unsigned request', ['ip' => $request->ip()]);

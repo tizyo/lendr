@@ -16,9 +16,9 @@
 
     <!-- Navigation -->
     <nav class="flex-1 overflow-y-auto py-4 px-2 space-y-0.5 sidebar-scroll">
-      <template v-for="section in navSections" :key="section.name">
-        <!-- A section of one is a plain link -->
-        <NavItem v-if="section.items.length === 1" :item="section.items[0]" :collapsed="collapsed" />
+      <template v-for="section in sections" :key="section.name">
+        <!-- A section of one is a plain link (also when permissions leave only one) -->
+        <NavItem v-if="section.items.length === 1" :item="{ icon: section.icon, ...section.items[0] }" :collapsed="collapsed" />
 
         <div v-else>
           <button
@@ -62,13 +62,14 @@ import { ref, computed } from 'vue'
 import { usePage } from '@inertiajs/vue3'
 import { ChevronRightIcon } from '@heroicons/vue/24/outline'
 import NavItem from './NavItem.vue'
-import { navSections, navIcon, activeNavRoute } from './navigation.js'
+import { visibleNavSections, navIcon, activeNavRoute } from './navigation.js'
 
 const props = defineProps({ collapsed: Boolean })
 const emit = defineEmits(['toggle'])
 
 const page = usePage()
 const tenant = computed(() => page.props.tenant)
+const sections = computed(() => visibleNavSections(page.props.auth?.user?.permissions ?? []))
 
 function containsActive(section) {
   const active = activeNavRoute()
@@ -81,14 +82,14 @@ const STORAGE_KEY = 'lendr.nav.open'
 const openSection = ref(readOpenSection())
 
 function readOpenSection() {
-  const current = navSections.find(containsActive)?.name
+  const current = sections.value.find(containsActive)?.name
   if (current) {
     return current
   }
 
   try {
     const saved = localStorage.getItem(STORAGE_KEY)
-    return navSections.some(s => s.name === saved) ? saved : null
+    return sections.value.some(s => s.name === saved) ? saved : null
   } catch {
     return null // storage unavailable
   }

@@ -163,7 +163,7 @@ test('growth plan creates tenant with custom subdomain', function () {
     expect($tenant)->not->toBeNull()
         ->and($tenant->plan)->toBe('growth');
 
-    $centralDomain = env('CENTRAL_DOMAIN', 'localhost');
+    $centralDomain = config('tenancy.central_domain');
     $domain = Domain::where('domain', $subdomain.'.'.$centralDomain)->first();
     expect($domain)->not->toBeNull()
         ->and($domain->tenant_id)->toBe($tenant->id);

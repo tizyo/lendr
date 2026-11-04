@@ -23,16 +23,15 @@ class ApiClientController extends BaseApiController
             'rate_limit_per_minute' => ['nullable', 'integer', 'min:1', 'max:1000'],
         ]);
 
-        $rawKey = ApiClient::generateKey();
-
-        $client = ApiClient::create([
+        // Saved by issueKey(), together with the key's hash.
+        $client = new ApiClient([
             'name' => $data['name'],
-            'client_key' => $rawKey,
-            'client_secret' => Hash::make($rawKey),
             'scopes' => $data['scopes'] ?? ['products_read'],
             'rate_limit_per_minute' => $data['rate_limit_per_minute'] ?? 60,
             'created_by' => auth()->id(),
         ]);
+
+        $rawKey = $client->issueKey();
 
         return $this->success(
             ['client' => $this->format($client) + ['client_key' => $rawKey]],
@@ -70,12 +69,7 @@ class ApiClientController extends BaseApiController
 
     public function rotateKey(ApiClient $apiClient): JsonResponse
     {
-        $rawKey = ApiClient::generateKey();
-
-        $apiClient->update([
-            'client_key' => $rawKey,
-            'client_secret' => Hash::make($rawKey),
-        ]);
+        $rawKey = $apiClient->issueKey();
 
         return $this->success(
             ['client_key' => $rawKey],

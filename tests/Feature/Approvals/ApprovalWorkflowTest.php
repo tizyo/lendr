@@ -20,7 +20,7 @@ function makeWorkflow(array $overrides = []): ApprovalWorkflow
         'entity_type' => 'loan_disbursement',
         'min_amount' => 0,
         'max_amount' => null,
-        'required_roles' => ['BranchManager', 'SuperAdmin'],
+        'required_roles' => ['branch_manager', 'super_admin'],
         'required_approvals' => 1,
         'is_active' => true,
     ], $overrides));
@@ -36,7 +36,7 @@ test('can create an approval workflow', function () {
             'name' => 'High-Value Disbursement',
             'entity_type' => 'loan_disbursement',
             'min_amount' => 50000,
-            'required_roles' => ['SuperAdmin'],
+            'required_roles' => ['super_admin'],
             'required_approvals' => 2,
         ])
         ->assertStatus(201);
@@ -97,13 +97,66 @@ test('submit returns null data when no workflow matches', function () {
 
     $resp = $this->actingAs($admin)
         ->postJson(route('api.v1.approvals.submit'), [
-            'entity_type' => 'nonexistent_type',
+            'entity_type' => 'expense',
             'entity_id' => 99,
         ])
         ->assertOk();
 
     expect($resp->json('data'))->toBeNull();
     expect(ApprovalRequest::count())->toBe(0);
+});
+
+test('submit refuses an action type no code enforces', function () {
+    $this->actingAs(approvalAdmin())
+        ->postJson(route('api.v1.approvals.submit'), ['entity_type' => 'nonexistent_type', 'entity_id' => 99])
+        ->assertUnprocessable();
+});
+
+test('workflows saved under the old screen names still apply', function () {
+    makeWorkflow(['entity_type' => 'loan_disburse']);
+
+    expect(ApprovalWorkflow::findFor('loan_disbursement', 5000))->not->toBeNull();
+});
+
+test('the person who submitted a request cannot approve it', function () {
+    $admin = approvalAdmin();
+    $workflow = makeWorkflow();
+    $request = ApprovalRequest::create([
+        'workflow_id' => $workflow->id, 'entity_type' => 'loan_disbursement', 'entity_id' => 1,
+        'submitted_by' => $admin->id, 'status' => 'pending',
+    ]);
+
+    $this->actingAs($admin)->postJson(route('api.v1.approvals.approve', $request))->assertUnprocessable();
+    expect($request->fresh()->status)->toBe('pending');
+});
+
+test('one person approving twice counts once', function () {
+    $submitter = approvalAdmin();
+    $approver = approvalAdmin();
+    $workflow = makeWorkflow(['required_approvals' => 2]);
+    $request = ApprovalRequest::create([
+        'workflow_id' => $workflow->id, 'entity_type' => 'loan_disbursement', 'entity_id' => 1,
+        'submitted_by' => $submitter->id, 'status' => 'pending',
+    ]);
+
+    $this->actingAs($approver)->postJson(route('api.v1.approvals.approve', $request))->assertOk();
+    $this->actingAs($approver)->postJson(route('api.v1.approvals.approve', $request))->assertUnprocessable();
+
+    expect($request->fresh()->status)->toBe('pending');
+});
+
+test('only the workflow roles can decide a request', function () {
+    (new \Database\Seeders\RolesAndPermissionsSeeder)->run();
+    $submitter = approvalAdmin();
+    $accountant = User::factory()->create(['role' => UserRole::Accountant, 'is_active' => true]);
+    $workflow = makeWorkflow(['required_roles' => ['branch_manager']]);
+    $request = ApprovalRequest::create([
+        'workflow_id' => $workflow->id, 'entity_type' => 'loan_disbursement', 'entity_id' => 1,
+        'submitted_by' => $submitter->id, 'status' => 'pending',
+    ]);
+
+    $this->actingAs($accountant)->postJson(route('api.v1.approvals.approve', $request))->assertUnprocessable();
+    expect($request->fresh()->status)->toBe('pending');
 });
 
 // ─── Pending List ─────────────────────────────────────────────────────────────
@@ -172,13 +225,14 @@ test('can show an approval request', function () {
 
 test('can approve a request and it becomes approved when threshold reached', function () {
     $admin = approvalAdmin();
+    $submitter = approvalAdmin();
     $workflow = makeWorkflow(['required_approvals' => 1]);
 
     $request = ApprovalRequest::create([
         'workflow_id' => $workflow->id,
         'entity_type' => 'loan_disbursement',
         'entity_id' => 1,
-        'submitted_by' => $admin->id,
+        'submitted_by' => $submitter->id,
         'status' => 'pending',
     ]);
 
@@ -192,6 +246,7 @@ test('can approve a request and it becomes approved when threshold reached', fun
 
 test('request stays pending until required_approvals threshold is met', function () {
     $admin = approvalAdmin();
+    $submitter = approvalAdmin();
     $approver = User::factory()->create(['role' => UserRole::SuperAdmin, 'is_active' => true]);
     $workflow = makeWorkflow(['required_approvals' => 2]);
 
@@ -199,7 +254,7 @@ test('request stays pending until required_approvals threshold is met', function
         'workflow_id' => $workflow->id,
         'entity_type' => 'loan_disbursement',
         'entity_id' => 1,
-        'submitted_by' => $admin->id,
+        'submitted_by' => $submitter->id,
         'status' => 'pending',
     ]);
 

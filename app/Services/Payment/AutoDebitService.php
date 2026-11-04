@@ -83,7 +83,7 @@ class AutoDebitService
             'momo_provider' => $order->gateway,
             'reference' => $order->provider_reference,
             'notes' => 'Auto-debit standing order #'.$order->id,
-        ]);
+        ], allowOverpayment: true); // already collected from the borrower
 
         $order->update([
             'status' => 'completed',

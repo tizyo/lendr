@@ -36,9 +36,16 @@ class RiskAssessmentService
             ->orderBy('sort_order')
             ->get();
 
+        // A policy someone already overrode for this loan (with a reason) stays overridden.
+        $overridden = RiskFlag::where('loan_id', $loan->id)->where('overridden', true)->pluck('risk_policy_id')->all();
+
         $flags = [];
 
         foreach ($policies as $policy) {
+            if (in_array($policy->id, $overridden)) {
+                continue;
+            }
+
             $detail = $policy->evaluate($context);
 
             if ($detail === null) {

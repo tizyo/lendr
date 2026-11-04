@@ -6,7 +6,7 @@
           <h1 class="text-xl font-bold text-neutral-900">Loan Insurance</h1>
           <p class="text-sm text-neutral-500 mt-0.5">Manage insurance products, policies, and claims</p>
         </div>
-        <button @click="openAddProduct" class="lendr-btn-primary">+ New Product</button>
+        <button v-if="can('insurance.manage')" @click="openAddProduct" class="lendr-btn-primary">+ New Product</button>
       </div>
     </template>
 
@@ -47,8 +47,10 @@
                 <span :class="p.is_active ? 'lendr-badge-success' : 'lendr-badge-neutral'" class="lendr-badge text-xs">{{ p.is_active ? 'Active' : 'Off' }}</span>
               </td>
               <td class="px-4 py-3 text-right">
-                <button @click="editProduct(p)" class="text-primary-600 text-xs hover:underline mr-2">Edit</button>
-                <button @click="deleteProduct(p)" class="text-red-400 text-xs hover:text-red-600">Remove</button>
+                <template v-if="can('insurance.manage')">
+                  <button @click="editProduct(p)" class="text-primary-600 text-xs hover:underline mr-2">Edit</button>
+                  <button @click="deleteProduct(p)" class="text-red-400 text-xs hover:text-red-600">Remove</button>
+                </template>
               </td>
             </tr>
           </tbody>
@@ -121,15 +123,15 @@
             <tr v-if="claims.length === 0"><td colspan="6" class="px-4 py-10 text-center text-neutral-400">No claims found.</td></tr>
             <tr v-for="c in claims" :key="c.id" class="hover:bg-neutral-50">
               <td class="px-4 py-3 font-mono text-xs">{{ c.claim_number }}</td>
-              <td class="px-4 py-3 font-mono text-xs">Policy #{{ c.loan_insurance_id }}</td>
+              <td class="px-4 py-3 font-mono text-xs">{{ c.policy_number ?? `Policy #${c.loan_insurance_id}` }}</td>
               <td class="px-4 py-3 capitalize text-neutral-600">{{ c.claim_type?.replace('_', ' ') }}</td>
               <td class="px-4 py-3 text-right font-medium">{{ fmt(c.claim_amount) }}</td>
               <td class="px-4 py-3 text-center">
                 <span :class="statusClass(c.status)" class="lendr-badge text-xs capitalize">{{ c.status }}</span>
               </td>
               <td class="px-4 py-3 text-right">
-                <button v-if="c.status === 'pending'" @click="openReview(c, 'approved')" class="text-green-600 text-xs hover:underline mr-2">Approve</button>
-                <button v-if="c.status === 'pending'" @click="openReview(c, 'rejected')" class="text-red-500 text-xs hover:underline">Reject</button>
+                <button v-if="c.status === 'pending' && can('insurance.manage')" @click="openReview(c, 'approved')" class="text-green-600 text-xs hover:underline mr-2">Approve</button>
+                <button v-if="c.status === 'pending' && can('insurance.manage')" @click="openReview(c, 'rejected')" class="text-red-500 text-xs hover:underline">Reject</button>
               </td>
             </tr>
           </tbody>
@@ -217,6 +219,9 @@
 import { ref, onMounted } from 'vue'
 import AppLayout from '@/admin/components/layout/AppLayout.vue'
 import axios from 'axios'
+import { useCan } from '@/admin/composables/useCan.js'
+
+const can = useCan()
 
 const activeTab = ref('products')
 const tabs = [

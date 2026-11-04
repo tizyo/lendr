@@ -1,0 +1,26 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+/**
+ * When each staff member last set their password, for Settings → Security →
+ * password expiry (EnforceStaffSecurity). Existing accounts count from creation.
+ */
+return new class extends Migration
+{
+    public function up(): void
+    {
+        if (Schema::hasTable('users') && ! Schema::hasColumn('users', 'password_changed_at')) {
+            Schema::table('users', fn (Blueprint $table) => $table->timestamp('password_changed_at')->nullable());
+        }
+    }
+
+    public function down(): void
+    {
+        if (Schema::hasColumn('users', 'password_changed_at')) {
+            Schema::table('users', fn (Blueprint $table) => $table->dropColumn('password_changed_at'));
+        }
+    }
+};

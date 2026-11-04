@@ -11,6 +11,10 @@
         </div>
       </div>
 
+      <div v-else-if="failed" class="bg-white rounded-2xl border border-gray-100 p-6 text-center text-sm text-gray-500">
+        We couldn't load your credit score just now. Please try again in a moment.
+      </div>
+
       <!-- Score card -->
       <div v-else class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
 
@@ -84,7 +88,7 @@
       </div>
 
       <!-- Factor breakdown -->
-      <div v-if="!loading" class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+      <div v-if="!loading && !failed" class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
         <h2 class="text-sm font-semibold text-gray-800 mb-4">Score Factors</h2>
         <div class="space-y-4">
 
@@ -111,7 +115,7 @@
       </div>
 
       <!-- Improvement tips -->
-      <div v-if="!loading" class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+      <div v-if="!loading && !failed" class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
         <h2 class="text-sm font-semibold text-gray-800 mb-4">How to Improve Your Score</h2>
         <div class="space-y-3">
           <div v-for="tip in tips" :key="tip.title" class="flex gap-3">
@@ -129,7 +133,7 @@
       </div>
 
       <!-- Marketplace CTA -->
-      <div v-if="!loading && score.score >= 550"
+      <div v-if="!loading && !failed && score.score >= 550"
            class="bg-emerald-50 border border-emerald-100 rounded-2xl p-5 flex items-center gap-4">
         <div class="w-10 h-10 bg-emerald-100 rounded-full flex items-center justify-center shrink-0">
           <svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -159,26 +163,24 @@ import PwaLayout from '@/pwa/components/PwaLayout.vue'
 import axios from 'axios'
 
 const loading = ref(true)
+const failed  = ref(false)
+// Zeros until the real breakdown arrives; a failed load shows a message, never a made-up score.
 const score   = ref({
-  score:            450,
-  score_band:       'fair',
-  repayment_history_score: 50,
-  debt_load_score:         50,
-  history_length_score:    20,
-  account_mix_score:       25,
-  new_credit_score:        80,
-  total_loans:       0,
-  total_completed:   0,
-  total_defaulted:   0,
-  last_updated:      null,
+  score: 300, score_band: 'poor',
+  repayment_history_score: 0, debt_load_score: 0, history_length_score: 0,
+  account_mix_score: 0, new_credit_score: 0,
+  total_loans: 0, total_completed: 0, total_defaulted: 0, last_updated: null,
 })
 
 onMounted(async () => {
   try {
-    const res = await axios.get('/api/v1/borrower/credit-score')
-    score.value = res.data.data ?? score.value
+    // /me/credit-score: the old /borrower/credit-score address never existed, so this
+    // page always showed an invented 450 "Fair".
+    const res = await axios.get('/api/v1/me/credit-score')
+    if (res.data.data) score.value = res.data.data
+    else failed.value = true
   } catch {
-    // keep defaults — shows baseline
+    failed.value = true
   } finally {
     loading.value = false
   }

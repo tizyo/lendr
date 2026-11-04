@@ -22,6 +22,7 @@ it('only checks permissions that exist', function () {
         "/->can\\(\\s*'([a-z_]+\\.[a-z_]+)'/",
         "/\\bcan\\(\\s*'([a-z_]+\\.[a-z_]+)'\\s*\\)/",
         "/hasPermissionTo\\(\\s*'([a-z_]+\\.[a-z_]+)'/",
+        "/\\bcan:\\s*'([a-z_]+\\.[a-z_]+)'/", // sidebar items (navigation.js)
     ];
 
     $unknown = [];

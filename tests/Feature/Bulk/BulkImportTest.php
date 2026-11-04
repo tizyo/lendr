@@ -9,6 +9,8 @@ use App\Models\Tenant\LoanType;
 use App\Models\Tenant\User;
 use Illuminate\Http\UploadedFile;
 
+beforeEach(fn () => fundTheBook());
+
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function bulkAdmin(): User

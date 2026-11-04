@@ -1,11 +1,12 @@
 <template>
+  <AppLayout>
   <div class="max-w-6xl mx-auto py-8 px-4 space-y-6">
     <div class="flex items-center justify-between">
       <h1 class="text-2xl font-bold">Agent / DSA Network</h1>
       <div class="flex gap-3">
         <button @click="activeTab = 'agents'" :class="tabClass('agents')">Agents</button>
         <button @click="activeTab = 'commissions'; loadCommissions()" :class="tabClass('commissions')">Commissions</button>
-        <button @click="openCreate" class="bg-green-600 text-white rounded px-4 py-2 text-sm hover:bg-green-700">
+        <button v-if="can('sales.manage')" @click="openCreate" class="bg-green-600 text-white rounded px-4 py-2 text-sm hover:bg-green-700">
           + New Agent
         </button>
       </div>
@@ -36,7 +37,7 @@
               <span :class="statusBadge(a.status)" class="px-2 py-0.5 rounded-full text-xs font-medium capitalize">{{ a.status }}</span>
             </td>
             <td class="px-4 py-3">
-              <button @click="editAgent(a)" class="text-xs text-green-700 hover:underline">Edit</button>
+              <button v-if="can('sales.manage')" @click="editAgent(a)" class="text-xs text-green-700 hover:underline">Edit</button>
             </td>
           </tr>
         </tbody>
@@ -75,8 +76,8 @@
               <span :class="commBadge(c.status)" class="px-2 py-0.5 rounded-full text-xs capitalize">{{ c.status }}</span>
             </td>
             <td class="px-4 py-3 flex gap-2">
-              <button v-if="c.status === 'pending'" @click="approveComm(c)" class="text-xs text-blue-700 hover:underline">Approve</button>
-              <button v-if="c.status === 'approved'" @click="payComm(c)" class="text-xs text-green-700 hover:underline">Pay</button>
+              <button v-if="c.status === 'pending' && can('commissions.approve')" @click="approveComm(c)" class="text-xs text-blue-700 hover:underline">Approve</button>
+              <button v-if="c.status === 'approved' && can('commissions.approve')" @click="payComm(c)" class="text-xs text-green-700 hover:underline">Mark paid</button>
             </td>
           </tr>
         </tbody>
@@ -134,11 +135,16 @@
       </div>
     </div>
   </div>
+  </AppLayout>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue'
 import axios from 'axios'
+import AppLayout from '@/admin/components/layout/AppLayout.vue'
+import { useCan } from '@/admin/composables/useCan.js'
+
+const can = useCan()
 
 const activeTab  = ref('agents')
 const agents     = ref({ data: [] })
@@ -194,14 +200,23 @@ async function saveAgent() {
 }
 
 async function approveComm(c) {
-  await axios.post(`/api/v1/agent-commissions/${c.id}/approve`)
+  try {
+    await axios.post(`/api/v1/agent-commissions/${c.id}/approve`)
+  } catch (e) {
+    alert(e.response?.data?.message ?? 'Could not approve this commission.')
+  }
   await loadCommissions()
 }
 
 async function payComm(c) {
   const date = prompt('Payment date (YYYY-MM-DD):', new Date().toISOString().slice(0, 10))
   if (!date) return
-  await axios.post(`/api/v1/agent-commissions/${c.id}/pay`, { paid_date: date })
+  const reference = prompt('Payment reference (optional):', '') ?? ''
+  try {
+    await axios.post(`/api/v1/agent-commissions/${c.id}/pay`, { paid_date: date, payment_reference: reference || null })
+  } catch (e) {
+    alert(e.response?.data?.message ?? 'Could not record this payment.')
+  }
   await loadCommissions()
 }
 

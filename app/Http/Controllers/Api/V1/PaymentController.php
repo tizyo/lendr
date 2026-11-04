@@ -2,18 +2,16 @@
 
 namespace App\Http\Controllers\Api\V1;
 
-use App\Enums\LoanStatus;
+use App\Exceptions\LoanActionException;
 use App\Models\Tenant\Loan;
 use App\Models\Tenant\Payment;
-use App\Services\FundService;
+use App\Services\Payment\PaymentService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 
 class PaymentController extends BaseApiController
 {
-    public function __construct(private FundService $fund) {}
+    public function __construct(private PaymentService $payments) {}
 
     public function index(Request $request): JsonResponse
     {
@@ -38,80 +36,30 @@ class PaymentController extends BaseApiController
         return $this->paginated($payments, fn ($p) => $this->formatPayment($p));
     }
 
+    /**
+     * Record a payment taken by staff. The same posting as every other channel
+     * (PaymentService): allocation by instalment, schedule, fund, ledger, CRB.
+     */
     public function store(Request $request): JsonResponse
     {
-        $request->validate([
+        $data = $request->validate([
             'loan_id' => ['required', 'exists:loans,id'],
             'amount' => ['required', 'numeric', 'min:0.01'],
             'payment_method' => ['required', 'in:cash,bank_transfer,airtel_money,mtn_momo,zamtel_kwacha,cheque'],
-            'payment_date' => ['required', 'date'],
+            'payment_date' => ['required', 'date', 'before_or_equal:today'],
             'reference' => ['nullable', 'string', 'max:100'],
             'notes' => ['nullable', 'string', 'max:500'],
         ]);
 
-        $loan = Loan::findOrFail($request->loan_id);
-
-        if (! in_array($loan->status, [LoanStatus::Active, LoanStatus::Disbursed, LoanStatus::Defaulted, LoanStatus::Frozen])) {
-            return $this->error('Payments can only be recorded for active loans.', 422);
-        }
-
-        $payment = DB::transaction(function () use ($request, $loan) {
-            $amount = (float) $request->amount;
-
-            // Allocate payment: first to penalty, then interest, then principal
-            [$principalAllocated, $interestAllocated, $penaltyAllocated] = $this->allocatePayment($loan, $amount);
-
-            $payment = Payment::create([
-                'receipt_number' => $this->generateReceiptNumber(),
-                'loan_id' => $loan->id,
+        try {
+            $payment = $this->payments->record(Loan::findOrFail($data['loan_id']), [
+                ...$data,
                 'recorded_by' => auth()->id(),
-                'amount' => $amount,
-                'principal_allocated' => $principalAllocated,
-                'interest_allocated' => $interestAllocated,
-                'penalty_allocated' => $penaltyAllocated,
-                'fee_allocated' => 0,
-                'payment_method' => $request->payment_method,
-                'payment_date' => $request->payment_date,
-                'reference' => $request->reference,
-                'notes' => $request->notes,
                 'source' => 'manual',
-                'is_overdue_payment' => $loan->isOverdue(),
             ]);
-
-            // Update loan balances
-            $newTotalPaid = (float) $loan->total_paid + $amount;
-            $newOutstanding = max(0, (float) $loan->outstanding_balance - ($principalAllocated + $interestAllocated));
-            $newPenalty = max(0, (float) $loan->penalty_balance - $penaltyAllocated);
-
-            $newStatus = $loan->status;
-            if ($newOutstanding <= 0 && $newPenalty <= 0) {
-                $newStatus = LoanStatus::Completed;
-                $loan->update(['closed_date' => now()->toDateString()]);
-            }
-
-            $loan->update([
-                'total_paid' => $newTotalPaid,
-                'outstanding_balance' => $newOutstanding,
-                'penalty_balance' => $newPenalty,
-                'status' => $newStatus->value,
-            ]);
-
-            // Update schedule instalments
-            $this->applyToSchedule($loan, $principalAllocated, $interestAllocated, $request->payment_date);
-
-            // Credit fund: repayment principal + interest
-            $repaymentAmount = $principalAllocated + $interestAllocated;
-            if ($repaymentAmount > 0) {
-                $this->fund->recordRepayment($payment, $repaymentAmount, auth()->id());
-            }
-
-            // Credit fund: penalty collected separately
-            if ($penaltyAllocated > 0) {
-                $this->fund->recordPenalty($payment, $penaltyAllocated, auth()->id());
-            }
-
-            return $payment;
-        });
+        } catch (LoanActionException $e) {
+            return $this->error($e->getMessage(), $e->status);
+        }
 
         $payment->load(['loan:id,loan_number', 'recordedBy:id,name']);
 
@@ -125,25 +73,19 @@ class PaymentController extends BaseApiController
         return $this->success($this->formatPayment($payment, true));
     }
 
-    public function destroy(Payment $payment): JsonResponse
+    /**
+     * Reverse a payment: schedule, loan balances, fund and ledger are all undone
+     * (PaymentService::reverse). The payment stays on record as reversed.
+     */
+    public function destroy(Request $request, Payment $payment): JsonResponse
     {
-        if (! auth()->user()?->can('payments.delete')) {
-            return $this->error('Forbidden.', 403);
+        $data = $request->validate(['reason' => ['required', 'string', 'min:3', 'max:500']]);
+
+        try {
+            $this->payments->reverse($payment, auth()->id(), $data['reason']);
+        } catch (LoanActionException $e) {
+            return $this->error($e->getMessage(), $e->status);
         }
-
-        DB::transaction(function () use ($payment) {
-            $loan = $payment->loan;
-
-            // Reverse allocation
-            $loan->update([
-                'total_paid' => max(0, (float) $loan->total_paid - (float) $payment->amount),
-                'outstanding_balance' => (float) $loan->outstanding_balance + (float) $payment->principal_allocated + (float) $payment->interest_allocated,
-                'penalty_balance' => (float) $loan->penalty_balance + (float) $payment->penalty_allocated,
-                'status' => $loan->status === LoanStatus::Completed ? LoanStatus::Active->value : $loan->status->value,
-            ]);
-
-            $payment->delete();
-        });
 
         return $this->success(null, 'Payment reversed.');
     }
@@ -174,79 +116,6 @@ class PaymentController extends BaseApiController
 
     // ─── Helpers ─────────────────────────────────────────────────────────────
 
-    /**
-     * Allocate payment to penalty → interest → principal.
-     * Returns [principalAllocated, interestAllocated, penaltyAllocated].
-     */
-    private function allocatePayment(Loan $loan, float $amount): array
-    {
-        $remaining = $amount;
-
-        $penaltyAllocated = min($remaining, (float) $loan->penalty_balance);
-        $remaining -= $penaltyAllocated;
-
-        // Next: unpaid interest from schedule
-        $unpaidInterest = (float) $loan->schedule()
-            ->where('is_paid', false)
-            ->sum('interest_due') - (float) $loan->schedule()->where('is_paid', false)->sum('interest_paid');
-
-        $interestAllocated = min($remaining, max(0, $unpaidInterest));
-        $remaining -= $interestAllocated;
-
-        $principalAllocated = min($remaining, (float) $loan->outstanding_balance - $interestAllocated);
-        $principalAllocated = max(0, $principalAllocated);
-
-        return [$principalAllocated, $interestAllocated, $penaltyAllocated];
-    }
-
-    /**
-     * Apply payment to the earliest unpaid schedule instalments.
-     */
-    private function applyToSchedule(Loan $loan, float $principalPaid, float $interestPaid, string $paymentDate): void
-    {
-        $remaining = $principalPaid + $interestPaid;
-
-        $instalments = $loan->schedule()
-            ->where('is_paid', false)
-            ->orderBy('due_date')
-            ->get();
-
-        foreach ($instalments as $instalment) {
-            if ($remaining <= 0) {
-                break;
-            }
-
-            $outstandingDue = (float) $instalment->outstanding;
-
-            if ($remaining >= $outstandingDue) {
-                $instalment->update([
-                    'total_paid' => (float) $instalment->total_paid + $outstandingDue,
-                    'principal_paid' => (float) $instalment->principal_paid + (float) $instalment->principal_due - (float) $instalment->principal_paid,
-                    'interest_paid' => (float) $instalment->interest_paid + (float) $instalment->interest_due - (float) $instalment->interest_paid,
-                    'outstanding' => 0,
-                    'is_paid' => true,
-                    'paid_date' => $paymentDate,
-                ]);
-                $remaining -= $outstandingDue;
-            } else {
-                $instalment->update([
-                    'total_paid' => (float) $instalment->total_paid + $remaining,
-                    'outstanding' => max(0, $outstandingDue - $remaining),
-                ]);
-                $remaining = 0;
-            }
-        }
-    }
-
-    private function generateReceiptNumber(): string
-    {
-        $prefix = 'REC-'.now()->format('Ym').'-';
-        $last = Payment::withTrashed()->where('receipt_number', 'like', $prefix.'%')->max('receipt_number');
-        $seq = $last ? ((int) Str::afterLast($last, '-')) + 1 : 1;
-
-        return $prefix.str_pad($seq, 5, '0', STR_PAD_LEFT);
-    }
-
     private function formatPayment(Payment $p, bool $full = false): array
     {
         $data = [
@@ -257,7 +126,9 @@ class PaymentController extends BaseApiController
             'amount' => (float) $p->amount,
             'principal_allocated' => (float) $p->principal_allocated,
             'interest_allocated' => (float) $p->interest_allocated,
+            'fee_allocated' => (float) $p->fee_allocated,
             'penalty_allocated' => (float) $p->penalty_allocated,
+            'unallocated_amount' => (float) $p->unallocated_amount,
             'payment_method' => $p->payment_method->value,
             'payment_method_label' => $p->payment_method->label(),
             'payment_date' => $p->payment_date->toDateString(),

@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Tenant\GlAccount;
 use App\Models\Tenant\GlJournalEntry;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
 class GlLedgerService
@@ -24,6 +25,8 @@ class GlLedgerService
         ?int $createdBy = null,
     ): GlJournalEntry {
         $entryDate = $entryDate ?: now()->toDateString();
+
+        GlAccount::ensureDefaults();
 
         return DB::transaction(function () use ($description, $lines, $source, $entryDate, $createdBy) {
             $entry = GlJournalEntry::create([
@@ -73,46 +76,101 @@ class GlLedgerService
     }
 
     /**
-     * Post a payment received journal entry.
-     * DR Cash on Hand | CR Loans Receivable (principal) + Interest Income (interest) + Fee Income (fees)
+     * Payment received: DR Cash on Hand for the whole amount, CR each part where it
+     * belongs — Loans Receivable (principal), Interest Income, Fee Income, Penalty
+     * Income, and any overpayment held as a customer credit (Accounts Payable).
+     * Penalties used to be credited to Loans Receivable, pushing it below zero.
      */
     public function postPayment(object $payment): GlJournalEntry
     {
-        $lines = [
-            ['account_code' => '1001', 'side' => 'debit', 'amount' => $payment->amount],
+        $parts = [
+            '1100' => ['amount' => (float) ($payment->principal_allocated ?? 0), 'notes' => 'Principal repaid'],
+            '4001' => ['amount' => (float) ($payment->interest_allocated ?? 0), 'notes' => 'Interest received'],
+            '4002' => ['amount' => (float) ($payment->fee_allocated ?? 0), 'notes' => 'Fees received'],
+            '4003' => ['amount' => (float) ($payment->penalty_allocated ?? 0), 'notes' => 'Penalties received'],
+            '2100' => ['amount' => (float) ($payment->unallocated_amount ?? 0), 'notes' => 'Overpayment held for the borrower'],
         ];
 
-        $principal = (float) ($payment->principal_allocated ?? $payment->amount);
-        $interest = (float) ($payment->interest_allocated ?? 0);
-        $fees = (float) ($payment->fee_allocated ?? 0);
+        $lines = [['account_code' => '1001', 'side' => 'debit', 'amount' => (float) $payment->amount, 'notes' => $payment->receipt_number ?? null]];
+        $credited = '0';
 
-        if ($principal > 0) {
-            $lines[] = ['account_code' => '1100', 'side' => 'credit', 'amount' => $principal];
-        }
-        if ($interest > 0) {
-            $lines[] = ['account_code' => '4001', 'side' => 'credit', 'amount' => $interest];
-        }
-        if ($fees > 0) {
-            $lines[] = ['account_code' => '4002', 'side' => 'credit', 'amount' => $fees];
-        }
-
-        // Adjust principal if interest/fees don't account for the full amount
-        $credited = $principal + $interest + $fees;
-        if (abs($credited - $payment->amount) > 0.01) {
-            // Correct the principal line amount
-            foreach ($lines as &$l) {
-                if ($l['account_code'] === '1100') {
-                    $l['amount'] = round($payment->amount - $interest - $fees, 2);
-                    break;
-                }
+        foreach ($parts as $code => $part) {
+            if ($part['amount'] > 0) {
+                $lines[] = ['account_code' => (string) $code, 'side' => 'credit', 'amount' => $part['amount'], 'notes' => $part['notes']];
+                $credited = bcadd($credited, (string) $part['amount'], 2);
             }
         }
 
+        // Anything not broken down (older rows) is principal, so the entry always balances.
+        $rest = bcsub((string) $payment->amount, $credited, 2);
+        if (bccomp($rest, '0', 2) > 0) {
+            $lines[] = ['account_code' => '1100', 'side' => 'credit', 'amount' => (float) $rest, 'notes' => 'Principal repaid'];
+        }
+
         return $this->post(
-            "Payment received for loan #{$payment->loan_id}",
+            "Payment received: {$payment->receipt_number}",
             $lines,
             $payment,
-            $payment->payment_date ?? now()->toDateString(),
+            $payment->payment_date ? Carbon::parse($payment->payment_date)->toDateString() : now()->toDateString(),
+            auth()->id(),
+        );
+    }
+
+    /**
+     * Post the mirror image of every journal entry recorded for a source (a reversed
+     * payment), so the ledger shows both the original and its reversal.
+     */
+    public function reverseEntriesFor(object $source, string $description): void
+    {
+        $entries = GlJournalEntry::with('lines.account')
+            ->where('source_type', get_class($source))
+            ->where('source_id', $source->id)
+            ->get();
+
+        foreach ($entries as $entry) {
+            $this->post(
+                $description,
+                $entry->lines->map(fn ($line) => [
+                    'account_code' => $line->account->code,
+                    'side' => $line->side === 'debit' ? 'credit' : 'debit',
+                    'amount' => (float) $line->amount,
+                    'notes' => 'Reversal of '.$entry->reference,
+                ])->all(),
+                $source, // kept against the same record, so its history shows both
+                now()->toDateString(),
+                auth()->id(),
+            );
+        }
+    }
+
+    /**
+     * Write-off: DR Write-Off Expense | CR Loans Receivable, for the principal still
+     * owed. Only principal is ever booked to 1100 (disbursement debits it, repayments
+     * credit their principal share); interest and fees are recognised as income when
+     * paid, so there's no receivable for them to write off. Writing off the whole
+     * outstanding balance used to push Loans Receivable below zero.
+     */
+    public function postWriteOff(object $loan): ?GlJournalEntry
+    {
+        $principalRepaid = (float) DB::table('payments')
+            ->where('loan_id', $loan->id)
+            ->whereNull('deleted_at')
+            ->sum('principal_allocated');
+
+        $principalOutstanding = round(max(0, (float) $loan->principal_amount - $principalRepaid), 2);
+
+        if ($principalOutstanding <= 0) {
+            return null;
+        }
+
+        return $this->post(
+            "Loan write-off: {$loan->loan_number}",
+            [
+                ['account_code' => '5003', 'side' => 'debit', 'amount' => $principalOutstanding, 'notes' => 'Write-off expense (principal outstanding)'],
+                ['account_code' => '1100', 'side' => 'credit', 'amount' => $principalOutstanding, 'notes' => 'Loans receivable written off'],
+            ],
+            $loan,
+            now()->toDateString(),
             auth()->id(),
         );
     }

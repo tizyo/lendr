@@ -87,7 +87,8 @@ class InsuranceController extends BaseApiController
 
     public function allClaims(Request $request): JsonResponse
     {
-        $query = InsuranceClaim::with('policy:id,loan_id,policy_number')
+        // loanInsurance, not "policy": no such relation exists, so this list always failed.
+        $query = InsuranceClaim::with('loanInsurance:id,loan_id,policy_number')
             ->orderByDesc('id');
 
         if ($request->filled('status')) {
@@ -247,6 +248,8 @@ class InsuranceController extends BaseApiController
         return [
             'id' => $c->id,
             'loan_insurance_id' => $c->loan_insurance_id,
+            'policy_number' => $c->relationLoaded('loanInsurance') ? $c->loanInsurance?->policy_number : null,
+            'loan_id' => $c->relationLoaded('loanInsurance') ? $c->loanInsurance?->loan_id : null,
             'claim_number' => $c->claim_number,
             'claim_type' => $c->claim_type,
             'claim_amount' => (float) $c->claim_amount,

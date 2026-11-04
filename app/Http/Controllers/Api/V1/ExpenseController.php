@@ -143,7 +143,25 @@ class ExpenseController extends BaseApiController
             return $this->error('You do not have permission to approve expenses.', 403);
         }
 
-        DB::transaction(function () use ($expense) {
+        // Maker-checker: whoever submitted the expense can't approve it, as long as
+        // someone else in the workspace can (a one-person workspace still works).
+        if ((int) $expense->submitted_by === (int) auth()->id() && $this->someoneElseCan('expenses.approve')) {
+            return $this->error('You submitted this expense, so someone else has to approve it.', 422);
+        }
+
+        try {
+            app(\App\Services\ApprovalService::class)->ensureApproved('expense', $expense->id, $request->user(), (float) $expense->amount, 'approving this expense');
+        } catch (\App\Exceptions\LoanActionException $e) {
+            return $this->error($e->getMessage(), $e->status);
+        }
+
+        $approved = DB::transaction(function () use ($expense) {
+            // Locked and re-checked: a double click must not debit the fund twice.
+            $expense = Expense::whereKey($expense->id)->lockForUpdate()->firstOrFail();
+            if ($expense->status !== ExpenseStatus::Pending) {
+                return false;
+            }
+
             $expense->update([
                 'status' => ExpenseStatus::Approved,
                 'approved_by' => auth()->id(),
@@ -151,7 +169,13 @@ class ExpenseController extends BaseApiController
             ]);
 
             $this->fund->recordExpense($expense, (float) $expense->amount, auth()->id());
+
+            return true;
         });
+
+        if (! $approved) {
+            return $this->error('This expense has already been decided.', 422);
+        }
 
         return $this->success($this->formatExpense($expense->fresh()), 'Expense approved.');
     }
@@ -175,6 +199,14 @@ class ExpenseController extends BaseApiController
     }
 
     // ─── Helpers ─────────────────────────────────────────────────────────────
+
+    private function someoneElseCan(string $permission): bool
+    {
+        return \App\Models\Tenant\User::where('id', '!=', auth()->id())
+            ->where('is_active', true)
+            ->get()
+            ->contains(fn ($user) => $user->can($permission));
+    }
 
     private function generateNumber(): string
     {

@@ -165,7 +165,16 @@
       </div>
 
       <!-- Notes -->
-      <div class="lendr-card p-6">
+      <div class="lendr-card p-6 space-y-4">
+        <div v-if="agents?.length">
+          <label class="label">Introduced by agent (optional)</label>
+          <select v-model="form.agent_id" class="input w-full">
+            <option value="">No agent</option>
+            <option v-for="a in agents" :key="a.id" :value="a.id">{{ a.agent_number }} · {{ a.name }}</option>
+          </select>
+          <p class="text-xs text-neutral-400 mt-1">The agent earns their commission when this loan is disbursed.</p>
+          <p v-if="errors.agent_id" class="text-xs text-red-600 mt-1">{{ errors.agent_id }}</p>
+        </div>
         <label class="label">Internal Notes</label>
         <textarea v-model="form.notes" rows="3" class="input w-full" placeholder="Any additional notes for the loan officer…"></textarea>
       </div>
@@ -190,6 +199,7 @@ import AppLayout from '@/admin/components/layout/AppLayout.vue'
 const props = defineProps({
   borrower: Object,
   loanTypes: Array,
+  agents: { type: Array, default: () => [] },
 })
 
 const errors = ref({})
@@ -216,6 +226,7 @@ const form = ref({
   guarantor_phone: '',
   guarantor_relationship: '',
   notes: '',
+  agent_id: '',
 })
 
 const selectedTypePlans = computed(() => {

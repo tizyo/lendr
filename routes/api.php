@@ -20,7 +20,7 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::post('forgot-password', [\App\Http\Controllers\Api\V1\Auth\StaffAuthController::class, 'forgotPassword'])->name('forgot-password');
         Route::post('reset-password', [\App\Http\Controllers\Api\V1\Auth\StaffAuthController::class, 'resetPassword'])->name('reset-password');
 
-        Route::middleware('auth:sanctum')->group(function () {
+        Route::middleware(['auth:sanctum', 'actor:staff'])->group(function () {
             Route::get('me', [\App\Http\Controllers\Api\V1\Auth\StaffAuthController::class, 'me'])->name('me');
             Route::post('logout', [\App\Http\Controllers\Api\V1\Auth\StaffAuthController::class, 'logout'])->name('logout');
             Route::post('refresh', [\App\Http\Controllers\Api\V1\Auth\StaffAuthController::class, 'refresh'])->name('refresh');
@@ -37,14 +37,20 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::post('verify-otp', [\App\Http\Controllers\Api\V1\Auth\BorrowerAuthController::class, 'verifyOtp'])->name('verify-otp');
         Route::post('login-pin', [\App\Http\Controllers\Api\V1\Auth\BorrowerAuthController::class, 'loginPin'])->name('login-pin');
 
-        Route::middleware('auth:sanctum')->group(function () {
+        Route::middleware(['auth:sanctum', 'actor:borrower'])->group(function () {
             Route::post('set-pin', [\App\Http\Controllers\Api\V1\Auth\BorrowerAuthController::class, 'setPin'])->name('set-pin');
             Route::post('refresh', [\App\Http\Controllers\Api\V1\Auth\BorrowerAuthController::class, 'refreshToken'])->name('refresh');
+            Route::post('logout', [\App\Http\Controllers\Api\V1\Auth\BorrowerAuthController::class, 'logout'])->name('logout');
         });
     });
 
+    // ─── Public workspace branding (login screens, borrower app) ─────────────
+    Route::get('settings/branding', [\App\Http\Controllers\Api\V1\SettingController::class, 'branding'])->name('settings.branding');
+    Route::get('branding', [\App\Http\Controllers\Api\V1\BrandingController::class, 'show'])->name('branding.show');
+
     // ─── Protected Staff Routes (Sanctum) ─────────────
-    Route::middleware('auth:sanctum')->group(function () {
+    // actor:staff — borrower-app and marketplace tokens also pass auth:sanctum.
+    Route::middleware(['auth:sanctum', 'actor:staff', 'tenant.status', \App\Http\Middleware\EnforceStaffSecurity::class])->group(function () {
 
         // Borrowers
         Route::apiResource('borrowers', \App\Http\Controllers\Api\V1\BorrowerController::class)->only(['index', 'show'])->middleware('permission:borrowers.view');
@@ -92,15 +98,15 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::post('loans/{loan}/freeze', [\App\Http\Controllers\Api\V1\LoanController::class, 'freeze'])->name('loans.freeze')->middleware('permission:loans.freeze');
         Route::post('loans/{loan}/unfreeze', [\App\Http\Controllers\Api\V1\LoanController::class, 'unfreeze'])->name('loans.unfreeze')->middleware('permission:loans.freeze');
         Route::post('loans/{loan}/write-off', [\App\Http\Controllers\Api\V1\LoanController::class, 'writeOff'])->name('loans.write-off')->middleware('permission:loans.write_off');
-        Route::post('loans/{loan}/restructure', [\App\Http\Controllers\Api\V1\LoanController::class, 'restructure'])->name('loans.restructure')->middleware('permission:loans.edit');
+        Route::post('loans/{loan}/restructure', [\App\Http\Controllers\Api\V1\LoanController::class, 'restructure'])->name('loans.restructure')->middleware('permission:loans.approve');
         // Standing Orders (Phase 55)
-        Route::get('loans/{loan}/standing-orders', [\App\Http\Controllers\Api\V1\StandingOrderController::class, 'index'])->name('loans.standing-orders.index');
-        Route::patch('standing-orders/{order}/cancel', [\App\Http\Controllers\Api\V1\StandingOrderController::class, 'cancel'])->name('standing-orders.cancel');
+        Route::get('loans/{loan}/standing-orders', [\App\Http\Controllers\Api\V1\StandingOrderController::class, 'index'])->name('loans.standing-orders.index')->middleware('permission:loans.view');
+        Route::patch('standing-orders/{order}/cancel', [\App\Http\Controllers\Api\V1\StandingOrderController::class, 'cancel'])->name('standing-orders.cancel')->middleware('permission:loans.edit');
         // Loan Top-ups (Phase 53)
-        Route::get('loans/{loan}/topups', [\App\Http\Controllers\Api\V1\LoanTopupController::class, 'index'])->name('loans.topups.index');
-        Route::post('loans/{loan}/topups', [\App\Http\Controllers\Api\V1\LoanTopupController::class, 'store'])->name('loans.topups.store');
-        Route::post('loans/{loan}/topups/{topup}/approve', [\App\Http\Controllers\Api\V1\LoanTopupController::class, 'approve'])->name('loans.topups.approve');
-        Route::post('loans/{loan}/topups/{topup}/reject', [\App\Http\Controllers\Api\V1\LoanTopupController::class, 'reject'])->name('loans.topups.reject');
+        Route::get('loans/{loan}/topups', [\App\Http\Controllers\Api\V1\LoanTopupController::class, 'index'])->name('loans.topups.index')->middleware('permission:loans.view');
+        Route::post('loans/{loan}/topups', [\App\Http\Controllers\Api\V1\LoanTopupController::class, 'store'])->name('loans.topups.store')->middleware('permission:loans.edit');
+        Route::post('loans/{loan}/topups/{topup}/approve', [\App\Http\Controllers\Api\V1\LoanTopupController::class, 'approve'])->name('loans.topups.approve')->middleware('permission:loans.approve');
+        Route::post('loans/{loan}/topups/{topup}/reject', [\App\Http\Controllers\Api\V1\LoanTopupController::class, 'reject'])->name('loans.topups.reject')->middleware('permission:loans.approve');
         // Write-off & Recovery (Phase 29)
         Route::get('loans/{loan}/writeoff', [\App\Http\Controllers\Api\V1\WriteoffController::class, 'show'])->name('loans.writeoff.show')->middleware('permission:loans.view');
         Route::post('loans/{loan}/recovery', [\App\Http\Controllers\Api\V1\WriteoffController::class, 'recovery'])->name('loans.writeoff.recovery')->middleware('permission:loans.write_off');
@@ -124,64 +130,65 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::put('collateral/{collateral}', [\App\Http\Controllers\Api\V1\CollateralController::class, 'update'])->name('collateral.update')->middleware('permission:loans.edit');
         Route::delete('collateral/{collateral}', [\App\Http\Controllers\Api\V1\CollateralController::class, 'destroy'])->name('collateral.destroy')->middleware('permission:loans.edit');
         // Loan insurance
-        Route::get('insurance/products', [\App\Http\Controllers\Api\V1\InsuranceController::class, 'products'])->name('insurance.products.index');
-        Route::post('insurance/products', [\App\Http\Controllers\Api\V1\InsuranceController::class, 'storeProduct'])->name('insurance.products.store');
-        Route::put('insurance/products/{product}', [\App\Http\Controllers\Api\V1\InsuranceController::class, 'updateProduct'])->name('insurance.products.update');
-        Route::delete('insurance/products/{product}', [\App\Http\Controllers\Api\V1\InsuranceController::class, 'destroyProduct'])->name('insurance.products.destroy');
-        Route::get('loans/{loan}/insurance', [\App\Http\Controllers\Api\V1\InsuranceController::class, 'loanPolicies'])->name('loans.insurance.index');
-        Route::post('loans/{loan}/insurance', [\App\Http\Controllers\Api\V1\InsuranceController::class, 'attachPolicy'])->name('loans.insurance.attach');
-        Route::get('insurance/policies', [\App\Http\Controllers\Api\V1\InsuranceController::class, 'allPolicies'])->name('insurance.policies.index');
-        Route::get('insurance/claims', [\App\Http\Controllers\Api\V1\InsuranceController::class, 'allClaims'])->name('insurance.claims.index');
-        Route::put('insurance/policies/{policy}', [\App\Http\Controllers\Api\V1\InsuranceController::class, 'updatePolicy'])->name('insurance.policies.update');
-        Route::get('insurance/policies/{policy}/claims', [\App\Http\Controllers\Api\V1\InsuranceController::class, 'policyClaims'])->name('insurance.policies.claims');
-        Route::post('insurance/policies/{policy}/claims', [\App\Http\Controllers\Api\V1\InsuranceController::class, 'fileClaim'])->name('insurance.policies.claims.store');
-        Route::put('insurance/claims/{claim}/review', [\App\Http\Controllers\Api\V1\InsuranceController::class, 'reviewClaim'])->name('insurance.claims.review');
+        Route::get('insurance/products', [\App\Http\Controllers\Api\V1\InsuranceController::class, 'products'])->name('insurance.products.index')->middleware('permission:insurance.view');
+        Route::post('insurance/products', [\App\Http\Controllers\Api\V1\InsuranceController::class, 'storeProduct'])->name('insurance.products.store')->middleware('permission:insurance.manage');
+        Route::put('insurance/products/{product}', [\App\Http\Controllers\Api\V1\InsuranceController::class, 'updateProduct'])->name('insurance.products.update')->middleware('permission:insurance.manage');
+        Route::delete('insurance/products/{product}', [\App\Http\Controllers\Api\V1\InsuranceController::class, 'destroyProduct'])->name('insurance.products.destroy')->middleware('permission:insurance.manage');
+        Route::get('loans/{loan}/insurance', [\App\Http\Controllers\Api\V1\InsuranceController::class, 'loanPolicies'])->name('loans.insurance.index')->middleware('permission:loans.view');
+        Route::post('loans/{loan}/insurance', [\App\Http\Controllers\Api\V1\InsuranceController::class, 'attachPolicy'])->name('loans.insurance.attach')->middleware('permission:loans.edit');
+        Route::get('insurance/policies', [\App\Http\Controllers\Api\V1\InsuranceController::class, 'allPolicies'])->name('insurance.policies.index')->middleware('permission:insurance.view');
+        Route::get('insurance/claims', [\App\Http\Controllers\Api\V1\InsuranceController::class, 'allClaims'])->name('insurance.claims.index')->middleware('permission:insurance.view');
+        Route::put('insurance/policies/{policy}', [\App\Http\Controllers\Api\V1\InsuranceController::class, 'updatePolicy'])->name('insurance.policies.update')->middleware('permission:insurance.manage');
+        Route::get('insurance/policies/{policy}/claims', [\App\Http\Controllers\Api\V1\InsuranceController::class, 'policyClaims'])->name('insurance.policies.claims')->middleware('permission:insurance.view');
+        Route::post('insurance/policies/{policy}/claims', [\App\Http\Controllers\Api\V1\InsuranceController::class, 'fileClaim'])->name('insurance.policies.claims.store')->middleware('permission:insurance.manage');
+        Route::put('insurance/claims/{claim}/review', [\App\Http\Controllers\Api\V1\InsuranceController::class, 'reviewClaim'])->name('insurance.claims.review')->middleware('permission:insurance.manage');
         // Investors
-        Route::get('investors/portfolio', [\App\Http\Controllers\Api\V1\InvestorController::class, 'portfolio'])->name('investors.portfolio');
-        Route::apiResource('investors', \App\Http\Controllers\Api\V1\InvestorController::class)->names('investors');
-        Route::get('investors/{investor}/allocations', [\App\Http\Controllers\Api\V1\InvestorController::class, 'allocations'])->name('investors.allocations');
-        Route::post('investors/{investor}/allocations', [\App\Http\Controllers\Api\V1\InvestorController::class, 'allocate'])->name('investors.allocate');
-        Route::put('investor-allocations/{allocation}', [\App\Http\Controllers\Api\V1\InvestorController::class, 'updateAllocation'])->name('investor-allocations.update');
+        Route::get('investors/portfolio', [\App\Http\Controllers\Api\V1\InvestorController::class, 'portfolio'])->name('investors.portfolio')->middleware('permission:investors.view');
+        Route::apiResource('investors', \App\Http\Controllers\Api\V1\InvestorController::class)->names('investors')->only(['index', 'show'])->middleware('permission:investors.view');
+        Route::apiResource('investors', \App\Http\Controllers\Api\V1\InvestorController::class)->names('investors')->only(['store', 'update', 'destroy'])->middleware('permission:investors.manage');
+        Route::get('investors/{investor}/allocations', [\App\Http\Controllers\Api\V1\InvestorController::class, 'allocations'])->name('investors.allocations')->middleware('permission:investors.view');
+        Route::post('investors/{investor}/allocations', [\App\Http\Controllers\Api\V1\InvestorController::class, 'allocate'])->name('investors.allocate')->middleware('permission:investors.manage');
+        Route::put('investor-allocations/{allocation}', [\App\Http\Controllers\Api\V1\InvestorController::class, 'updateAllocation'])->name('investor-allocations.update')->middleware('permission:investors.manage');
 
         // ─── Investor Returns / Dividends (Phase 67) ──────────────────────────
-        Route::get('investors/{investor}/dividends', [\App\Http\Controllers\Api\V1\InvestorReturnsController::class, 'index'])->name('investors.dividends.index');
-        Route::post('investors/{investor}/dividends', [\App\Http\Controllers\Api\V1\InvestorReturnsController::class, 'calculate'])->name('investors.dividends.calculate');
-        Route::post('investor-dividends/{dividend}/pay', [\App\Http\Controllers\Api\V1\InvestorReturnsController::class, 'pay'])->name('investor-dividends.pay');
-        Route::delete('investor-dividends/{dividend}', [\App\Http\Controllers\Api\V1\InvestorReturnsController::class, 'cancel'])->name('investor-dividends.cancel');
+        Route::get('investors/{investor}/dividends', [\App\Http\Controllers\Api\V1\InvestorReturnsController::class, 'index'])->name('investors.dividends.index')->middleware('permission:investors.view');
+        Route::post('investors/{investor}/dividends', [\App\Http\Controllers\Api\V1\InvestorReturnsController::class, 'calculate'])->name('investors.dividends.calculate')->middleware('permission:investors.manage');
+        Route::post('investor-dividends/{dividend}/pay', [\App\Http\Controllers\Api\V1\InvestorReturnsController::class, 'pay'])->name('investor-dividends.pay')->middleware('permission:investors.manage');
+        Route::delete('investor-dividends/{dividend}', [\App\Http\Controllers\Api\V1\InvestorReturnsController::class, 'cancel'])->name('investor-dividends.cancel')->middleware('permission:investors.manage');
         // IFRS9 Provisioning
-        Route::get('provisioning/rates', [\App\Http\Controllers\Api\V1\ProvisioningController::class, 'rates'])->name('provisioning.rates.index');
-        Route::post('provisioning/rates', [\App\Http\Controllers\Api\V1\ProvisioningController::class, 'storeRate'])->name('provisioning.rates.store');
-        Route::put('provisioning/rates/{rate}', [\App\Http\Controllers\Api\V1\ProvisioningController::class, 'updateRate'])->name('provisioning.rates.update');
-        Route::post('provisioning/rates/seed', [\App\Http\Controllers\Api\V1\ProvisioningController::class, 'seedRates'])->name('provisioning.rates.seed');
-        Route::post('provisioning/run', [\App\Http\Controllers\Api\V1\ProvisioningController::class, 'runPortfolio'])->name('provisioning.run');
-        Route::get('provisioning/summary', [\App\Http\Controllers\Api\V1\ProvisioningController::class, 'portfolioSummary'])->name('provisioning.summary');
-        Route::post('loans/{loan}/provision', [\App\Http\Controllers\Api\V1\ProvisioningController::class, 'calculateLoan'])->name('loans.provision');
-        Route::get('loans/{loan}/provisions', [\App\Http\Controllers\Api\V1\ProvisioningController::class, 'loanHistory'])->name('loans.provisions');
+        Route::get('provisioning/rates', [\App\Http\Controllers\Api\V1\ProvisioningController::class, 'rates'])->name('provisioning.rates.index')->middleware('permission:accounting.view');
+        Route::post('provisioning/rates', [\App\Http\Controllers\Api\V1\ProvisioningController::class, 'storeRate'])->name('provisioning.rates.store')->middleware('permission:accounting.manage');
+        Route::put('provisioning/rates/{rate}', [\App\Http\Controllers\Api\V1\ProvisioningController::class, 'updateRate'])->name('provisioning.rates.update')->middleware('permission:accounting.manage');
+        Route::post('provisioning/rates/seed', [\App\Http\Controllers\Api\V1\ProvisioningController::class, 'seedRates'])->name('provisioning.rates.seed')->middleware('permission:accounting.manage');
+        Route::post('provisioning/run', [\App\Http\Controllers\Api\V1\ProvisioningController::class, 'runPortfolio'])->name('provisioning.run')->middleware('permission:accounting.manage');
+        Route::get('provisioning/summary', [\App\Http\Controllers\Api\V1\ProvisioningController::class, 'portfolioSummary'])->name('provisioning.summary')->middleware('permission:accounting.view');
+        Route::post('loans/{loan}/provision', [\App\Http\Controllers\Api\V1\ProvisioningController::class, 'calculateLoan'])->name('loans.provision')->middleware('permission:accounting.manage');
+        Route::get('loans/{loan}/provisions', [\App\Http\Controllers\Api\V1\ProvisioningController::class, 'loanHistory'])->name('loans.provisions')->middleware('permission:loans.view');
         // Interest Accrual
-        Route::get('interest-accrual', [\App\Http\Controllers\Api\V1\InterestAccrualController::class, 'index'])->name('interest-accrual.index');
-        Route::post('interest-accrual/run', [\App\Http\Controllers\Api\V1\InterestAccrualController::class, 'run'])->name('interest-accrual.run');
-        Route::get('interest-accrual/summary', [\App\Http\Controllers\Api\V1\InterestAccrualController::class, 'summary'])->name('interest-accrual.summary');
+        Route::get('interest-accrual', [\App\Http\Controllers\Api\V1\InterestAccrualController::class, 'index'])->name('interest-accrual.index')->middleware('permission:accounting.view');
+        Route::post('interest-accrual/run', [\App\Http\Controllers\Api\V1\InterestAccrualController::class, 'run'])->name('interest-accrual.run')->middleware('permission:accounting.manage');
+        Route::get('interest-accrual/summary', [\App\Http\Controllers\Api\V1\InterestAccrualController::class, 'summary'])->name('interest-accrual.summary')->middleware('permission:accounting.view');
         // Penalties
-        Route::get('penalties', [\App\Http\Controllers\Api\V1\PenaltyController::class, 'index'])->name('penalties.index');
-        Route::post('penalties/run', [\App\Http\Controllers\Api\V1\PenaltyController::class, 'run'])->name('penalties.run');
-        Route::post('penalties/{penalty}/waive', [\App\Http\Controllers\Api\V1\PenaltyController::class, 'waive'])->name('penalties.waive');
-        Route::get('loans/{loan}/penalties', [\App\Http\Controllers\Api\V1\PenaltyController::class, 'loanPenalties'])->name('loans.penalties');
+        Route::get('penalties', [\App\Http\Controllers\Api\V1\PenaltyController::class, 'index'])->name('penalties.index')->middleware('permission:collections.view');
+        Route::post('penalties/run', [\App\Http\Controllers\Api\V1\PenaltyController::class, 'run'])->name('penalties.run')->middleware('permission:collections.manage');
+        Route::post('penalties/{penalty}/waive', [\App\Http\Controllers\Api\V1\PenaltyController::class, 'waive'])->name('penalties.waive')->middleware('permission:loans.approve'); // forgiving money: managers only
+        Route::get('loans/{loan}/penalties', [\App\Http\Controllers\Api\V1\PenaltyController::class, 'loanPenalties'])->name('loans.penalties')->middleware('permission:loans.view');
         // Financial Statements
-        Route::prefix('financial-statements')->name('financial-statements.')->group(function () {
+        Route::prefix('financial-statements')->name('financial-statements.')->middleware('permission:accounting.view')->group(function () {
             Route::get('balance-sheet', [\App\Http\Controllers\Api\V1\FinancialStatementController::class, 'balanceSheet'])->name('balance-sheet');
             Route::get('income-statement', [\App\Http\Controllers\Api\V1\FinancialStatementController::class, 'incomeStatement'])->name('income-statement');
             Route::get('cash-flow', [\App\Http\Controllers\Api\V1\FinancialStatementController::class, 'cashFlow'])->name('cash-flow');
             Route::get('par', [\App\Http\Controllers\Api\V1\FinancialStatementController::class, 'portfolioAtRisk'])->name('par');
         });
         // Approval Workflows
-        Route::get('approvals/workflows', [\App\Http\Controllers\Api\V1\ApprovalController::class, 'indexWorkflows'])->name('approvals.workflows.index');
-        Route::post('approvals/workflows', [\App\Http\Controllers\Api\V1\ApprovalController::class, 'storeWorkflow'])->name('approvals.workflows.store');
-        Route::put('approvals/workflows/{workflow}', [\App\Http\Controllers\Api\V1\ApprovalController::class, 'updateWorkflow'])->name('approvals.workflows.update');
-        Route::get('approvals/pending', [\App\Http\Controllers\Api\V1\ApprovalController::class, 'pending'])->name('approvals.pending');
-        Route::post('approvals/submit', [\App\Http\Controllers\Api\V1\ApprovalController::class, 'submit'])->name('approvals.submit');
-        Route::get('approvals/{approvalRequest}', [\App\Http\Controllers\Api\V1\ApprovalController::class, 'show'])->name('approvals.show');
-        Route::post('approvals/{approvalRequest}/approve', [\App\Http\Controllers\Api\V1\ApprovalController::class, 'approve'])->name('approvals.approve');
-        Route::post('approvals/{approvalRequest}/reject', [\App\Http\Controllers\Api\V1\ApprovalController::class, 'reject'])->name('approvals.reject');
+        Route::get('approvals/workflows', [\App\Http\Controllers\Api\V1\ApprovalController::class, 'indexWorkflows'])->name('approvals.workflows.index')->middleware('permission:approvals.view');
+        Route::post('approvals/workflows', [\App\Http\Controllers\Api\V1\ApprovalController::class, 'storeWorkflow'])->name('approvals.workflows.store')->middleware('permission:approvals.manage');
+        Route::put('approvals/workflows/{workflow}', [\App\Http\Controllers\Api\V1\ApprovalController::class, 'updateWorkflow'])->name('approvals.workflows.update')->middleware('permission:approvals.manage');
+        Route::get('approvals/pending', [\App\Http\Controllers\Api\V1\ApprovalController::class, 'pending'])->name('approvals.pending')->middleware('permission:approvals.view');
+        Route::post('approvals/submit', [\App\Http\Controllers\Api\V1\ApprovalController::class, 'submit'])->name('approvals.submit')->middleware('permission:approvals.view');
+        Route::get('approvals/{approvalRequest}', [\App\Http\Controllers\Api\V1\ApprovalController::class, 'show'])->name('approvals.show')->middleware('permission:approvals.view');
+        Route::post('approvals/{approvalRequest}/approve', [\App\Http\Controllers\Api\V1\ApprovalController::class, 'approve'])->name('approvals.approve')->middleware('permission:approvals.act');
+        Route::post('approvals/{approvalRequest}/reject', [\App\Http\Controllers\Api\V1\ApprovalController::class, 'reject'])->name('approvals.reject')->middleware('permission:approvals.act');
 
         // Payments
         Route::apiResource('payments', \App\Http\Controllers\Api\V1\PaymentController::class)->only(['index', 'show'])->middleware('permission:payments.view');
@@ -220,34 +227,35 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::post('expense-budgets', [\App\Http\Controllers\Api\V1\ExpenseCategoryController::class, 'storeBudget'])->name('expense-budgets.store')->middleware('permission:expenses.edit');
         Route::get('expense-settings', [\App\Http\Controllers\Api\V1\ExpenseCategoryController::class, 'settings'])->name('expense-settings.show')->middleware('permission:expenses.view');
         Route::put('expense-settings', [\App\Http\Controllers\Api\V1\ExpenseCategoryController::class, 'updateSettings'])->name('expense-settings.update')->middleware('permission:expenses.edit');
-        Route::get('exchange-rates/current', [\App\Http\Controllers\Api\V1\ExchangeRateController::class, 'current'])->name('exchange-rates.current');
-        Route::apiResource('exchange-rates', \App\Http\Controllers\Api\V1\ExchangeRateController::class)->except(['show']);
+        Route::get('exchange-rates/current', [\App\Http\Controllers\Api\V1\ExchangeRateController::class, 'current'])->name('exchange-rates.current')->middleware('permission:loans.view');
+        Route::apiResource('exchange-rates', \App\Http\Controllers\Api\V1\ExchangeRateController::class)->only(['index'])->middleware(['permission:accounting.view', 'plan.feature:exchange_rates']);
+        Route::apiResource('exchange-rates', \App\Http\Controllers\Api\V1\ExchangeRateController::class)->only(['store', 'update', 'destroy'])->middleware(['permission:accounting.manage', 'plan.feature:exchange_rates']);
 
         // ─── Multi-Currency (Phase 64) ────────────────────────────────────────
-        Route::get('multi-currency/portfolio', [\App\Http\Controllers\Api\V1\MultiCurrencyController::class, 'portfolio'])->name('multi-currency.portfolio');
-        Route::post('multi-currency/convert', [\App\Http\Controllers\Api\V1\MultiCurrencyController::class, 'convert'])->name('multi-currency.convert');
-        Route::get('loans/{loan}/currency', [\App\Http\Controllers\Api\V1\MultiCurrencyController::class, 'loanInfo'])->name('loans.currency');
+        Route::get('multi-currency/portfolio', [\App\Http\Controllers\Api\V1\MultiCurrencyController::class, 'portfolio'])->name('multi-currency.portfolio')->middleware(['permission:accounting.view', 'plan.feature:exchange_rates']);
+        Route::post('multi-currency/convert', [\App\Http\Controllers\Api\V1\MultiCurrencyController::class, 'convert'])->name('multi-currency.convert')->middleware('permission:loans.view');
+        Route::get('loans/{loan}/currency', [\App\Http\Controllers\Api\V1\MultiCurrencyController::class, 'loanInfo'])->name('loans.currency')->middleware('permission:loans.view');
 
         // ─── Auto Credit Decision (Phase 66) ─────────────────────────────────
-        Route::get('auto-decision/rules', [\App\Http\Controllers\Api\V1\AutoDecisionController::class, 'rules'])->name('auto-decision.rules.index');
-        Route::post('auto-decision/rules', [\App\Http\Controllers\Api\V1\AutoDecisionController::class, 'storeRule'])->name('auto-decision.rules.store');
-        Route::put('auto-decision/rules/{rule}', [\App\Http\Controllers\Api\V1\AutoDecisionController::class, 'updateRule'])->name('auto-decision.rules.update');
-        Route::delete('auto-decision/rules/{rule}', [\App\Http\Controllers\Api\V1\AutoDecisionController::class, 'destroyRule'])->name('auto-decision.rules.destroy');
-        Route::post('auto-decision/evaluate/{loan}', [\App\Http\Controllers\Api\V1\AutoDecisionController::class, 'evaluate'])->name('auto-decision.evaluate');
-        Route::get('auto-decision/{loan}', [\App\Http\Controllers\Api\V1\AutoDecisionController::class, 'show'])->name('auto-decision.show');
-        Route::post('auto-decision/{decision}/override', [\App\Http\Controllers\Api\V1\AutoDecisionController::class, 'override'])->name('auto-decision.override');
+        Route::get('auto-decision/rules', [\App\Http\Controllers\Api\V1\AutoDecisionController::class, 'rules'])->name('auto-decision.rules.index')->middleware('permission:risk.view');
+        Route::post('auto-decision/rules', [\App\Http\Controllers\Api\V1\AutoDecisionController::class, 'storeRule'])->name('auto-decision.rules.store')->middleware('permission:risk.manage');
+        Route::put('auto-decision/rules/{rule}', [\App\Http\Controllers\Api\V1\AutoDecisionController::class, 'updateRule'])->name('auto-decision.rules.update')->middleware('permission:risk.manage');
+        Route::delete('auto-decision/rules/{rule}', [\App\Http\Controllers\Api\V1\AutoDecisionController::class, 'destroyRule'])->name('auto-decision.rules.destroy')->middleware('permission:risk.manage');
+        Route::post('auto-decision/evaluate/{loan}', [\App\Http\Controllers\Api\V1\AutoDecisionController::class, 'evaluate'])->name('auto-decision.evaluate')->middleware('permission:loans.edit');
+        Route::get('auto-decision/{loan}', [\App\Http\Controllers\Api\V1\AutoDecisionController::class, 'show'])->name('auto-decision.show')->middleware('permission:loans.view');
+        Route::post('auto-decision/{decision}/override', [\App\Http\Controllers\Api\V1\AutoDecisionController::class, 'override'])->name('auto-decision.override')->middleware('permission:loans.approve');
 
         // ─── Compliance Calendar (Phase 68) ───────────────────────────────────
-        Route::get('compliance-events/upcoming', [\App\Http\Controllers\Api\V1\ComplianceCalendarController::class, 'upcoming'])->name('compliance-events.upcoming');
-        Route::get('compliance-events', [\App\Http\Controllers\Api\V1\ComplianceCalendarController::class, 'index'])->name('compliance-events.index');
-        Route::post('compliance-events', [\App\Http\Controllers\Api\V1\ComplianceCalendarController::class, 'store'])->name('compliance-events.store');
-        Route::get('compliance-events/{complianceEvent}', [\App\Http\Controllers\Api\V1\ComplianceCalendarController::class, 'show'])->name('compliance-events.show');
-        Route::put('compliance-events/{complianceEvent}', [\App\Http\Controllers\Api\V1\ComplianceCalendarController::class, 'update'])->name('compliance-events.update');
-        Route::delete('compliance-events/{complianceEvent}', [\App\Http\Controllers\Api\V1\ComplianceCalendarController::class, 'destroy'])->name('compliance-events.destroy');
-        Route::post('compliance-events/{complianceEvent}/complete', [\App\Http\Controllers\Api\V1\ComplianceCalendarController::class, 'complete'])->name('compliance-events.complete');
+        Route::get('compliance-events/upcoming', [\App\Http\Controllers\Api\V1\ComplianceCalendarController::class, 'upcoming'])->name('compliance-events.upcoming')->middleware('permission:compliance.view');
+        Route::get('compliance-events', [\App\Http\Controllers\Api\V1\ComplianceCalendarController::class, 'index'])->name('compliance-events.index')->middleware('permission:compliance.view');
+        Route::post('compliance-events', [\App\Http\Controllers\Api\V1\ComplianceCalendarController::class, 'store'])->name('compliance-events.store')->middleware('permission:compliance.manage');
+        Route::get('compliance-events/{complianceEvent}', [\App\Http\Controllers\Api\V1\ComplianceCalendarController::class, 'show'])->name('compliance-events.show')->middleware('permission:compliance.view');
+        Route::put('compliance-events/{complianceEvent}', [\App\Http\Controllers\Api\V1\ComplianceCalendarController::class, 'update'])->name('compliance-events.update')->middleware('permission:compliance.manage');
+        Route::delete('compliance-events/{complianceEvent}', [\App\Http\Controllers\Api\V1\ComplianceCalendarController::class, 'destroy'])->name('compliance-events.destroy')->middleware('permission:compliance.manage');
+        Route::post('compliance-events/{complianceEvent}/complete', [\App\Http\Controllers\Api\V1\ComplianceCalendarController::class, 'complete'])->name('compliance-events.complete')->middleware('permission:compliance.manage');
 
         // Reports
-        Route::prefix('reports')->name('reports.')->middleware('permission:reports.view')->group(function () {
+        Route::prefix('reports')->name('reports.')->middleware(['permission:reports.view', 'plan.feature:advanced_reports'])->group(function () {
             Route::get('{type}', [\App\Http\Controllers\Api\V1\ReportController::class, 'generate'])->name('generate');
             Route::get('{type}/export', [\App\Http\Controllers\Api\V1\ReportController::class, 'export'])->name('export')->middleware('permission:reports.export');
         });
@@ -269,8 +277,6 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::get('settings', [\App\Http\Controllers\Api\V1\SettingController::class, 'index'])->name('settings.index')->middleware('permission:settings.view');
         Route::put('settings', [\App\Http\Controllers\Api\V1\SettingController::class, 'update'])->name('settings.update')->middleware('permission:settings.edit');
         Route::post('settings/logo', [\App\Http\Controllers\Api\V1\SettingController::class, 'uploadLogo'])->name('settings.logo')->middleware('permission:settings.edit');
-        Route::get('settings/branding', [\App\Http\Controllers\Api\V1\SettingController::class, 'branding'])->name('settings.branding')->withoutMiddleware('auth:sanctum');
-        Route::get('branding', [\App\Http\Controllers\Api\V1\BrandingController::class, 'show'])->name('branding.show')->withoutMiddleware('auth:sanctum');
         Route::post('settings/test-email', [\App\Http\Controllers\Api\V1\SettingController::class, 'testEmail'])->name('settings.test-email')->middleware('permission:settings.edit');
 
         // Notifications
@@ -279,8 +285,8 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::put('notifications/read-all', [\App\Http\Controllers\Api\V1\NotificationController::class, 'markAllRead'])->name('notifications.read-all');
 
         // Audit Log
-        Route::get('audit-log', [\App\Http\Controllers\Api\V1\AuditLogController::class, 'index'])->name('audit-log.index');
-        Route::get('audit-log/export', [\App\Http\Controllers\Api\V1\AuditLogController::class, 'export'])->name('audit-log.export');
+        Route::get('audit-log', [\App\Http\Controllers\Api\V1\AuditLogController::class, 'index'])->name('audit-log.index')->middleware(['permission:audit_log.view', 'plan.feature:audit_log']);
+        Route::get('audit-log/export', [\App\Http\Controllers\Api\V1\AuditLogController::class, 'export'])->name('audit-log.export')->middleware(['permission:audit_log.view', 'plan.feature:audit_log']);
 
         // Notification Preferences
         Route::get('notification-preferences', [\App\Http\Controllers\Api\V1\NotificationPreferenceController::class, 'index'])->name('notification-preferences.index');
@@ -288,50 +294,50 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
 
         // GL Ledger (Phase 28)
         Route::prefix('gl')->name('gl.')->group(function () {
-            Route::get('accounts', [\App\Http\Controllers\Api\V1\GlLedgerController::class, 'accounts'])->name('accounts');
-            Route::post('accounts', [\App\Http\Controllers\Api\V1\GlLedgerController::class, 'createAccount'])->name('accounts.create');
-            Route::post('seed-accounts', [\App\Http\Controllers\Api\V1\GlLedgerController::class, 'seedAccounts'])->name('accounts.seed');
-            Route::get('entries', [\App\Http\Controllers\Api\V1\GlLedgerController::class, 'entries'])->name('entries');
-            Route::post('entries', [\App\Http\Controllers\Api\V1\GlLedgerController::class, 'createEntry'])->name('entries.create');
-            Route::get('trial-balance', [\App\Http\Controllers\Api\V1\GlLedgerController::class, 'trialBalance'])->name('trial-balance');
+            Route::get('accounts', [\App\Http\Controllers\Api\V1\GlLedgerController::class, 'accounts'])->name('accounts')->middleware('permission:accounting.view');
+            Route::post('accounts', [\App\Http\Controllers\Api\V1\GlLedgerController::class, 'createAccount'])->name('accounts.create')->middleware('permission:accounting.manage');
+            Route::post('seed-accounts', [\App\Http\Controllers\Api\V1\GlLedgerController::class, 'seedAccounts'])->name('accounts.seed')->middleware('permission:accounting.manage');
+            Route::get('entries', [\App\Http\Controllers\Api\V1\GlLedgerController::class, 'entries'])->name('entries')->middleware('permission:accounting.view');
+            Route::post('entries', [\App\Http\Controllers\Api\V1\GlLedgerController::class, 'createEntry'])->name('entries.create')->middleware('permission:accounting.manage');
+            Route::get('trial-balance', [\App\Http\Controllers\Api\V1\GlLedgerController::class, 'trialBalance'])->name('trial-balance')->middleware('permission:accounting.view');
         });
 
         // Notification Templates (Phase 25)
-        Route::get('notification-templates', [\App\Http\Controllers\Api\V1\NotificationTemplateController::class, 'index'])->name('notification-templates.index');
-        Route::put('notification-templates/{event}/{channel}', [\App\Http\Controllers\Api\V1\NotificationTemplateController::class, 'upsert'])->name('notification-templates.upsert');
-        Route::delete('notification-templates/{event}/{channel}', [\App\Http\Controllers\Api\V1\NotificationTemplateController::class, 'destroy'])->name('notification-templates.destroy');
-        Route::post('notification-templates/{event}/{channel}/preview', [\App\Http\Controllers\Api\V1\NotificationTemplateController::class, 'preview'])->name('notification-templates.preview');
+        Route::get('notification-templates', [\App\Http\Controllers\Api\V1\NotificationTemplateController::class, 'index'])->name('notification-templates.index')->middleware('permission:settings.view');
+        Route::put('notification-templates/{event}/{channel}', [\App\Http\Controllers\Api\V1\NotificationTemplateController::class, 'upsert'])->name('notification-templates.upsert')->middleware('permission:settings.edit');
+        Route::delete('notification-templates/{event}/{channel}', [\App\Http\Controllers\Api\V1\NotificationTemplateController::class, 'destroy'])->name('notification-templates.destroy')->middleware('permission:settings.edit');
+        Route::post('notification-templates/{event}/{channel}/preview', [\App\Http\Controllers\Api\V1\NotificationTemplateController::class, 'preview'])->name('notification-templates.preview')->middleware('permission:settings.view');
 
         // Savings (Phase 30)
-        Route::get('savings', [\App\Http\Controllers\Api\V1\SavingsController::class, 'index'])->name('savings.index');
-        Route::post('savings', [\App\Http\Controllers\Api\V1\SavingsController::class, 'store'])->name('savings.store');
-        Route::get('savings/{savings}', [\App\Http\Controllers\Api\V1\SavingsController::class, 'show'])->name('savings.show');
-        Route::put('savings/{savings}/status', [\App\Http\Controllers\Api\V1\SavingsController::class, 'updateStatus'])->name('savings.status');
-        Route::post('savings/{savings}/deposit', [\App\Http\Controllers\Api\V1\SavingsController::class, 'deposit'])->name('savings.deposit');
-        Route::post('savings/{savings}/withdraw', [\App\Http\Controllers\Api\V1\SavingsController::class, 'withdraw'])->name('savings.withdraw');
-        Route::post('savings/{savings}/accrue-interest', [\App\Http\Controllers\Api\V1\SavingsController::class, 'accrueInterest'])->name('savings.accrue-interest');
-        Route::get('savings/{savings}/statement', [\App\Http\Controllers\Api\V1\SavingsController::class, 'statement'])->name('savings.statement');
-        Route::get('savings/{savings}/goal-progress', [\App\Http\Controllers\Api\V1\SavingsController::class, 'goalProgress'])->name('savings.goal-progress');
-        Route::post('savings/{savings}/mature', [\App\Http\Controllers\Api\V1\SavingsController::class, 'matureFd'])->name('savings.mature');
-        Route::get('savings-matured', [\App\Http\Controllers\Api\V1\SavingsController::class, 'matured'])->name('savings.matured');
+        Route::get('savings', [\App\Http\Controllers\Api\V1\SavingsController::class, 'index'])->name('savings.index')->middleware('permission:savings.view');
+        Route::post('savings', [\App\Http\Controllers\Api\V1\SavingsController::class, 'store'])->name('savings.store')->middleware('permission:savings.manage');
+        Route::get('savings/{savings}', [\App\Http\Controllers\Api\V1\SavingsController::class, 'show'])->name('savings.show')->middleware('permission:savings.view');
+        Route::put('savings/{savings}/status', [\App\Http\Controllers\Api\V1\SavingsController::class, 'updateStatus'])->name('savings.status')->middleware('permission:savings.manage');
+        Route::post('savings/{savings}/deposit', [\App\Http\Controllers\Api\V1\SavingsController::class, 'deposit'])->name('savings.deposit')->middleware('permission:savings.transact');
+        Route::post('savings/{savings}/withdraw', [\App\Http\Controllers\Api\V1\SavingsController::class, 'withdraw'])->name('savings.withdraw')->middleware('permission:savings.transact');
+        Route::post('savings/{savings}/accrue-interest', [\App\Http\Controllers\Api\V1\SavingsController::class, 'accrueInterest'])->name('savings.accrue-interest')->middleware('permission:accounting.manage');
+        Route::get('savings/{savings}/statement', [\App\Http\Controllers\Api\V1\SavingsController::class, 'statement'])->name('savings.statement')->middleware('permission:savings.view');
+        Route::get('savings/{savings}/goal-progress', [\App\Http\Controllers\Api\V1\SavingsController::class, 'goalProgress'])->name('savings.goal-progress')->middleware('permission:savings.view');
+        Route::post('savings/{savings}/mature', [\App\Http\Controllers\Api\V1\SavingsController::class, 'matureFd'])->name('savings.mature')->middleware('permission:savings.manage');
+        Route::get('savings-matured', [\App\Http\Controllers\Api\V1\SavingsController::class, 'matured'])->name('savings.matured')->middleware('permission:savings.view');
 
         // Loan Groups (Phase 31)
-        Route::get('loan-groups', [\App\Http\Controllers\Api\V1\LoanGroupController::class, 'index'])->name('loan-groups.index');
-        Route::post('loan-groups', [\App\Http\Controllers\Api\V1\LoanGroupController::class, 'store'])->name('loan-groups.store');
-        Route::get('loan-groups/{loanGroup}', [\App\Http\Controllers\Api\V1\LoanGroupController::class, 'show'])->name('loan-groups.show');
-        Route::put('loan-groups/{loanGroup}', [\App\Http\Controllers\Api\V1\LoanGroupController::class, 'update'])->name('loan-groups.update');
-        Route::delete('loan-groups/{loanGroup}', [\App\Http\Controllers\Api\V1\LoanGroupController::class, 'destroy'])->name('loan-groups.destroy');
-        Route::post('loan-groups/{loanGroup}/members', [\App\Http\Controllers\Api\V1\LoanGroupController::class, 'addMember'])->name('loan-groups.members.add');
-        Route::delete('loan-groups/{loanGroup}/members/{borrower}', [\App\Http\Controllers\Api\V1\LoanGroupController::class, 'removeMember'])->name('loan-groups.members.remove');
+        Route::get('loan-groups', [\App\Http\Controllers\Api\V1\LoanGroupController::class, 'index'])->name('loan-groups.index')->middleware('permission:loans.view');
+        Route::post('loan-groups', [\App\Http\Controllers\Api\V1\LoanGroupController::class, 'store'])->name('loan-groups.store')->middleware('permission:loans.create');
+        Route::get('loan-groups/{loanGroup}', [\App\Http\Controllers\Api\V1\LoanGroupController::class, 'show'])->name('loan-groups.show')->middleware('permission:loans.view');
+        Route::put('loan-groups/{loanGroup}', [\App\Http\Controllers\Api\V1\LoanGroupController::class, 'update'])->name('loan-groups.update')->middleware('permission:loans.edit');
+        Route::delete('loan-groups/{loanGroup}', [\App\Http\Controllers\Api\V1\LoanGroupController::class, 'destroy'])->name('loan-groups.destroy')->middleware('permission:loans.delete');
+        Route::post('loan-groups/{loanGroup}/members', [\App\Http\Controllers\Api\V1\LoanGroupController::class, 'addMember'])->name('loan-groups.members.add')->middleware('permission:loans.edit');
+        Route::delete('loan-groups/{loanGroup}/members/{borrower}', [\App\Http\Controllers\Api\V1\LoanGroupController::class, 'removeMember'])->name('loan-groups.members.remove')->middleware('permission:loans.edit');
 
         // Staff Targets (Phase 32)
-        Route::get('staff-targets', [\App\Http\Controllers\Api\V1\StaffTargetController::class, 'index'])->name('staff-targets.index');
-        Route::post('staff-targets', [\App\Http\Controllers\Api\V1\StaffTargetController::class, 'upsert'])->name('staff-targets.upsert');
-        Route::delete('staff-targets/{staffTarget}', [\App\Http\Controllers\Api\V1\StaffTargetController::class, 'destroy'])->name('staff-targets.destroy');
-        Route::get('staff-targets/performance', [\App\Http\Controllers\Api\V1\StaffTargetController::class, 'performance'])->name('staff-targets.performance');
+        Route::get('staff-targets', [\App\Http\Controllers\Api\V1\StaffTargetController::class, 'index'])->name('staff-targets.index')->middleware('permission:sales.view');
+        Route::post('staff-targets', [\App\Http\Controllers\Api\V1\StaffTargetController::class, 'upsert'])->name('staff-targets.upsert')->middleware('permission:sales.targets');
+        Route::delete('staff-targets/{staffTarget}', [\App\Http\Controllers\Api\V1\StaffTargetController::class, 'destroy'])->name('staff-targets.destroy')->middleware('permission:sales.targets');
+        Route::get('staff-targets/performance', [\App\Http\Controllers\Api\V1\StaffTargetController::class, 'performance'])->name('staff-targets.performance')->middleware('permission:sales.view');
 
         // Outbound Webhook Endpoints (Phase 33)
-        Route::prefix('webhook-endpoints')->name('webhook-endpoints.')->group(function () {
+        Route::prefix('webhook-endpoints')->name('webhook-endpoints.')->middleware('permission:integrations.manage')->group(function () {
             Route::get('/', [\App\Http\Controllers\Api\V1\WebhookEndpointController::class, 'index'])->name('index');
             Route::post('/', [\App\Http\Controllers\Api\V1\WebhookEndpointController::class, 'store'])->name('store');
             Route::get('/{webhookEndpoint}', [\App\Http\Controllers\Api\V1\WebhookEndpointController::class, 'show'])->name('show');
@@ -343,177 +349,197 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         });
 
         // Branding (Phase 34)
-        Route::put('branding', [\App\Http\Controllers\Api\V1\BrandingController::class, 'update'])->name('branding.update');
-        Route::post('branding/logo', [\App\Http\Controllers\Api\V1\BrandingController::class, 'uploadLogo'])->name('branding.logo');
-        Route::post('branding/favicon', [\App\Http\Controllers\Api\V1\BrandingController::class, 'uploadFavicon'])->name('branding.favicon');
+        Route::put('branding', [\App\Http\Controllers\Api\V1\BrandingController::class, 'update'])->name('branding.update')->middleware('permission:settings.edit');
+        Route::post('branding/logo', [\App\Http\Controllers\Api\V1\BrandingController::class, 'uploadLogo'])->name('branding.logo')->middleware('permission:settings.edit');
+        Route::post('branding/favicon', [\App\Http\Controllers\Api\V1\BrandingController::class, 'uploadFavicon'])->name('branding.favicon')->middleware('permission:settings.edit');
 
         // Branches (P9)
-        Route::apiResource('branches', \App\Http\Controllers\Api\V1\BranchController::class);
+        Route::apiResource('branches', \App\Http\Controllers\Api\V1\BranchController::class)->only(['index', 'show'])->middleware('permission:branches.view');
+        Route::apiResource('branches', \App\Http\Controllers\Api\V1\BranchController::class)->only(['store', 'update', 'destroy'])->middleware('permission:branches.manage');
 
         // CRM — Leads & Interactions (Phase 36)
-        Route::get('leads/pipeline', [\App\Http\Controllers\Api\V1\LeadController::class, 'pipeline'])->name('leads.pipeline');
-        Route::get('leads', [\App\Http\Controllers\Api\V1\LeadController::class, 'index'])->name('leads.index');
-        Route::post('leads', [\App\Http\Controllers\Api\V1\LeadController::class, 'store'])->name('leads.store');
-        Route::get('leads/{lead}', [\App\Http\Controllers\Api\V1\LeadController::class, 'show'])->name('leads.show');
-        Route::put('leads/{lead}', [\App\Http\Controllers\Api\V1\LeadController::class, 'update'])->name('leads.update');
-        Route::delete('leads/{lead}', [\App\Http\Controllers\Api\V1\LeadController::class, 'destroy'])->name('leads.destroy');
-        Route::post('leads/{lead}/convert', [\App\Http\Controllers\Api\V1\LeadController::class, 'convert'])->name('leads.convert');
-        Route::post('leads/{lead}/interactions', [\App\Http\Controllers\Api\V1\LeadController::class, 'addInteraction'])->name('leads.interactions.store');
+        Route::middleware('permission:sales.view')->group(function () {
+            Route::get('leads/pipeline', [\App\Http\Controllers\Api\V1\LeadController::class, 'pipeline'])->name('leads.pipeline');
+            Route::get('leads', [\App\Http\Controllers\Api\V1\LeadController::class, 'index'])->name('leads.index');
+            Route::get('leads/{lead}', [\App\Http\Controllers\Api\V1\LeadController::class, 'show'])->name('leads.show');
+        });
+        Route::middleware('permission:sales.manage')->group(function () {
+            Route::post('leads', [\App\Http\Controllers\Api\V1\LeadController::class, 'store'])->name('leads.store');
+            Route::put('leads/{lead}', [\App\Http\Controllers\Api\V1\LeadController::class, 'update'])->name('leads.update');
+            Route::delete('leads/{lead}', [\App\Http\Controllers\Api\V1\LeadController::class, 'destroy'])->name('leads.destroy');
+            Route::post('leads/{lead}/interactions', [\App\Http\Controllers\Api\V1\LeadController::class, 'addInteraction'])->name('leads.interactions.store');
+        });
+        // Converting a lead creates a borrower.
+        Route::post('leads/{lead}/convert', [\App\Http\Controllers\Api\V1\LeadController::class, 'convert'])->name('leads.convert')->middleware(['permission:sales.manage', 'permission:borrowers.create']);
 
         // Risk Management (Phase 37)
-        Route::get('risk-policies', [\App\Http\Controllers\Api\V1\RiskPolicyController::class, 'index'])->name('risk-policies.index');
-        Route::post('risk-policies', [\App\Http\Controllers\Api\V1\RiskPolicyController::class, 'store'])->name('risk-policies.store');
-        Route::get('risk-policies/{riskPolicy}', [\App\Http\Controllers\Api\V1\RiskPolicyController::class, 'show'])->name('risk-policies.show');
-        Route::put('risk-policies/{riskPolicy}', [\App\Http\Controllers\Api\V1\RiskPolicyController::class, 'update'])->name('risk-policies.update');
-        Route::delete('risk-policies/{riskPolicy}', [\App\Http\Controllers\Api\V1\RiskPolicyController::class, 'destroy'])->name('risk-policies.destroy');
-        Route::get('risk-policy/rule-types', [\App\Http\Controllers\Api\V1\RiskPolicyController::class, 'ruleTypes'])->name('risk-policies.rule-types');
-        Route::post('loans/{loan}/risk-assess', [\App\Http\Controllers\Api\V1\RiskPolicyController::class, 'assess'])->name('loans.risk-assess');
-        Route::get('loans/{loan}/risk-flags', [\App\Http\Controllers\Api\V1\RiskPolicyController::class, 'flags'])->name('loans.risk-flags');
-        Route::post('risk-flags/{riskFlag}/override', [\App\Http\Controllers\Api\V1\RiskPolicyController::class, 'override'])->name('risk-flags.override');
+        Route::get('risk-policies', [\App\Http\Controllers\Api\V1\RiskPolicyController::class, 'index'])->name('risk-policies.index')->middleware('permission:risk.view');
+        Route::post('risk-policies', [\App\Http\Controllers\Api\V1\RiskPolicyController::class, 'store'])->name('risk-policies.store')->middleware('permission:risk.manage');
+        Route::get('risk-policies/{riskPolicy}', [\App\Http\Controllers\Api\V1\RiskPolicyController::class, 'show'])->name('risk-policies.show')->middleware('permission:risk.view');
+        Route::put('risk-policies/{riskPolicy}', [\App\Http\Controllers\Api\V1\RiskPolicyController::class, 'update'])->name('risk-policies.update')->middleware('permission:risk.manage');
+        Route::delete('risk-policies/{riskPolicy}', [\App\Http\Controllers\Api\V1\RiskPolicyController::class, 'destroy'])->name('risk-policies.destroy')->middleware('permission:risk.manage');
+        Route::get('risk-policy/rule-types', [\App\Http\Controllers\Api\V1\RiskPolicyController::class, 'ruleTypes'])->name('risk-policies.rule-types')->middleware('permission:risk.view');
+        Route::post('loans/{loan}/risk-assess', [\App\Http\Controllers\Api\V1\RiskPolicyController::class, 'assess'])->name('loans.risk-assess')->middleware('permission:loans.edit');
+        Route::get('loans/{loan}/risk-flags', [\App\Http\Controllers\Api\V1\RiskPolicyController::class, 'flags'])->name('loans.risk-flags')->middleware('permission:loans.view');
+        Route::post('risk-flags/{riskFlag}/override', [\App\Http\Controllers\Api\V1\RiskPolicyController::class, 'override'])->name('risk-flags.override')->middleware('permission:loans.approve');
 
         // Agents / DSA Network (Phase 39)
-        Route::get('agents/commissions', [\App\Http\Controllers\Api\V1\AgentController::class, 'allCommissions'])->name('agents.commissions.all');
-        Route::get('agents', [\App\Http\Controllers\Api\V1\AgentController::class, 'index'])->name('agents.index');
-        Route::post('agents', [\App\Http\Controllers\Api\V1\AgentController::class, 'store'])->name('agents.store');
-        Route::get('agents/{agent}', [\App\Http\Controllers\Api\V1\AgentController::class, 'show'])->name('agents.show');
-        Route::put('agents/{agent}', [\App\Http\Controllers\Api\V1\AgentController::class, 'update'])->name('agents.update');
-        Route::delete('agents/{agent}', [\App\Http\Controllers\Api\V1\AgentController::class, 'destroy'])->name('agents.destroy');
-        Route::get('agents/{agent}/commissions', [\App\Http\Controllers\Api\V1\AgentController::class, 'commissions'])->name('agents.commissions');
-        Route::get('agents/{agent}/loans', [\App\Http\Controllers\Api\V1\AgentController::class, 'loans'])->name('agents.loans');
-        Route::post('agent-commissions/{agentCommission}/approve', [\App\Http\Controllers\Api\V1\AgentController::class, 'approveCommission'])->name('agent-commissions.approve');
-        Route::post('agent-commissions/{agentCommission}/pay', [\App\Http\Controllers\Api\V1\AgentController::class, 'payCommission'])->name('agent-commissions.pay');
+        Route::middleware('permission:sales.view')->group(function () {
+            Route::get('agents/commissions', [\App\Http\Controllers\Api\V1\AgentController::class, 'allCommissions'])->name('agents.commissions.all');
+            Route::get('agents', [\App\Http\Controllers\Api\V1\AgentController::class, 'index'])->name('agents.index');
+            Route::get('agents/{agent}', [\App\Http\Controllers\Api\V1\AgentController::class, 'show'])->name('agents.show');
+            Route::get('agents/{agent}/commissions', [\App\Http\Controllers\Api\V1\AgentController::class, 'commissions'])->name('agents.commissions');
+            Route::get('agents/{agent}/loans', [\App\Http\Controllers\Api\V1\AgentController::class, 'loans'])->name('agents.loans');
+        });
+        Route::middleware('permission:sales.manage')->group(function () {
+            Route::post('agents', [\App\Http\Controllers\Api\V1\AgentController::class, 'store'])->name('agents.store');
+            Route::put('agents/{agent}', [\App\Http\Controllers\Api\V1\AgentController::class, 'update'])->name('agents.update');
+            Route::delete('agents/{agent}', [\App\Http\Controllers\Api\V1\AgentController::class, 'destroy'])->name('agents.destroy');
+        });
+        Route::post('agent-commissions/{agentCommission}/approve', [\App\Http\Controllers\Api\V1\AgentController::class, 'approveCommission'])->name('agent-commissions.approve')->middleware('permission:commissions.approve');
+        Route::post('agent-commissions/{agentCommission}/pay', [\App\Http\Controllers\Api\V1\AgentController::class, 'payCommission'])->name('agent-commissions.pay')->middleware('permission:commissions.approve');
 
         // Campaigns (Phase 59)
-        Route::apiResource('campaigns', \App\Http\Controllers\Api\V1\CampaignController::class);
-        Route::post('campaigns/{campaign}/dispatch', [\App\Http\Controllers\Api\V1\CampaignController::class, 'dispatch'])->name('campaigns.dispatch');
-        Route::get('campaigns/{campaign}/stats', [\App\Http\Controllers\Api\V1\CampaignController::class, 'stats'])->name('campaigns.stats');
-        Route::post('campaigns/{campaign}/recipients/{recipient}/open', [\App\Http\Controllers\Api\V1\CampaignController::class, 'trackOpen'])->name('campaigns.open');
+        Route::apiResource('campaigns', \App\Http\Controllers\Api\V1\CampaignController::class)->only(['index', 'show'])->middleware('permission:sales.view');
+        Route::apiResource('campaigns', \App\Http\Controllers\Api\V1\CampaignController::class)->only(['store', 'update', 'destroy'])->middleware('permission:sales.manage');
+        Route::post('campaigns/{campaign}/dispatch', [\App\Http\Controllers\Api\V1\CampaignController::class, 'dispatch'])->name('campaigns.dispatch')->middleware('permission:notifications.broadcast');
+        Route::get('campaigns/{campaign}/stats', [\App\Http\Controllers\Api\V1\CampaignController::class, 'stats'])->name('campaigns.stats')->middleware('permission:sales.view');
+        Route::post('campaigns/{campaign}/recipients/{recipient}/open', [\App\Http\Controllers\Api\V1\CampaignController::class, 'trackOpen'])->name('campaigns.open')->middleware('permission:sales.manage');
 
         // API Client Management (Phase 60)
-        Route::apiResource('api-clients', \App\Http\Controllers\Api\V1\ApiClientController::class);
-        Route::post('api-clients/{apiClient}/rotate-key', [\App\Http\Controllers\Api\V1\ApiClientController::class, 'rotateKey'])->name('api-clients.rotate-key');
-        Route::get('api-clients/{apiClient}/logs', [\App\Http\Controllers\Api\V1\ApiClientController::class, 'logs'])->name('api-clients.logs');
+        Route::middleware(['permission:integrations.manage', 'plan.feature:api_access'])->group(function () {
+            Route::apiResource('api-clients', \App\Http\Controllers\Api\V1\ApiClientController::class);
+            Route::post('api-clients/{apiClient}/rotate-key', [\App\Http\Controllers\Api\V1\ApiClientController::class, 'rotateKey'])->name('api-clients.rotate-key');
+            Route::get('api-clients/{apiClient}/logs', [\App\Http\Controllers\Api\V1\ApiClientController::class, 'logs'])->name('api-clients.logs');
+        });
 
         // Collections Automation (Phase 56)
-        Route::get('escalation-rules', [\App\Http\Controllers\Api\V1\CollectionCaseController::class, 'rules'])->name('escalation-rules.index');
-        Route::post('escalation-rules', [\App\Http\Controllers\Api\V1\CollectionCaseController::class, 'storeRule'])->name('escalation-rules.store');
-        Route::put('escalation-rules/{rule}', [\App\Http\Controllers\Api\V1\CollectionCaseController::class, 'updateRule'])->name('escalation-rules.update');
-        Route::delete('escalation-rules/{rule}', [\App\Http\Controllers\Api\V1\CollectionCaseController::class, 'destroyRule'])->name('escalation-rules.destroy');
-        Route::get('collection-cases', [\App\Http\Controllers\Api\V1\CollectionCaseController::class, 'index'])->name('collection-cases.index');
-        Route::get('collection-cases/{collectionCase}', [\App\Http\Controllers\Api\V1\CollectionCaseController::class, 'show'])->name('collection-cases.show');
-        Route::put('collection-cases/{collectionCase}', [\App\Http\Controllers\Api\V1\CollectionCaseController::class, 'update'])->name('collection-cases.update');
-        Route::post('loans/{loan}/escalate', [\App\Http\Controllers\Api\V1\CollectionCaseController::class, 'escalateLoan'])->name('loans.escalate');
-        Route::get('collection-cases/{collectionCase}/promises', [\App\Http\Controllers\Api\V1\CollectionCaseController::class, 'promises'])->name('collection-cases.promises');
-        Route::post('collection-cases/{collectionCase}/promises', [\App\Http\Controllers\Api\V1\CollectionCaseController::class, 'storePromise'])->name('collection-cases.promises.store');
+        Route::get('escalation-rules', [\App\Http\Controllers\Api\V1\CollectionCaseController::class, 'rules'])->name('escalation-rules.index')->middleware('permission:collections.view');
+        Route::post('escalation-rules', [\App\Http\Controllers\Api\V1\CollectionCaseController::class, 'storeRule'])->name('escalation-rules.store')->middleware('permission:collections.configure');
+        Route::put('escalation-rules/{rule}', [\App\Http\Controllers\Api\V1\CollectionCaseController::class, 'updateRule'])->name('escalation-rules.update')->middleware('permission:collections.configure');
+        Route::delete('escalation-rules/{rule}', [\App\Http\Controllers\Api\V1\CollectionCaseController::class, 'destroyRule'])->name('escalation-rules.destroy')->middleware('permission:collections.configure');
+        Route::get('collection-cases', [\App\Http\Controllers\Api\V1\CollectionCaseController::class, 'index'])->name('collection-cases.index')->middleware('permission:collections.view');
+        Route::get('collection-cases/{collectionCase}', [\App\Http\Controllers\Api\V1\CollectionCaseController::class, 'show'])->name('collection-cases.show')->middleware('permission:collections.view');
+        Route::put('collection-cases/{collectionCase}', [\App\Http\Controllers\Api\V1\CollectionCaseController::class, 'update'])->name('collection-cases.update')->middleware('permission:collections.manage');
+        Route::post('loans/{loan}/escalate', [\App\Http\Controllers\Api\V1\CollectionCaseController::class, 'escalateLoan'])->name('loans.escalate')->middleware('permission:collections.manage');
+        Route::get('collection-cases/{collectionCase}/promises', [\App\Http\Controllers\Api\V1\CollectionCaseController::class, 'promises'])->name('collection-cases.promises')->middleware('permission:collections.view');
+        Route::post('collection-cases/{collectionCase}/promises', [\App\Http\Controllers\Api\V1\CollectionCaseController::class, 'storePromise'])->name('collection-cases.promises.store')->middleware('permission:collections.manage');
 
         // Reconciliation (Phase 57)
-        Route::get('reconciliation', [\App\Http\Controllers\Api\V1\ReconciliationController::class, 'index'])->name('reconciliation.index');
-        Route::post('reconciliation/import', [\App\Http\Controllers\Api\V1\ReconciliationController::class, 'import'])->name('reconciliation.import');
-        Route::get('reconciliation/{statement}', [\App\Http\Controllers\Api\V1\ReconciliationController::class, 'show'])->name('reconciliation.show');
-        Route::post('reconciliation/{statement}/reconcile', [\App\Http\Controllers\Api\V1\ReconciliationController::class, 'reconcile'])->name('reconciliation.reconcile');
-        Route::get('reconciliation/{statement}/unmatched', [\App\Http\Controllers\Api\V1\ReconciliationController::class, 'unmatched'])->name('reconciliation.unmatched');
-        Route::post('reconciliation/transactions/{transaction}/match', [\App\Http\Controllers\Api\V1\ReconciliationController::class, 'match'])->name('reconciliation.match');
-        Route::post('reconciliation/transactions/{transaction}/ignore', [\App\Http\Controllers\Api\V1\ReconciliationController::class, 'ignore'])->name('reconciliation.ignore');
+        Route::get('reconciliation', [\App\Http\Controllers\Api\V1\ReconciliationController::class, 'index'])->name('reconciliation.index')->middleware('permission:accounting.view');
+        Route::post('reconciliation/import', [\App\Http\Controllers\Api\V1\ReconciliationController::class, 'import'])->name('reconciliation.import')->middleware('permission:accounting.manage');
+        Route::get('reconciliation/{statement}', [\App\Http\Controllers\Api\V1\ReconciliationController::class, 'show'])->name('reconciliation.show')->middleware('permission:accounting.view');
+        Route::post('reconciliation/{statement}/reconcile', [\App\Http\Controllers\Api\V1\ReconciliationController::class, 'reconcile'])->name('reconciliation.reconcile')->middleware('permission:accounting.manage');
+        Route::get('reconciliation/{statement}/unmatched', [\App\Http\Controllers\Api\V1\ReconciliationController::class, 'unmatched'])->name('reconciliation.unmatched')->middleware('permission:accounting.view');
+        Route::post('reconciliation/transactions/{transaction}/match', [\App\Http\Controllers\Api\V1\ReconciliationController::class, 'match'])->name('reconciliation.match')->middleware('permission:accounting.manage');
+        Route::post('reconciliation/transactions/{transaction}/ignore', [\App\Http\Controllers\Api\V1\ReconciliationController::class, 'ignore'])->name('reconciliation.ignore')->middleware('permission:accounting.manage');
 
         // ─── Branch Performance Dashboards ───────────────────────────
-        Route::get('branches/{branch}/performance/pnl', [\App\Http\Controllers\Api\V1\BranchPerformanceController::class, 'pnl'])->name('branches.performance.pnl');
-        Route::get('branches/{branch}/performance/portfolio', [\App\Http\Controllers\Api\V1\BranchPerformanceController::class, 'portfolio'])->name('branches.performance.portfolio');
-        Route::get('branches/{branch}/performance/officers', [\App\Http\Controllers\Api\V1\BranchPerformanceController::class, 'officers'])->name('branches.performance.officers');
+        Route::middleware(['permission:branches.view', 'permission:reports.view'])->group(function () {
+            Route::get('branches/{branch}/performance/pnl', [\App\Http\Controllers\Api\V1\BranchPerformanceController::class, 'pnl'])->name('branches.performance.pnl');
+            Route::get('branches/{branch}/performance/portfolio', [\App\Http\Controllers\Api\V1\BranchPerformanceController::class, 'portfolio'])->name('branches.performance.portfolio');
+            Route::get('branches/{branch}/performance/officers', [\App\Http\Controllers\Api\V1\BranchPerformanceController::class, 'officers'])->name('branches.performance.officers');
+        });
 
         // ─── Loan Calculator ──────────────────────────────────────────
-        Route::post('calculator/calculate', [\App\Http\Controllers\Api\V1\LoanCalculatorController::class, 'calculate'])->name('calculator.calculate');
+        Route::post('calculator/calculate', [\App\Http\Controllers\Api\V1\LoanCalculatorController::class, 'calculate'])->name('calculator.calculate')->middleware('permission:loan_products.view');
 
         // ─── Onboarding Wizard ────────────────────────────────────────
         Route::get('onboarding/progress', [\App\Http\Controllers\Api\V1\OnboardingWizardController::class, 'progress'])->name('onboarding.progress');
-        Route::post('onboarding/steps/{key}/complete', [\App\Http\Controllers\Api\V1\OnboardingWizardController::class, 'complete'])->name('onboarding.steps.complete');
-        Route::post('onboarding/steps/{key}/reset', [\App\Http\Controllers\Api\V1\OnboardingWizardController::class, 'reset'])->name('onboarding.steps.reset');
+        Route::post('onboarding/steps/{key}/complete', [\App\Http\Controllers\Api\V1\OnboardingWizardController::class, 'complete'])->name('onboarding.steps.complete')->middleware('permission:settings.edit');
+        Route::post('onboarding/steps/{key}/reset', [\App\Http\Controllers\Api\V1\OnboardingWizardController::class, 'reset'])->name('onboarding.steps.reset')->middleware('permission:settings.edit');
 
         // ─── Staff Commissions ────────────────────────────────────────
-        Route::get('commission-rules', [\App\Http\Controllers\Api\V1\CommissionController::class, 'rules'])->name('commission-rules.index');
-        Route::post('commission-rules', [\App\Http\Controllers\Api\V1\CommissionController::class, 'storeRule'])->name('commission-rules.store');
-        Route::put('commission-rules/{rule}', [\App\Http\Controllers\Api\V1\CommissionController::class, 'updateRule'])->name('commission-rules.update');
-        Route::delete('commission-rules/{rule}', [\App\Http\Controllers\Api\V1\CommissionController::class, 'destroyRule'])->name('commission-rules.destroy');
-        Route::get('commissions', [\App\Http\Controllers\Api\V1\CommissionController::class, 'index'])->name('commissions.index');
-        Route::get('commissions/users/{userId}/summary', [\App\Http\Controllers\Api\V1\CommissionController::class, 'summary'])->name('commissions.summary');
-        Route::post('commissions/approve-period', [\App\Http\Controllers\Api\V1\CommissionController::class, 'approvePeriod'])->name('commissions.approve-period');
-        Route::post('commissions/mark-paid', [\App\Http\Controllers\Api\V1\CommissionController::class, 'markPaid'])->name('commissions.mark-paid');
+        Route::get('commission-rules', [\App\Http\Controllers\Api\V1\CommissionController::class, 'rules'])->name('commission-rules.index')->middleware('permission:commissions.view');
+        Route::post('commission-rules', [\App\Http\Controllers\Api\V1\CommissionController::class, 'storeRule'])->name('commission-rules.store')->middleware('permission:commissions.approve');
+        Route::put('commission-rules/{rule}', [\App\Http\Controllers\Api\V1\CommissionController::class, 'updateRule'])->name('commission-rules.update')->middleware('permission:commissions.approve');
+        Route::delete('commission-rules/{rule}', [\App\Http\Controllers\Api\V1\CommissionController::class, 'destroyRule'])->name('commission-rules.destroy')->middleware('permission:commissions.approve');
+        Route::get('commissions', [\App\Http\Controllers\Api\V1\CommissionController::class, 'index'])->name('commissions.index')->middleware('permission:commissions.view');
+        Route::get('commissions/users/{userId}/summary', [\App\Http\Controllers\Api\V1\CommissionController::class, 'summary'])->name('commissions.summary')->middleware('permission:commissions.view');
+        Route::post('commissions/approve-period', [\App\Http\Controllers\Api\V1\CommissionController::class, 'approvePeriod'])->name('commissions.approve-period')->middleware('permission:commissions.approve');
+        Route::post('commissions/mark-paid', [\App\Http\Controllers\Api\V1\CommissionController::class, 'markPaid'])->name('commissions.mark-paid')->middleware('permission:commissions.approve');
 
-        // ─── Loan Product Marketplace (tenant-side management) ────────
-        Route::get('marketplace/my-products', [\App\Http\Controllers\Api\V1\PublicMarketplaceController::class, 'myProducts'])->name('marketplace.my-products');
-        Route::post('marketplace/products', [\App\Http\Controllers\Api\V1\PublicMarketplaceController::class, 'publish'])->name('marketplace.publish');
-        Route::delete('marketplace/products/{id}', [\App\Http\Controllers\Api\V1\PublicMarketplaceController::class, 'unpublish'])->name('marketplace.unpublish');
-        Route::get('marketplace/products', [\App\Http\Controllers\Api\V1\PublicMarketplaceController::class, 'browse'])->name('marketplace.browse');
-        Route::get('marketplace/products/{id}', [\App\Http\Controllers\Api\V1\PublicMarketplaceController::class, 'show'])->name('marketplace.show');
+        // ─── Marketplaces (plan feature) ──────────────────────────────
+        Route::middleware('plan.feature:marketplace')->group(function () {
+            // ─── Loan Product Marketplace (tenant-side management) ────────
+            Route::get('marketplace/my-products', [\App\Http\Controllers\Api\V1\PublicMarketplaceController::class, 'myProducts'])->name('marketplace.my-products')->middleware('permission:marketplace.view');
+            Route::post('marketplace/products', [\App\Http\Controllers\Api\V1\PublicMarketplaceController::class, 'publish'])->name('marketplace.publish')->middleware('permission:marketplace.manage');
+            Route::delete('marketplace/products/{id}', [\App\Http\Controllers\Api\V1\PublicMarketplaceController::class, 'unpublish'])->name('marketplace.unpublish')->middleware('permission:marketplace.manage');
+            Route::get('marketplace/products', [\App\Http\Controllers\Api\V1\PublicMarketplaceController::class, 'browse'])->name('marketplace.browse')->middleware('permission:marketplace.view');
+            Route::get('marketplace/products/{id}', [\App\Http\Controllers\Api\V1\PublicMarketplaceController::class, 'show'])->name('marketplace.show')->middleware('permission:marketplace.view');
 
-        // ─── CRB (Credit Reference Bureau) ───────────────────────────
-        Route::post('crb/check', [\App\Http\Controllers\Api\V1\CrbController::class, 'check'])->name('crb.check');
-        Route::get('crb/inquiries', [\App\Http\Controllers\Api\V1\CrbController::class, 'inquiries'])->name('crb.inquiries');
-        Route::get('crb/report/{hash}', [\App\Http\Controllers\Api\V1\CrbController::class, 'report'])->name('crb.report');
-        Route::get('borrowers/{borrower}/crb', [\App\Http\Controllers\Api\V1\CrbController::class, 'borrowerReport'])->name('crb.borrower-report');
-        Route::post('borrowers/{borrower}/crb/recalculate', [\App\Http\Controllers\Api\V1\CrbController::class, 'recalculate'])->name('crb.recalculate');
+            // ─── CRB (Credit Reference Bureau) ───────────────────────────
+            Route::post('crb/check', [\App\Http\Controllers\Api\V1\CrbController::class, 'check'])->name('crb.check')->middleware('permission:crb.check');
+            Route::get('crb/inquiries', [\App\Http\Controllers\Api\V1\CrbController::class, 'inquiries'])->name('crb.inquiries')->middleware('permission:crb.view');
+            Route::get('crb/report/{hash}', [\App\Http\Controllers\Api\V1\CrbController::class, 'report'])->name('crb.report')->middleware('permission:crb.view');
+            Route::get('borrowers/{borrower}/crb', [\App\Http\Controllers\Api\V1\CrbController::class, 'borrowerReport'])->name('crb.borrower-report')->middleware('permission:crb.view');
+            Route::post('borrowers/{borrower}/crb/recalculate', [\App\Http\Controllers\Api\V1\CrbController::class, 'recalculate'])->name('crb.recalculate')->middleware('permission:crb.check');
 
-        // ─── KYC Pull (Ghost User identity lookup) ────────────────────
-        Route::post('borrowers/kyc-lookup', [\App\Http\Controllers\Api\V1\BorrowerController::class, 'kycLookup'])->name('borrowers.kyc-lookup');
-        Route::post('borrowers/{borrower}/kyc-import', [\App\Http\Controllers\Api\V1\BorrowerController::class, 'kycImport'])->name('borrowers.kyc-import');
+            // ─── KYC Pull (Ghost User identity lookup) ────────────────────
+            Route::post('borrowers/kyc-lookup', [\App\Http\Controllers\Api\V1\BorrowerController::class, 'kycLookup'])->name('borrowers.kyc-lookup')->middleware('permission:borrowers.create');
+            Route::post('borrowers/{borrower}/kyc-import', [\App\Http\Controllers\Api\V1\BorrowerController::class, 'kycImport'])->name('borrowers.kyc-import')->middleware('permission:borrowers.edit');
 
-        // ─── Repo Marketplace — Tenant Management ─────────────────────
-        Route::apiResource('repo-items', \App\Http\Controllers\Api\V1\RepoItemController::class);
-        Route::post('repo-items/{id}/mark-sold', [\App\Http\Controllers\Api\V1\RepoItemController::class, 'markSold'])->name('repo-items.mark-sold');
-        Route::get('repo-items/{id}/enquiries', [\App\Http\Controllers\Api\V1\RepoItemController::class, 'enquiries'])->name('repo-items.enquiries');
-        Route::post('repo-items/{id}/enquiries/{enquiryId}/reply', [\App\Http\Controllers\Api\V1\RepoItemController::class, 'reply'])->name('repo-items.enquiries.reply');
+            // ─── Repo Marketplace — Tenant Management ─────────────────────
+            Route::apiResource('repo-items', \App\Http\Controllers\Api\V1\RepoItemController::class)->only(['index', 'show'])->middleware('permission:marketplace.view');
+            Route::apiResource('repo-items', \App\Http\Controllers\Api\V1\RepoItemController::class)->only(['store', 'update', 'destroy'])->middleware('permission:marketplace.manage');
+            Route::post('repo-items/{id}/mark-sold', [\App\Http\Controllers\Api\V1\RepoItemController::class, 'markSold'])->name('repo-items.mark-sold')->middleware('permission:marketplace.manage');
+            Route::get('repo-items/{id}/enquiries', [\App\Http\Controllers\Api\V1\RepoItemController::class, 'enquiries'])->name('repo-items.enquiries')->middleware('permission:marketplace.view');
+            Route::post('repo-items/{id}/enquiries/{enquiryId}/reply', [\App\Http\Controllers\Api\V1\RepoItemController::class, 'reply'])->name('repo-items.enquiries.reply')->middleware('permission:marketplace.manage');
 
-        // Featured Repo Items (tenant-paid promotions)
-        Route::get('featured-items/quote', [\App\Http\Controllers\Api\V1\FeaturedItemController::class, 'quote'])->name('featured-items.quote');
-        Route::get('featured-items', [\App\Http\Controllers\Api\V1\FeaturedItemController::class, 'index'])->name('featured-items.index');
-        Route::post('featured-items', [\App\Http\Controllers\Api\V1\FeaturedItemController::class, 'store'])->name('featured-items.store');
-        Route::post('featured-items/{id}/confirm', [\App\Http\Controllers\Api\V1\FeaturedItemController::class, 'confirmPayment'])->name('featured-items.confirm');
-        Route::delete('featured-items/{id}', [\App\Http\Controllers\Api\V1\FeaturedItemController::class, 'destroy'])->name('featured-items.destroy');
+            // Featured Repo Items (tenant-paid promotions)
+            Route::get('featured-items/quote', [\App\Http\Controllers\Api\V1\FeaturedItemController::class, 'quote'])->name('featured-items.quote')->middleware('permission:marketplace.view');
+            Route::get('featured-items', [\App\Http\Controllers\Api\V1\FeaturedItemController::class, 'index'])->name('featured-items.index')->middleware('permission:marketplace.view');
+            Route::post('featured-items', [\App\Http\Controllers\Api\V1\FeaturedItemController::class, 'store'])->name('featured-items.store')->middleware('permission:marketplace.manage');
+            Route::post('featured-items/{id}/confirm', [\App\Http\Controllers\Api\V1\FeaturedItemController::class, 'confirmPayment'])->name('featured-items.confirm')->middleware('permission:marketplace.manage');
+            Route::delete('featured-items/{id}', [\App\Http\Controllers\Api\V1\FeaturedItemController::class, 'destroy'])->name('featured-items.destroy')->middleware('permission:marketplace.manage');
 
-        // Hot Deals
-        Route::get('hot-deals', [\App\Http\Controllers\Api\V1\HotDealController::class, 'index'])->name('hot-deals.index');
-        Route::post('hot-deals', [\App\Http\Controllers\Api\V1\HotDealController::class, 'store'])->name('hot-deals.store');
-        Route::put('hot-deals/{id}', [\App\Http\Controllers\Api\V1\HotDealController::class, 'update'])->name('hot-deals.update');
-        Route::delete('hot-deals/{id}', [\App\Http\Controllers\Api\V1\HotDealController::class, 'destroy'])->name('hot-deals.destroy');
-        Route::get('hot-deals/{id}/leads', [\App\Http\Controllers\Api\V1\HotDealController::class, 'leads'])->name('hot-deals.leads');
-        Route::post('hot-deals/{id}/toggle', [\App\Http\Controllers\Api\V1\HotDealController::class, 'toggle'])->name('hot-deals.toggle');
+            // Hot Deals
+            Route::get('hot-deals', [\App\Http\Controllers\Api\V1\HotDealController::class, 'index'])->name('hot-deals.index')->middleware('permission:marketplace.view');
+            Route::post('hot-deals', [\App\Http\Controllers\Api\V1\HotDealController::class, 'store'])->name('hot-deals.store')->middleware('permission:marketplace.manage');
+            Route::put('hot-deals/{id}', [\App\Http\Controllers\Api\V1\HotDealController::class, 'update'])->name('hot-deals.update')->middleware('permission:marketplace.manage');
+            Route::delete('hot-deals/{id}', [\App\Http\Controllers\Api\V1\HotDealController::class, 'destroy'])->name('hot-deals.destroy')->middleware('permission:marketplace.manage');
+            Route::get('hot-deals/{id}/leads', [\App\Http\Controllers\Api\V1\HotDealController::class, 'leads'])->name('hot-deals.leads')->middleware('permission:marketplace.view');
+            Route::post('hot-deals/{id}/toggle', [\App\Http\Controllers\Api\V1\HotDealController::class, 'toggle'])->name('hot-deals.toggle')->middleware('permission:marketplace.manage');
+        }); // plan.feature:marketplace
 
         // ─── Tax & Regulatory Compliance (Phase 56) ───────────────────
         Route::prefix('tax')->name('tax.')->group(function () {
-            Route::get('configurations', [\App\Http\Controllers\Api\V1\TaxComplianceController::class, 'configurations'])->name('configurations');
-            Route::post('configurations', [\App\Http\Controllers\Api\V1\TaxComplianceController::class, 'storeConfig'])->name('configurations.store');
-            Route::put('configurations/{config}', [\App\Http\Controllers\Api\V1\TaxComplianceController::class, 'updateConfig'])->name('configurations.update');
-            Route::get('wht-summary', [\App\Http\Controllers\Api\V1\TaxComplianceController::class, 'whtSummary'])->name('wht-summary');
-            Route::post('wht-summary/{period}/remit', [\App\Http\Controllers\Api\V1\TaxComplianceController::class, 'markRemitted'])->name('wht-summary.remit');
-            Route::get('par-report', [\App\Http\Controllers\Api\V1\TaxComplianceController::class, 'parReport'])->name('par-report');
-            Route::get('capital-adequacy', [\App\Http\Controllers\Api\V1\TaxComplianceController::class, 'capitalAdequacy'])->name('capital-adequacy');
-            Route::get('computations', [\App\Http\Controllers\Api\V1\TaxComplianceController::class, 'computations'])->name('computations');
+            Route::get('configurations', [\App\Http\Controllers\Api\V1\TaxComplianceController::class, 'configurations'])->name('configurations')->middleware('permission:accounting.view');
+            Route::post('configurations', [\App\Http\Controllers\Api\V1\TaxComplianceController::class, 'storeConfig'])->name('configurations.store')->middleware('permission:accounting.manage');
+            Route::put('configurations/{config}', [\App\Http\Controllers\Api\V1\TaxComplianceController::class, 'updateConfig'])->name('configurations.update')->middleware('permission:accounting.manage');
+            Route::get('wht-summary', [\App\Http\Controllers\Api\V1\TaxComplianceController::class, 'whtSummary'])->name('wht-summary')->middleware('permission:accounting.view');
+            Route::post('wht-summary/{period}/remit', [\App\Http\Controllers\Api\V1\TaxComplianceController::class, 'markRemitted'])->name('wht-summary.remit')->middleware('permission:accounting.manage');
+            Route::get('par-report', [\App\Http\Controllers\Api\V1\TaxComplianceController::class, 'parReport'])->name('par-report')->middleware('permission:compliance.view');
+            Route::get('capital-adequacy', [\App\Http\Controllers\Api\V1\TaxComplianceController::class, 'capitalAdequacy'])->name('capital-adequacy')->middleware('permission:compliance.view');
+            Route::get('computations', [\App\Http\Controllers\Api\V1\TaxComplianceController::class, 'computations'])->name('computations')->middleware('permission:accounting.view');
         });
 
         // ─── Loan Offer Engine (Phase 57) ─────────────────────────────
         Route::prefix('loan-offers')->name('loan-offers.')->group(function () {
-            Route::get('rules', [\App\Http\Controllers\Api\V1\LoanOfferController::class, 'rules'])->name('rules');
-            Route::post('rules', [\App\Http\Controllers\Api\V1\LoanOfferController::class, 'storeRule'])->name('rules.store');
-            Route::put('rules/{rule}', [\App\Http\Controllers\Api\V1\LoanOfferController::class, 'updateRule'])->name('rules.update');
-            Route::delete('rules/{rule}', [\App\Http\Controllers\Api\V1\LoanOfferController::class, 'destroyRule'])->name('rules.destroy');
-            Route::get('/', [\App\Http\Controllers\Api\V1\LoanOfferController::class, 'index'])->name('index');
-            Route::post('generate', [\App\Http\Controllers\Api\V1\LoanOfferController::class, 'generate'])->name('generate');
-            Route::get('{offer}', [\App\Http\Controllers\Api\V1\LoanOfferController::class, 'show'])->name('show');
-            Route::post('{offer}/accept', [\App\Http\Controllers\Api\V1\LoanOfferController::class, 'accept'])->name('accept');
-            Route::post('{offer}/decline', [\App\Http\Controllers\Api\V1\LoanOfferController::class, 'decline'])->name('decline');
-            Route::post('{offer}/expire', [\App\Http\Controllers\Api\V1\LoanOfferController::class, 'expire'])->name('expire');
+            Route::get('rules', [\App\Http\Controllers\Api\V1\LoanOfferController::class, 'rules'])->name('rules')->middleware('permission:sales.view');
+            Route::post('rules', [\App\Http\Controllers\Api\V1\LoanOfferController::class, 'storeRule'])->name('rules.store')->middleware('permission:loan_products.edit');
+            Route::put('rules/{rule}', [\App\Http\Controllers\Api\V1\LoanOfferController::class, 'updateRule'])->name('rules.update')->middleware('permission:loan_products.edit');
+            Route::delete('rules/{rule}', [\App\Http\Controllers\Api\V1\LoanOfferController::class, 'destroyRule'])->name('rules.destroy')->middleware('permission:loan_products.edit');
+            Route::get('/', [\App\Http\Controllers\Api\V1\LoanOfferController::class, 'index'])->name('index')->middleware('permission:sales.view');
+            Route::post('generate', [\App\Http\Controllers\Api\V1\LoanOfferController::class, 'generate'])->name('generate')->middleware('permission:sales.manage');
+            Route::get('{offer}', [\App\Http\Controllers\Api\V1\LoanOfferController::class, 'show'])->name('show')->middleware('permission:sales.view');
+            Route::post('{offer}/accept', [\App\Http\Controllers\Api\V1\LoanOfferController::class, 'accept'])->name('accept')->middleware(['permission:sales.manage', 'permission:loans.create']);
+            Route::post('{offer}/decline', [\App\Http\Controllers\Api\V1\LoanOfferController::class, 'decline'])->name('decline')->middleware('permission:sales.manage');
+            Route::post('{offer}/expire', [\App\Http\Controllers\Api\V1\LoanOfferController::class, 'expire'])->name('expire')->middleware('permission:sales.manage');
         });
     });
 
     // ─── Open Banking (Phase 60 — API-key auth) ──────────────────
-    Route::prefix('open/v1')->name('open.')->middleware('api-gateway')->group(function () {
-        Route::get('products', [\App\Http\Controllers\Api\V1\OpenBankingController::class, 'products'])->name('products');
-        Route::post('loan/apply', [\App\Http\Controllers\Api\V1\OpenBankingController::class, 'applyLoan'])->name('loan.apply');
-        Route::get('loan/{reference}/status', [\App\Http\Controllers\Api\V1\OpenBankingController::class, 'loanStatus'])->name('loan.status');
-        Route::post('payment/initiate', [\App\Http\Controllers\Api\V1\OpenBankingController::class, 'initiatePayment'])->name('payment.initiate');
+    // Each route checks the API key's scope (api-gateway:<scope>).
+    Route::prefix('open/v1')->name('open.')->group(function () {
+        Route::get('products', [\App\Http\Controllers\Api\V1\OpenBankingController::class, 'products'])->name('products')->middleware('api-gateway:products_read');
+        Route::post('loan/apply', [\App\Http\Controllers\Api\V1\OpenBankingController::class, 'applyLoan'])->name('loan.apply')->middleware('api-gateway:loan_apply');
+        Route::get('loan/{reference}/status', [\App\Http\Controllers\Api\V1\OpenBankingController::class, 'loanStatus'])->name('loan.status')->middleware('api-gateway:loan_status');
+        Route::post('payment/initiate', [\App\Http\Controllers\Api\V1\OpenBankingController::class, 'initiatePayment'])->name('payment.initiate')->middleware('api-gateway:payment_initiate');
     });
 
     // ─── Borrower Protected Routes (Sanctum — borrower tokens) ───
-    Route::prefix('me')->name('borrower.')->middleware('auth:sanctum')->group(function () {
+    Route::prefix('me')->name('borrower.')->middleware(['auth:sanctum', 'actor:borrower'])->group(function () {
         Route::get('/', [\App\Http\Controllers\Api\V1\Borrower\ProfileController::class, 'show'])->name('profile');
         Route::get('loans', [\App\Http\Controllers\Api\V1\Borrower\ProfileController::class, 'loans'])->name('loans');
         Route::get('payments', [\App\Http\Controllers\Api\V1\Borrower\ProfileController::class, 'payments'])->name('payments');
@@ -574,7 +600,7 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
             Route::post('request-otp', [\App\Http\Controllers\Api\V1\Public\GhostAuthController::class, 'requestOtp'])->name('request-otp');
             Route::post('verify-otp', [\App\Http\Controllers\Api\V1\Public\GhostAuthController::class, 'verifyOtp'])->name('verify-otp');
 
-            Route::middleware('auth:sanctum')->group(function () {
+            Route::middleware(['auth:sanctum', 'actor:ghost'])->group(function () {
                 Route::get('profile', [\App\Http\Controllers\Api\V1\Public\GhostAuthController::class, 'profile'])->name('profile');
                 Route::put('profile', [\App\Http\Controllers\Api\V1\Public\GhostAuthController::class, 'updateProfile'])->name('profile.update');
             });
@@ -591,7 +617,7 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::post('hot-deals/{id}/enquire', [\App\Http\Controllers\Api\V1\Public\FeaturedController::class, 'enquireDeal'])->name('hot-deals.enquire');
 
         // Ghost-auth required
-        Route::middleware('auth:sanctum')->group(function () {
+        Route::middleware(['auth:sanctum', 'actor:ghost'])->group(function () {
             Route::post('items/{id}/enquire', [\App\Http\Controllers\Api\V1\Public\RepoItemController::class, 'enquire'])->name('items.enquire');
             Route::get('my-enquiries', [\App\Http\Controllers\Api\V1\Public\RepoItemController::class, 'myEnquiries'])->name('my-enquiries');
 
@@ -610,54 +636,69 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
 
         // Subscription/billing webhooks (central DB — no tenant context)
         Route::post('subscription/{gateway}', [\App\Http\Controllers\Webhook\SubscriptionWebhookController::class, 'handle'])->name('subscription');
+
+        // Same handlers with the workspace in the path, for the shared host (lendr.cc)
+        // where there's no subdomain to tell whose callback it is. Each lender pastes
+        // its own URLs (Settings → Payments) into its provider dashboards.
+        // MTN delivers its callbacks with PUT.
+        Route::match(['post', 'put'], '{provider}/{tenant}', \App\Http\Controllers\Webhook\ProviderWebhookController::class)
+            ->middleware(\App\Http\Middleware\InitializeTenancyFromRoute::class)
+            ->whereIn('provider', array_keys(\App\Http\Controllers\Webhook\ProviderWebhookController::HANDLERS))
+            ->name('tenant');
+
+        // Subdomain workspaces: the host already says whose callback it is.
+        Route::post('airtel', [\App\Http\Controllers\Webhook\AirtelWebhookController::class, 'handle'])->name('airtel');
+        Route::match(['post', 'put'], 'mtn', [\App\Http\Controllers\Webhook\MtnWebhookController::class, 'handle'])->name('mtn');
+        Route::post('zamtel', [\App\Http\Controllers\Webhook\ZamtelWebhookController::class, 'handle'])->name('zamtel');
     });
 
     // ─── Marketplace (Lender-facing — P11) ──────────────────────
     // ─── E-Signatures & Digital Contracts (Phase 56) ──────────────────────────
-    Route::middleware('auth:sanctum')->prefix('loans/{loan}')->name('loans.')->group(function () {
-        Route::get('agreement', [\App\Http\Controllers\Api\V1\ESignatureController::class, 'show'])->name('agreement.show');
-        Route::post('agreement/generate', [\App\Http\Controllers\Api\V1\ESignatureController::class, 'generate'])->name('agreement.generate');
-        Route::post('agreement/send-otp', [\App\Http\Controllers\Api\V1\ESignatureController::class, 'sendOtp'])->name('agreement.send-otp');
-        Route::post('agreement/sign', [\App\Http\Controllers\Api\V1\ESignatureController::class, 'sign'])->name('agreement.sign');
-        Route::get('agreement/audit', [\App\Http\Controllers\Api\V1\ESignatureController::class, 'audit'])->name('agreement.audit');
-        Route::get('agreement/download', [\App\Http\Controllers\Api\V1\ESignatureController::class, 'download'])->name('agreement.download');
+    Route::middleware(['auth:sanctum', 'actor:staff', 'tenant.status', \App\Http\Middleware\EnforceStaffSecurity::class])->prefix('loans/{loan}')->name('loans.')->group(function () {
+        Route::get('agreement', [\App\Http\Controllers\Api\V1\ESignatureController::class, 'show'])->name('agreement.show')->middleware('permission:loans.view');
+        Route::post('agreement/generate', [\App\Http\Controllers\Api\V1\ESignatureController::class, 'generate'])->name('agreement.generate')->middleware('permission:loans.edit');
+        Route::post('agreement/send-otp', [\App\Http\Controllers\Api\V1\ESignatureController::class, 'sendOtp'])->name('agreement.send-otp')->middleware('permission:loans.edit');
+        Route::post('agreement/sign', [\App\Http\Controllers\Api\V1\ESignatureController::class, 'sign'])->name('agreement.sign')->middleware('permission:loans.edit');
+        Route::get('agreement/audit', [\App\Http\Controllers\Api\V1\ESignatureController::class, 'audit'])->name('agreement.audit')->middleware('permission:loans.view');
+        Route::get('agreement/download', [\App\Http\Controllers\Api\V1\ESignatureController::class, 'download'])->name('agreement.download')->middleware('permission:loans.view');
     });
 
     // ─── Regulatory Reporting Engine (Phase 59) ──────────────────────────────
-    Route::middleware('auth:sanctum')->prefix('regulatory')->name('regulatory.')->group(function () {
-        Route::post('generate', [\App\Http\Controllers\Api\V1\RegulatoryReportController::class, 'generate'])->name('generate');
-        Route::get('reports', [\App\Http\Controllers\Api\V1\RegulatoryReportController::class, 'index'])->name('reports');
-        Route::get('reports/{report}', [\App\Http\Controllers\Api\V1\RegulatoryReportController::class, 'show'])->name('reports.show');
-        Route::post('reports/{report}/email', [\App\Http\Controllers\Api\V1\RegulatoryReportController::class, 'email'])->name('reports.email');
-        Route::get('configs', [\App\Http\Controllers\Api\V1\RegulatoryReportController::class, 'configs'])->name('configs');
-        Route::post('configs', [\App\Http\Controllers\Api\V1\RegulatoryReportController::class, 'upsertConfig'])->name('configs.upsert');
+    Route::middleware(['auth:sanctum', 'actor:staff', 'tenant.status', \App\Http\Middleware\EnforceStaffSecurity::class])->prefix('regulatory')->name('regulatory.')->group(function () {
+        Route::post('generate', [\App\Http\Controllers\Api\V1\RegulatoryReportController::class, 'generate'])->name('generate')->middleware('permission:compliance.manage');
+        Route::get('reports', [\App\Http\Controllers\Api\V1\RegulatoryReportController::class, 'index'])->name('reports')->middleware('permission:compliance.view');
+        Route::get('reports/{report}', [\App\Http\Controllers\Api\V1\RegulatoryReportController::class, 'show'])->name('reports.show')->middleware('permission:compliance.view');
+        Route::post('reports/{report}/email', [\App\Http\Controllers\Api\V1\RegulatoryReportController::class, 'email'])->name('reports.email')->middleware('permission:compliance.manage');
+        Route::get('configs', [\App\Http\Controllers\Api\V1\RegulatoryReportController::class, 'configs'])->name('configs')->middleware('permission:compliance.view');
+        Route::post('configs', [\App\Http\Controllers\Api\V1\RegulatoryReportController::class, 'upsertConfig'])->name('configs.upsert')->middleware('permission:compliance.manage');
     });
 
     // ─── Customer Loyalty & Rewards (Phase 58) ───────────────────────────────
-    Route::middleware('auth:sanctum')->group(function () {
-        Route::get('borrowers/{borrower}/loyalty', [\App\Http\Controllers\Api\V1\LoyaltyController::class, 'show'])->name('loyalty.show');
-        Route::post('borrowers/{borrower}/loyalty/redeem', [\App\Http\Controllers\Api\V1\LoyaltyController::class, 'redeem'])->name('loyalty.redeem');
-        Route::get('loyalty/tiers', [\App\Http\Controllers\Api\V1\LoyaltyController::class, 'tiers'])->name('loyalty.tiers');
-        Route::post('loyalty/tiers', [\App\Http\Controllers\Api\V1\LoyaltyController::class, 'upsertTier'])->name('loyalty.tiers.upsert');
+    Route::middleware(['auth:sanctum', 'actor:staff', 'tenant.status', \App\Http\Middleware\EnforceStaffSecurity::class])->group(function () {
+        Route::get('borrowers/{borrower}/loyalty', [\App\Http\Controllers\Api\V1\LoyaltyController::class, 'show'])->name('loyalty.show')->middleware('permission:borrowers.view');
+        Route::post('borrowers/{borrower}/loyalty/redeem', [\App\Http\Controllers\Api\V1\LoyaltyController::class, 'redeem'])->name('loyalty.redeem')->middleware('permission:borrowers.edit');
+        Route::get('loyalty/tiers', [\App\Http\Controllers\Api\V1\LoyaltyController::class, 'tiers'])->name('loyalty.tiers')->middleware('permission:settings.view');
+        Route::post('loyalty/tiers', [\App\Http\Controllers\Api\V1\LoyaltyController::class, 'upsertTier'])->name('loyalty.tiers.upsert')->middleware('permission:settings.edit');
     });
 
     // ─── Field Collection App API (Phase 57) ─────────────────────────────────
-    Route::middleware('auth:sanctum')->prefix('field')->name('field.')->group(function () {
-        Route::post('check-in', [\App\Http\Controllers\Api\V1\FieldCollectionController::class, 'checkIn'])->name('check-in');
-        Route::get('check-ins', [\App\Http\Controllers\Api\V1\FieldCollectionController::class, 'checkIns'])->name('check-ins');
-        Route::post('collect', [\App\Http\Controllers\Api\V1\FieldCollectionController::class, 'collect'])->name('collect');
-        Route::get('collections', [\App\Http\Controllers\Api\V1\FieldCollectionController::class, 'collections'])->name('collections');
-        Route::get('loans', [\App\Http\Controllers\Api\V1\FieldCollectionController::class, 'loans'])->name('loans');
-        Route::post('sync', [\App\Http\Controllers\Api\V1\FieldCollectionController::class, 'syncSubmit'])->name('sync');
-        Route::get('sync/pending', [\App\Http\Controllers\Api\V1\FieldCollectionController::class, 'syncPending'])->name('sync.pending');
+    Route::middleware(['auth:sanctum', 'actor:staff', 'tenant.status', \App\Http\Middleware\EnforceStaffSecurity::class])->prefix('field')->name('field.')->group(function () {
+        Route::post('check-in', [\App\Http\Controllers\Api\V1\FieldCollectionController::class, 'checkIn'])->name('check-in')->middleware('permission:collections.manage');
+        Route::get('check-ins', [\App\Http\Controllers\Api\V1\FieldCollectionController::class, 'checkIns'])->name('check-ins')->middleware('permission:collections.view');
+        Route::post('collect', [\App\Http\Controllers\Api\V1\FieldCollectionController::class, 'collect'])->name('collect')->middleware('permission:payments.create');
+        Route::get('collections', [\App\Http\Controllers\Api\V1\FieldCollectionController::class, 'collections'])->name('collections')->middleware('permission:collections.view');
+        Route::get('loans', [\App\Http\Controllers\Api\V1\FieldCollectionController::class, 'loans'])->name('loans')->middleware('permission:collections.view');
+        Route::post('sync', [\App\Http\Controllers\Api\V1\FieldCollectionController::class, 'syncSubmit'])->name('sync')->middleware('permission:payments.create');
+        Route::get('sync/pending', [\App\Http\Controllers\Api\V1\FieldCollectionController::class, 'syncPending'])->name('sync.pending')->middleware('permission:collections.view');
     });
 
-    Route::prefix('marketplace')->name('marketplace.')->middleware('auth:sanctum')->group(function () {
-        Route::get('listings', [\App\Http\Controllers\Api\V1\MarketplaceController::class, 'index'])->name('listings');
-        Route::get('listings/{id}', [\App\Http\Controllers\Api\V1\MarketplaceController::class, 'show'])->name('listings.show');
-        Route::post('listings/{id}/express-interest', [\App\Http\Controllers\Api\V1\MarketplaceController::class, 'expressInterest'])->name('listings.interest');
-        Route::get('my-interests', [\App\Http\Controllers\Api\V1\MarketplaceController::class, 'myInterests'])->name('interests');
-        Route::get('reviews/{globalId}', [\App\Http\Controllers\Api\V1\MarketplaceController::class, 'reviews'])->name('reviews');
-        Route::post('reviews', [\App\Http\Controllers\Api\V1\MarketplaceController::class, 'postReview'])->name('reviews.create');
+    // Lender-facing borrower marketplace: other lenders' borrower listings.
+    Route::prefix('marketplace')->name('marketplace.')->middleware(['auth:sanctum', 'actor:staff', 'tenant.status', \App\Http\Middleware\EnforceStaffSecurity::class, 'plan.feature:marketplace'])->group(function () {
+        Route::get('listings', [\App\Http\Controllers\Api\V1\MarketplaceController::class, 'index'])->name('listings')->middleware('permission:marketplace.view');
+        Route::get('listings/{id}', [\App\Http\Controllers\Api\V1\MarketplaceController::class, 'show'])->name('listings.show')->middleware('permission:marketplace.view');
+        Route::post('listings/{id}/express-interest', [\App\Http\Controllers\Api\V1\MarketplaceController::class, 'expressInterest'])->name('listings.interest')->middleware('permission:marketplace.manage');
+        Route::get('my-interests', [\App\Http\Controllers\Api\V1\MarketplaceController::class, 'myInterests'])->name('interests')->middleware('permission:marketplace.view');
+        Route::get('reviews/{globalId}', [\App\Http\Controllers\Api\V1\MarketplaceController::class, 'reviews'])->name('reviews')->middleware('permission:marketplace.view');
+        Route::post('reviews', [\App\Http\Controllers\Api\V1\MarketplaceController::class, 'postReview'])->name('reviews.create')->middleware('permission:marketplace.manage');
     });
 });

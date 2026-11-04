@@ -217,7 +217,7 @@
           <p class="text-sm text-neutral-500 max-w-sm mx-auto">
             Your workspace uses the LENDR platform email. Upgrade to Enterprise to configure your own SMTP server and send emails from your own domain.
           </p>
-          <a :href="route('billing.index')" class="btn-primary inline-block text-sm px-4 py-2">Upgrade to Enterprise</a>
+          <a :href="route('support.index')" class="btn-primary inline-block text-sm px-4 py-2">Talk to us about Enterprise</a>
         </div>
 
         <div v-else class="lendr-card p-6 space-y-4">
@@ -285,7 +285,7 @@
           <p class="text-sm text-neutral-500 max-w-sm mx-auto">
             Your workspace uses the LENDR platform SMS provider. Upgrade to Enterprise to configure your own Africa's Talking or SMS.to account.
           </p>
-          <a :href="route('billing.index')" class="btn-primary inline-block text-sm px-4 py-2">Upgrade to Enterprise</a>
+          <a :href="route('support.index')" class="btn-primary inline-block text-sm px-4 py-2">Talk to us about Enterprise</a>
         </div>
 
         <div v-else class="lendr-card p-6 space-y-4">
@@ -316,6 +316,58 @@
               <button type="button" @click="showSmsKey = !showSmsKey"
                 class="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 text-xs">
                 {{ showSmsKey ? 'Hide' : 'Show' }}
+              </button>
+            </div>
+          </div>
+        </div>
+      </template>
+
+      <!-- ─── Mobile Money ─── -->
+      <template v-if="activeTab === 'mobile_money'">
+        <div class="lendr-card p-6 space-y-2">
+          <h2 class="text-base font-semibold text-neutral-800">Mobile money providers</h2>
+          <p class="text-sm text-neutral-500">
+            Your own provider accounts, used to collect repayments from borrowers and to send loan payouts.
+            Borrowers only see a provider once its credentials are filled in. Keys and secrets are stored encrypted
+            and never shown again: leave a saved one as it is to keep it.
+          </p>
+        </div>
+
+        <div v-for="provider in momoProviders" :key="provider.id" class="lendr-card p-6 space-y-4">
+          <div class="flex items-center justify-between gap-3">
+            <h3 class="text-sm font-semibold text-neutral-800">{{ provider.label }}</h3>
+            <span class="text-xs rounded-full px-2.5 py-0.5"
+              :class="providerConfigured(provider) ? 'bg-emerald-50 text-emerald-700' : 'bg-neutral-100 text-neutral-500'">
+              {{ providerConfigured(provider) ? 'Configured' : 'Not set up' }}
+            </span>
+          </div>
+          <p v-if="provider.note" class="text-xs text-neutral-500">{{ provider.note }}</p>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div v-for="field in provider.fields" :key="field.key" :class="field.wide ? 'sm:col-span-2' : ''">
+              <label class="label" :for="field.key">{{ field.label }}</label>
+              <select v-if="field.type === 'environment'" :id="field.key" v-model="form[field.key]" class="input w-full">
+                <option value="sandbox">Sandbox (testing)</option>
+                <option value="production">Production (live money)</option>
+              </select>
+              <input v-else :id="field.key" v-model="form[field.key]"
+                :type="field.secret ? 'password' : 'text'"
+                :placeholder="field.placeholder || ''"
+                autocomplete="off"
+                class="input w-full" />
+              <p v-if="field.secret && form[field.key] === MASK" class="text-xs text-neutral-400 mt-1">
+                Saved. Type a new value to replace it.
+              </p>
+              <p v-else-if="field.hint" class="text-xs text-neutral-400 mt-1">{{ field.hint }}</p>
+            </div>
+          </div>
+
+          <div v-if="webhookUrls?.[provider.webhook]" class="rounded-lg bg-neutral-50 border border-neutral-200 p-3">
+            <p class="text-xs font-medium text-neutral-600 mb-1">Callback / webhook URL: paste this into your {{ provider.label }} dashboard</p>
+            <div class="flex items-center gap-2">
+              <code class="text-xs text-neutral-700 break-all flex-1">{{ webhookUrls[provider.webhook] }}</code>
+              <button type="button" class="btn-ghost text-xs shrink-0" @click="copy(webhookUrls[provider.webhook])">
+                {{ copied === webhookUrls[provider.webhook] ? 'Copied' : 'Copy' }}
               </button>
             </div>
           </div>
@@ -386,6 +438,14 @@
         </div>
       </template>
 
+      <!-- Anything the server refused, whichever tab it is on -->
+      <div v-if="activeTab !== 'notifications' && saveErrors.length" class="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+        <p class="font-medium mb-1">Nothing was saved:</p>
+        <ul class="list-disc pl-5 space-y-0.5">
+          <li v-for="e in saveErrors" :key="e">{{ e }}</li>
+        </ul>
+      </div>
+
       <!-- Save button (hidden on notifications tab — has its own save) -->
       <div v-if="activeTab !== 'notifications'" class="flex justify-end">
         <button type="submit" class="btn-primary" :disabled="saving">
@@ -401,7 +461,7 @@ import { ref, reactive, computed } from 'vue'
 import { router, usePage } from '@inertiajs/vue3'
 import AppLayout from '@/admin/components/layout/AppLayout.vue'
 
-const props = defineProps({ settings: Object, logoUrl: String })
+const props = defineProps({ settings: Object, logoUrl: String, webhookUrls: Object })
 
 const page = usePage()
 const isEnterprise = computed(() => page.props.tenant?.plan === 'enterprise')
@@ -411,9 +471,93 @@ const tabs = [
   { id: 'branding',      label: 'Branding'      },
   { id: 'smtp',          label: 'Email SMTP'    },
   { id: 'sms',           label: 'SMS Gateway'   },
+  { id: 'mobile_money',  label: 'Mobile Money'  },
   { id: 'security',      label: 'Security'      },
   { id: 'notifications', label: 'Notifications' },
 ]
+
+// Shown in place of a saved secret; sending it back means "keep the saved one".
+const MASK = '••••••••'
+
+// Keys only an Enterprise workspace may set (mirrors TenantSettings::ENTERPRISE_ONLY).
+const ENTERPRISE_ONLY = [
+  'smtp_host', 'smtp_port', 'smtp_username', 'smtp_password', 'smtp_encryption', 'smtp_from_email', 'smtp_from_name',
+  'sms_gateway', 'sms_api_key', 'sms_sender_name', 'sms_username',
+]
+
+// Mobile money providers: `required` are the fields a provider needs before borrowers are offered it.
+const momoProviders = [
+  {
+    id: 'airtel', label: 'Airtel Money', webhook: 'airtel',
+    required: ['airtel_client_id', 'airtel_client_secret'],
+    fields: [
+      { key: 'airtel_client_id', label: 'Client ID' },
+      { key: 'airtel_client_secret', label: 'Client secret', secret: true },
+      { key: 'airtel_pin', label: 'Disbursement PIN', secret: true, hint: 'Only needed to send loan payouts.' },
+      { key: 'airtel_environment', label: 'Environment', type: 'environment' },
+      { key: 'airtel_webhook_secret', label: 'Callback signing secret', secret: true, wide: true },
+    ],
+  },
+  {
+    id: 'mtn', label: 'MTN MoMo', webhook: 'mtn',
+    required: ['mtn_subscription_key', 'mtn_api_user', 'mtn_api_key'],
+    note: 'LENDR sends the callback address below with every request, protected by the callback key you choose here.',
+    fields: [
+      { key: 'mtn_subscription_key', label: 'Collections subscription key', secret: true },
+      { key: 'mtn_disbursement_subscription_key', label: 'Disbursements subscription key', secret: true, hint: 'Leave empty to use the collections key.' },
+      { key: 'mtn_api_user', label: 'API user (UUID)' },
+      { key: 'mtn_api_key', label: 'API key', secret: true },
+      { key: 'mtn_environment', label: 'Environment', type: 'environment' },
+      { key: 'mtn_callback_api_key', label: 'Callback key', secret: true, hint: 'Any long random string. MTN callbacks without it are refused.' },
+    ],
+  },
+  {
+    id: 'zamtel', label: 'Zamtel Kwacha', webhook: 'zamtel',
+    required: ['zamtel_api_key', 'zamtel_api_url'],
+    fields: [
+      { key: 'zamtel_api_url', label: 'API base URL', placeholder: 'https://…', wide: true },
+      { key: 'zamtel_api_key', label: 'API key', secret: true },
+      { key: 'zamtel_webhook_secret', label: 'Callback signing secret', secret: true },
+    ],
+  },
+  {
+    id: 'lipila', label: 'Lipila', webhook: 'lipila',
+    required: ['lipila_api_key', 'lipila_api_url'],
+    note: 'Lipila collects repayments from all three networks. It is not used for loan payouts.',
+    fields: [
+      { key: 'lipila_api_url', label: 'API base URL', placeholder: 'https://…', wide: true },
+      { key: 'lipila_api_key', label: 'API key', secret: true },
+      { key: 'lipila_webhook_secret', label: 'Callback signing secret', secret: true },
+    ],
+  },
+  {
+    id: 'pawapay', label: 'PawaPay', webhook: 'pawapay',
+    required: ['pawapay_api_key'],
+    note: 'One PawaPay account reaches Airtel, MTN and Zamtel numbers.',
+    fields: [
+      { key: 'pawapay_api_key', label: 'API token', secret: true },
+      { key: 'pawapay_environment', label: 'Environment', type: 'environment' },
+      { key: 'pawapay_webhook_secret', label: 'Callback signing secret', secret: true, wide: true },
+    ],
+  },
+]
+
+const momoKeys = momoProviders.flatMap(p => p.fields.map(f => f.key))
+const copied = ref(null)
+
+function providerConfigured(provider) {
+  return provider.required.every(k => String(form[k] ?? '').trim() !== '')
+}
+
+async function copy(text) {
+  try {
+    await navigator.clipboard.writeText(text)
+    copied.value = text
+    setTimeout(() => { if (copied.value === text) copied.value = null }, 2000)
+  } catch {
+    window.prompt('Copy this URL:', text)
+  }
+}
 
 const activeTab = ref('general')
 const saving    = ref(false)
@@ -461,12 +605,23 @@ const form = reactive({
   require_2fa:            s.require_2fa === 'true' || s.require_2fa === true,
   session_timeout_minutes: s.session_timeout_minutes || '480',
   password_expiry_days:    s.password_expiry_days    || '0',
+  ...Object.fromEntries(momoKeys.map(k => [k, s[k] ?? (k.endsWith('_environment') ? 'sandbox' : '')])),
 })
+
+const saveErrors = ref([])
 
 function save() {
   saving.value = true
-  router.put(route('settings.update'), { settings: form }, {
+  saveErrors.value = []
+
+  // Below Enterprise the SMTP/SMS fields are hidden and not the workspace's to set.
+  const settings = Object.fromEntries(
+    Object.entries(form).filter(([key]) => isEnterprise.value || !ENTERPRISE_ONLY.includes(key)),
+  )
+
+  router.put(route('settings.update'), { settings }, {
     preserveScroll: true,
+    onError: (errors) => { saveErrors.value = Object.values(errors) },
     onFinish: () => { saving.value = false },
   })
 }

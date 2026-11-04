@@ -280,6 +280,7 @@ class PdfController extends Controller
             (int) $loan->tenure,
             now()->toDateString(),
             (float) $loan->interest_amount,
+            (float) $loan->processing_fee + (float) $loan->insurance_fee,
         ), [], false);
 
         return [array_map(fn ($r) => [

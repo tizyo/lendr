@@ -47,7 +47,11 @@ class SendLoanEventNotificationJob implements ShouldQueue
             return;
         }
 
-        $message = $this->buildMessage($loan);
+        // The workspace's own wording (Settings → Message Templates) wins over the built-in text.
+        $smsTemplate = $this->template($loan, 'sms');
+        $emailTemplate = $this->template($loan, 'email');
+
+        $message = $smsTemplate['body'] ?? $this->buildMessage($loan);
 
         if (! $message) {
             Log::warning("[LoanNotification] No message template for event '{$this->event}'", ['loan_id' => $this->loanId]);
@@ -69,6 +73,8 @@ class SendLoanEventNotificationJob implements ShouldQueue
                 event: $this->event,
                 loanNumber: $loan->loan_number,
                 context: $this->context,
+                customSubject: $emailTemplate['subject'] ?? null,
+                customBody: $emailTemplate['body'] ?? null,
             ));
         }
 
@@ -103,6 +109,40 @@ class SendLoanEventNotificationJob implements ShouldQueue
                 'data' => ['loan_id' => $loan->id, 'loan_number' => $loan->loan_number] + $this->context,
             ]);
         }
+    }
+
+    /** This job's events under the names the Message Templates screen uses. */
+    private const TEMPLATE_EVENTS = [
+        'approved' => 'loan_approved',
+        'denied' => 'loan_denied',
+        'disbursed' => 'loan_disbursed',
+        'payment_received' => 'payment_received',
+        'upcoming_payment' => 'payment_reminder',
+        'overdue' => 'overdue_reminder',
+        'completed' => 'loan_completed',
+    ];
+
+    /** @return array{subject: ?string, body: string}|null the filled-in template, or null to use the built-in text */
+    private function template(Loan $loan, string $channel): ?array
+    {
+        $event = self::TEMPLATE_EVENTS[$this->event] ?? null;
+        $template = $event ? \App\Models\Tenant\NotificationTemplate::findActive($event, $channel) : null;
+
+        if (! $template || blank($template->body)) {
+            return null;
+        }
+
+        $amount = $this->context['amount_paid'] ?? $this->context['amount_due'] ?? $loan->principal_amount;
+
+        return $template->render([
+            '{{borrower_name}}' => trim(($loan->borrower->first_name ?? '').' '.($loan->borrower->last_name ?? '')),
+            '{{loan_number}}' => $loan->loan_number,
+            '{{amount}}' => number_format((float) $amount, 2),
+            '{{due_date}}' => (string) ($this->context['due_date'] ?? ''),
+            '{{outstanding}}' => number_format((float) $loan->outstanding_balance, 2),
+            '{{company_name}}' => (string) (\App\Support\TenantSettings::get('company_name') ?: tenancy()->tenant?->name ?? ''),
+            '{{otp}}' => '',
+        ]);
     }
 
     private function buildMessage(Loan $loan): ?string

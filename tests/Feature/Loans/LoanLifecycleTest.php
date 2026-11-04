@@ -7,6 +7,8 @@ use App\Models\Tenant\Loan;
 use App\Models\Tenant\User;
 use Spatie\Permission\Models\Permission;
 
+beforeEach(fn () => fundTheBook());
+
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function loanUser(array $permissions = [], UserRole $role = UserRole::LoanOfficer): User

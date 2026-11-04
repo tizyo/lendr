@@ -3,26 +3,20 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Enums\LoanStatus;
+use App\Exceptions\LoanActionException;
 use App\Http\Requests\Api\V1\Loan\DisburseRequest;
 use App\Http\Requests\Api\V1\Loan\StoreLoanRequest;
-use App\Jobs\AutoDisburseLoanJob;
-use App\Jobs\CreateStandingOrdersJob;
-use App\Jobs\DisburseMobileMoneyJob;
-use App\Jobs\SendLoanEventNotificationJob;
 use App\Models\Landlord\RepoItem;
-use App\Models\Landlord\TenantWallet;
-use App\Models\Tenant\ApprovalRequest;
-use App\Models\Tenant\ApprovalWorkflow;
 use App\Models\Tenant\CollateralItem;
 use App\Models\Tenant\Loan;
 use App\Models\Tenant\LoanPlan;
-use App\Models\Tenant\LoanSchedule;
 use App\Models\Tenant\LoanWriteoff;
 use App\Services\ApprovalService;
 use App\Services\CrbService;
 use App\Services\FundService;
 use App\Services\GlLedgerService;
 use App\Services\LoanCalculatorService;
+use App\Services\LoanLifecycleService;
 use App\Services\NotificationService;
 use App\Services\Payment\DisbursementOutcomeService;
 use Illuminate\Http\JsonResponse;
@@ -85,7 +79,7 @@ class LoanController extends BaseApiController
                     'borrower_id', 'loan_type_id', 'loan_plan_id',
                     'principal_amount', 'tenure', 'loan_purpose',
                     'application_date', 'collateral_description',
-                    'guarantor_name', 'guarantor_phone', 'guarantor_relationship', 'notes',
+                    'guarantor_name', 'guarantor_phone', 'guarantor_relationship', 'notes', 'agent_id',
                 ]),
                 'loan_number' => $this->generateLoanNumber(),
                 'created_by' => auth()->id(),
@@ -208,200 +202,53 @@ class LoanController extends BaseApiController
      * Approve a submitted loan.
      * POST /api/v1/loans/{loan}/approve
      */
-    public function approve(Request $request, Loan $loan): JsonResponse
+    public function approve(Request $request, Loan $loan, LoanLifecycleService $lifecycle): JsonResponse
     {
-        if (! auth()->user()?->can('loans.approve')) {
-            return $this->error('Forbidden.', 403);
+        $request->validate(['notes' => ['nullable', 'string', 'max:1000']]);
+
+        try {
+            $loan = $lifecycle->approve($loan, $request->user(), $request->notes);
+        } catch (LoanActionException $e) {
+            return $this->loanActionError($e);
         }
 
-        if ($loan->status !== LoanStatus::Submitted) {
-            return $this->error('Only submitted loans can be approved.', 422);
-        }
-
-        DB::transaction(function () use ($loan, $request) {
-            $loan->update([
-                'status' => LoanStatus::Approved->value,
-                'approved_by' => auth()->id(),
-                'approval_date' => now()->toDateString(),
-            ]);
-
-            $this->logStatusChange($loan, LoanStatus::Submitted, LoanStatus::Approved, auth()->id(), $request->notes ?? 'Loan approved.');
-        });
-
-        dispatch(new SendLoanEventNotificationJob($loan->id, 'approved'));
-
-        $this->notifications->notifyRoles(
-            ['branch_manager', 'super_admin'],
-            'loan_approved',
-            "Loan {$loan->loan_number} approved — awaiting disbursement",
-            'Approved by '.auth()->user()?->name.'. Principal: ZMW '.number_format((float) $loan->principal_amount, 2),
-            ['loan_id' => $loan->id, 'loan_number' => $loan->loan_number],
-        );
-
-        return $this->success($this->formatLoan($loan->fresh()), 'Loan approved.');
+        return $this->success($this->formatLoan($loan), 'Loan approved.');
     }
 
     /**
      * Disburse an approved loan — generates repayment schedule.
      * POST /api/v1/loans/{loan}/disburse
      */
-    public function disburse(DisburseRequest $request, Loan $loan): JsonResponse
+    public function disburse(DisburseRequest $request, Loan $loan, LoanLifecycleService $lifecycle): JsonResponse
     {
-        if ($loan->status !== LoanStatus::Approved) {
-            return $this->error('Only approved loans can be disbursed.', 422);
-        }
-
-        // Phase 53: check if a disbursement approval workflow applies
-        $workflow = ApprovalWorkflow::findFor('loan_disbursement', (float) $loan->principal_amount);
-
-        if ($workflow) {
-            $approved = ApprovalRequest::where('entity_type', 'loan_disbursement')
-                ->where('entity_id', $loan->id)
-                ->where('status', 'approved')
-                ->exists();
-
-            if (! $approved) {
-                // Auto-submit a request if none exists
-                $existing = ApprovalRequest::where('entity_type', 'loan_disbursement')
-                    ->where('entity_id', $loan->id)
-                    ->whereIn('status', ['pending'])
-                    ->first();
-
-                if (! $existing) {
-                    $this->approvals->submit('loan_disbursement', $loan->id, $request->user(), (float) $loan->principal_amount);
-                }
-
-                return $this->error('Approval required before disbursement. A request has been submitted.', 422);
-            }
-        }
-
-        // CRB check — alert if borrower has active loans at any other tenant
-        $borrower = $loan->borrower;
-        $identifier = $borrower->crbIdentifier();
-        $tenantId = (string) (tenant('id') ?? 'local');
-
-        if ($identifier && ! $request->boolean('crb_override')) {
-            $hash = $this->crb->hash($identifier['value'], $identifier['type']);
-            $crbResult = $this->crb->check($hash, $identifier['type'], $tenantId, 'loan_disbursement');
-
-            if ($crbResult['has_active_loans']) {
-                // Log the inquiry with override_requested = false (tenant was notified)
-                return response()->json([
-                    'success' => false,
-                    'message' => 'CRB alert: This borrower has active loan(s) at another lender. Pass crb_override=true to proceed.',
-                    'crb' => [
-                        'credit_score' => $crbResult['credit_score'],
-                        'score_band' => $crbResult['score_band'],
-                        'active_loan_count' => $crbResult['active_loan_count'],
-                        'risk_level' => $crbResult['risk_level'],
-                    ],
-                ], 409);
-            }
-        }
-
-        // If override was explicitly requested, log it
-        if ($identifier && $request->boolean('crb_override')) {
-            $hash = $this->crb->hash($identifier['value'], $identifier['type']);
-            \App\Models\Landlord\CrbInquiry::create([
-                'identity_hash' => $hash,
-                'tenant_id' => $tenantId,
-                'purpose' => 'loan_disbursement',
-                'result_has_active_loans' => true,
-                'override_requested' => true,
-                'override_reason' => $request->input('crb_override_reason', 'Manual override'),
-                'created_at' => now(),
-            ]);
-        }
-
-        DB::transaction(function () use ($loan, $request) {
-            $disbursementDate = $request->disbursement_date;
-            $plan = $loan->loanPlan;
-            $maturityDate = $this->calculator->maturityDate($disbursementDate, $plan, $loan->tenure);
-
-            $firstRepaymentDate = $request->first_repayment_date
-                ?? $this->calculator->maturityDate($disbursementDate, $plan, 1);
-
-            $loan->update([
-                'status' => LoanStatus::Active->value,
-                'disbursed_by' => auth()->id(),
-                'disbursement_date' => $disbursementDate,
-                'disbursement_method' => $request->disbursement_method,
-                'disbursement_account' => $request->disbursement_account,
-                'disbursement_reference' => $request->disbursement_reference,
-                'first_repayment_date' => $firstRepaymentDate,
-                'maturity_date' => $maturityDate,
-            ]);
-
-            // Generate schedule
-            $scheduleRows = $this->calculator->generateSchedule(
-                $plan,
-                (float) $loan->principal_amount,
-                $loan->tenure,
-                $disbursementDate,
-                (float) $loan->interest_amount,
+        try {
+            $result = $lifecycle->disburse(
+                $loan,
+                $request->user(),
+                $request->validated(),
+                $request->boolean('crb_override'),
+                $request->input('crb_override_reason'),
             );
-
-            foreach ($scheduleRows as $row) {
-                LoanSchedule::create([
-                    'loan_id' => $loan->id,
-                    'instalment_number' => $row['instalment_number'],
-                    'due_date' => $row['due_date'],
-                    'principal_due' => $row['principal_due'],
-                    'interest_due' => $row['interest_due'],
-                    'fee_due' => $row['fee_due'],
-                    'total_due' => $row['total_due'],
-                    'outstanding' => $row['outstanding'],
-                ]);
-            }
-
-            $this->logStatusChange($loan, LoanStatus::Approved, LoanStatus::Active, auth()->id(), $request->notes ?? 'Loan disbursed and activated.');
-
-            // Debit fund balance
-            $this->fund->recordDisbursement($loan->fresh(), auth()->id());
-
-            try {
-                app(GlLedgerService::class)->postDisbursement($loan->fresh());
-            } catch (\Throwable) {
-                // GL accounts may not be seeded for this tenant; do not block disbursement
-            }
-        });
-
-        // Trigger MoMo payout — Enterprise tenants use wallet credentials; others use tenant settings
-        $fresh = $loan->fresh(['borrower']);
-        $tenantPlan = tenant('plan') ?? 'starter';
-        $wallet = null;
-
-        if ($tenantPlan === 'enterprise') {
-            $wallet = TenantWallet::where('tenant_id', $tenantId)->where('is_active', true)->first();
+        } catch (LoanActionException $e) {
+            return $this->loanActionError($e);
         }
 
-        $payout = match (true) {
-            (bool) $wallet?->disburse_enabled => new AutoDisburseLoanJob($fresh, $wallet->id),
-            (bool) $fresh->disbursement_method?->isMobileMoney() => new DisburseMobileMoneyJob($fresh),
-            default => null,
-        };
+        return $this->success(
+            $this->formatLoan($result['loan']->load('schedule')),
+            $result['payout_sent']
+                ? 'Loan activated — mobile money payout sent to the provider. You\'ll be notified if it fails.'
+                : 'Loan disbursed and activated.',
+        );
+    }
 
-        if ($payout) {
-            // The borrower notification and CRB "loan opened" wait for the provider
-            // to accept the payout; a rejected payout reverses this disbursement
-            // (see DisbursementOutcomeService).
-            dispatch($payout);
-
-            if ($wallet?->disburse_enabled && $wallet->debit_enabled) {
-                dispatch(new CreateStandingOrdersJob($fresh, $wallet->id));
-            }
-
-            return $this->success(
-                $this->formatLoan($fresh->load('schedule')),
-                'Loan activated — mobile money payout sent to the provider. You\'ll be notified if it fails.',
-            );
+    /** A refused loan action as the API reports it (CRB alerts keep their 409 + summary). */
+    private function loanActionError(LoanActionException $e): JsonResponse
+    {
+        if ($e->context) {
+            return response()->json(['success' => false, 'message' => $e->getMessage(), ...$e->context], $e->status);
         }
 
-        // Cash / bank transfer: the money has already been handed over.
-        dispatch(new SendLoanEventNotificationJob($loan->id, 'disbursed'));
-        app(DisbursementOutcomeService::class)->recordCrbLoanOpened($fresh);
-
-        return $this->success($this->formatLoan($fresh->load('schedule')), 'Loan disbursed and activated.');
+        return $this->error($e->getMessage(), $e->status);
     }
 
     /**
@@ -511,31 +358,38 @@ class LoanController extends BaseApiController
             return $this->error('Only frozen or defaulted loans can be written off.', 422);
         }
 
-        $from = $loan->status;
-        $loan->update(['status' => LoanStatus::WrittenOff->value]);
-        $this->logStatusChange($loan, $from, LoanStatus::WrittenOff, auth()->id(), $request->reason);
-
-        // Create write-off record and GL entry
-        $writeoff = LoanWriteoff::create([
-            'loan_id' => $loan->id,
-            'written_off_by' => auth()->id(),
-            'written_off_amount' => $loan->outstanding_balance,
-            'reason' => $request->reason,
-        ]);
-
         try {
-            app(GlLedgerService::class)->post(
-                "Loan write-off: {$loan->loan_number}",
-                [
-                    ['account_code' => '5003', 'side' => 'debit',  'amount' => $loan->outstanding_balance, 'notes' => 'Write-off expense'],
-                    ['account_code' => '1100', 'side' => 'credit', 'amount' => $loan->outstanding_balance, 'notes' => 'Loans receivable written off'],
-                ],
-                $loan,
-                now()->toDateString(),
-                auth()->id(),
-            );
-        } catch (\Throwable) {
-            // GL accounts may not be seeded; do not block write-off
+            $this->approvals->ensureApproved('write_off', $loan->id, $request->user(), (float) $loan->outstanding_balance, 'writing off this loan');
+        } catch (LoanActionException $e) {
+            return $this->loanActionError($e);
+        }
+
+        $result = DB::transaction(function () use ($loan, $request) {
+            $loan = Loan::whereKey($loan->id)->lockForUpdate()->firstOrFail();
+
+            // Re-checked under the lock: two clicks must not write it off twice.
+            if (! in_array($loan->status, [LoanStatus::Frozen, LoanStatus::Defaulted])) {
+                return null;
+            }
+
+            $from = $loan->status;
+            $loan->update(['status' => LoanStatus::WrittenOff->value]);
+            $this->logStatusChange($loan, $from, LoanStatus::WrittenOff, auth()->id(), $request->reason);
+
+            LoanWriteoff::create([
+                'loan_id' => $loan->id,
+                'written_off_by' => auth()->id(),
+                'written_off_amount' => $loan->outstanding_balance,
+                'reason' => $request->reason,
+            ]);
+
+            app(GlLedgerService::class)->postWriteOff($loan);
+
+            return $loan;
+        });
+
+        if (! $result) {
+            return $this->error('This loan has already been written off.', 422);
         }
 
         // Auto-suggest repo listings from collateral (best-effort, Growth+ only)
@@ -623,66 +477,20 @@ class LoanController extends BaseApiController
      * Restructure an active loan (change terms).
      * POST /api/v1/loans/{loan}/restructure
      */
-    public function restructure(Request $request, Loan $loan): JsonResponse
+    public function restructure(Request $request, Loan $loan, LoanLifecycleService $lifecycle): JsonResponse
     {
-        $request->validate([
-            'tenure' => ['required', 'integer', 'min:1'],
+        $data = $request->validate([
+            'tenure' => ['required', 'integer', 'min:1', 'max:600'],
             'reason' => ['required', 'string', 'max:1000'],
         ]);
 
-        if (! in_array($loan->status, [LoanStatus::Active, LoanStatus::Frozen, LoanStatus::Defaulted])) {
-            return $this->error('Only active, frozen, or defaulted loans can be restructured.', 422);
+        try {
+            $loan = $lifecycle->restructure($loan, $request->user(), (int) $data['tenure'], $data['reason']);
+        } catch (LoanActionException $e) {
+            return $this->loanActionError($e);
         }
 
-        DB::transaction(function () use ($loan, $request) {
-            // Recalculate based on outstanding balance and new tenure
-            $newTenure = (int) $request->tenure;
-            $plan = $loan->loanPlan;
-            $outstanding = (float) $loan->outstanding_balance;
-
-            $amounts = $this->calculator->calculateAmounts($plan, $outstanding, $newTenure);
-
-            $loan->update([
-                'tenure' => $newTenure,
-                'interest_amount' => $amounts['interest_amount'],
-                'total_payable' => bcadd((string) $loan->total_paid, (string) ($outstanding + $amounts['interest_amount']), 2),
-                'outstanding_balance' => bcadd($outstanding, $amounts['interest_amount'], 2),
-            ]);
-
-            // Drop remaining unpaid schedule and regenerate
-            $loan->schedule()->where('is_paid', false)->delete();
-
-            $scheduleRows = $this->calculator->generateSchedule(
-                $plan,
-                $outstanding,
-                $newTenure,
-                now()->toDateString(),
-                $amounts['interest_amount'],
-            );
-
-            $lastInstalment = $loan->schedule()->where('is_paid', true)->max('instalment_number') ?? 0;
-
-            foreach ($scheduleRows as $i => $row) {
-                LoanSchedule::create([
-                    'loan_id' => $loan->id,
-                    'instalment_number' => $lastInstalment + $i + 1,
-                    'due_date' => $row['due_date'],
-                    'principal_due' => $row['principal_due'],
-                    'interest_due' => $row['interest_due'],
-                    'fee_due' => $row['fee_due'],
-                    'total_due' => $row['total_due'],
-                    'outstanding' => $row['outstanding'],
-                ]);
-            }
-
-            activity()
-                ->performedOn($loan)
-                ->causedBy(auth()->user())
-                ->withProperties(['reason' => $request->reason, 'new_tenure' => $newTenure])
-                ->log('restructured');
-        });
-
-        return $this->success($this->formatLoan($loan->fresh()->load('schedule')), 'Loan restructured.');
+        return $this->success($this->formatLoan($loan->load('schedule')), 'Loan restructured.');
     }
 
     /**

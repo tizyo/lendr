@@ -13,18 +13,36 @@ use Illuminate\Support\Facades\Hash;
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
+// The open API runs inside a workspace whose plan includes API access.
+beforeEach(function () {
+    config(['tenancy.bootstrappers' => []]);
+    \App\Models\Landlord\PlanConfig::updateOrCreate(['plan' => 'growth'], ['label' => 'Growth', 'features' => ['api_access' => true]]);
+    $tenant = \App\Models\Landlord\Tenant::withoutEvents(fn () => \App\Models\Landlord\Tenant::create([
+        'id' => 'openapi-'.uniqid(), 'name' => 'Open API Lender', 'slug' => 'openapi-'.uniqid(), 'plan' => 'growth', 'status' => 'active',
+    ]));
+    tenancy()->initialize($tenant);
+});
+
+afterEach(function () {
+    tenancy()->end();
+    \App\Models\Landlord\Tenant::withoutEvents(fn () => \App\Models\Landlord\Tenant::query()->where('id', 'like', 'openapi-%')->each(fn ($t) => $t->delete()));
+});
+
 function openBankingAdmin(): User
 {
     return User::factory()->create(['role' => UserRole::SuperAdmin, 'is_active' => true]);
 }
 
+/** A client whose key is $attrs['client_key'] — stored, like real keys, only as a hash. */
 function makeApiClient(array $attrs = []): array
 {
     $rawKey = $attrs['client_key'] ?? 'lndr_'.str_repeat('x', 40);
+    unset($attrs['client_key']);
 
     $client = ApiClient::create(array_merge([
         'name' => 'Test Client',
-        'client_key' => $rawKey,
+        'client_key' => substr($rawKey, 0, 12).'…',
+        'key_hash' => ApiClient::hashKey($rawKey),
         'client_secret' => Hash::make($rawKey),
         'scopes' => ['products_read', 'loan_apply', 'loan_status', 'payment_initiate'],
         'is_active' => true,
@@ -140,6 +158,7 @@ test('can submit a loan application via open API', function () {
         'interest_rate' => 24,
         'interest_type' => 'flat',
         'interest_period' => 'monthly',
+        'min_amount' => 100, 'max_amount' => 100000, 'min_tenure' => 1, 'max_tenure' => 24,
     ]);
 
     $resp = $this->withHeaders(apiHeaders($data['key']))
@@ -165,6 +184,7 @@ test('loan application creates or reuses borrower by phone', function () {
         'interest_rate' => 24,
         'interest_type' => 'flat',
         'interest_period' => 'monthly',
+        'min_amount' => 100, 'max_amount' => 100000, 'min_tenure' => 1, 'max_tenure' => 24,
     ]);
 
     $phone = '+260977999888';
@@ -180,7 +200,8 @@ test('loan application creates or reuses borrower by phone', function () {
     ]);
 
     expect(Borrower::where('phone', $phone)->count())->toBe(1);
-    expect(Loan::where('outstanding_balance', 3000)->count())->toBe(1);
+    expect(Loan::where('principal_amount', 3000)->count())->toBe(1)
+        ->and((float) Loan::where('principal_amount', 3000)->value('total_payable'))->toBeGreaterThan(3000.0); // interest worked out
 });
 
 test('can check loan status by reference', function () {
@@ -235,6 +256,7 @@ test('can initiate a payment via open API', function () {
             'loan_reference' => 'LN-EXT-PAYTEST',
             'amount' => 500,
             'phone' => '+260977111222',
+            'provider' => 'mtn_momo',
         ])
         ->assertStatus(201);
 
@@ -250,6 +272,44 @@ test('API access is logged after each request', function () {
         ->assertOk();
 
     expect(ApiAccessLog::where('api_client_id', $data['client']->id)->count())->toBe(1);
+});
+
+test('keys are stored only as a hash, never in plain text', function () {
+    $admin = openBankingAdmin();
+    (new \Database\Seeders\RolesAndPermissionsSeeder)->run();
+    $admin->syncRoles(['super_admin']);
+
+    $raw = $this->actingAs($admin)
+        ->postJson(route('api.v1.api-clients.store'), ['name' => 'Partner', 'scopes' => ['products_read']])
+        ->json('data.client.client_key');
+
+    $row = \Illuminate\Support\Facades\DB::table('api_clients')->where('name', 'Partner')->first();
+    expect($row->client_key)->not->toBe($raw)
+        ->and($row->key_hash)->toBe(hash('sha256', $raw))
+        ->and(\App\Models\Landlord\ApiKeyIndex::where('key_hash', $row->key_hash)->value('tenant_id'))->toBe(tenant('id'));
+});
+
+test('finds the lender from the key alone on the shared host', function () {
+    $data = makeApiClient();
+    \App\Models\Landlord\ApiKeyIndex::create(['key_hash' => ApiClient::hashKey($data['key']), 'tenant_id' => tenant('id'), 'api_client_id' => $data['client']->id]);
+    tenancy()->end();
+
+    $this->withHeaders(apiHeaders($data['key']))->getJson('/api/v1/open/v1/products')->assertOk();
+});
+
+test('a key can only call what its scopes allow', function () {
+    $data = makeApiClient(['scopes' => ['products_read'], 'client_key' => 'lndr_'.str_repeat('s', 40)]);
+
+    $this->withHeaders(apiHeaders($data['key']))->getJson('/api/v1/open/v1/products')->assertOk();
+    $this->withHeaders(apiHeaders($data['key']))->postJson('/api/v1/open/v1/loan/apply', [])->assertForbidden();
+    $this->withHeaders(apiHeaders($data['key']))->getJson('/api/v1/open/v1/loan/X/status')->assertForbidden();
+});
+
+test('API keys stop working when the plan no longer includes API access', function () {
+    $data = makeApiClient(['client_key' => 'lndr_'.str_repeat('p', 40)]);
+    \App\Models\Landlord\PlanConfig::where('plan', 'growth')->update(['features' => json_encode(['api_access' => false])]);
+
+    $this->withHeaders(apiHeaders($data['key']))->getJson('/api/v1/open/v1/products')->assertForbidden();
 });
 
 test('rate limit returns 429 when exceeded', function () {

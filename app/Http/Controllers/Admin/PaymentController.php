@@ -63,6 +63,8 @@ class PaymentController extends Controller
                 'principal_allocated' => number_format((float) $payment->principal_allocated, 2),
                 'interest_allocated' => number_format((float) $payment->interest_allocated, 2),
                 'penalty_allocated' => number_format((float) $payment->penalty_allocated, 2),
+                'fee_allocated' => number_format((float) $payment->fee_allocated, 2),
+                'unallocated_amount' => number_format((float) $payment->unallocated_amount, 2),
                 'payment_method' => $payment->payment_method->label(),
                 'payment_date' => $payment->payment_date->format('d M Y'),
                 'reference' => $payment->reference,

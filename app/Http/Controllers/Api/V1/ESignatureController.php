@@ -51,11 +51,12 @@ class ESignatureController extends BaseApiController
 
         $otp = $this->esig->sendOtp($agreement, $request->ip(), $request->userAgent() ?? '');
 
-        // In production, dispatch SMS to borrower's phone.
-        // Returned here for testing convenience (masked in non-debug).
-        $masked = config('app.debug') ? $otp : null;
+        // The code goes to the borrower's phone (ESignatureService). It is echoed back only
+        // on a developer machine or in tests: APP_DEBUG left on in production used to hand
+        // staff the code, so they could "sign" for the borrower.
+        $echo = app()->environment('local', 'testing') ? $otp : null;
 
-        return $this->success(['otp_sent' => true, 'otp' => $masked], 'OTP sent to borrower.');
+        return $this->success(['otp_sent' => true, 'otp' => $echo], 'Signing code sent to the borrower\'s phone.');
     }
 
     /** POST /api/v1/loans/{loan}/agreement/sign */

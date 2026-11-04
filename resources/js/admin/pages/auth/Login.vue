@@ -12,6 +12,11 @@
         {{ flash.success }}
       </div>
 
+      <!-- Flash warning (e.g. signed out after the workspace's idle timeout) -->
+      <div v-if="flash.warning" class="mb-4 p-3.5 bg-amber-50 border border-amber-200 rounded-xl text-sm text-amber-800 text-center">
+        {{ flash.warning }}
+      </div>
+
       <!-- Card -->
       <div class="bg-white rounded-2xl shadow-2xl p-8">
         <h1 class="text-xl font-bold text-neutral-900 mb-1">Welcome back</h1>

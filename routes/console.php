@@ -11,6 +11,7 @@ use App\Commands\ProcessComplianceRemindersCommand;
 use App\Commands\ProcessCrmFollowupsCommand;
 use App\Commands\ProcessOverdueLoansCommand;
 use App\Commands\ProcessStandingOrdersCommand;
+use App\Commands\ProcessSubscriptionsCommand;
 use App\Commands\ProcessTrialExpiryCommand;
 use App\Commands\ProcessUpcomingPaymentRemindersCommand;
 use App\Commands\RunReconciliationCommand;
@@ -71,6 +72,13 @@ Schedule::command(ProcessTrialExpiryCommand::class)
     ->withoutOverlapping()
     ->runInBackground()
     ->appendOutputTo(storage_path('logs/trial-expiry.log'));
+
+// 07:15 daily — renewal reminders (7d/3d/1d) and paid plans past ends_at + grace → Starter
+Schedule::command(ProcessSubscriptionsCommand::class)
+    ->dailyAt('07:15')
+    ->withoutOverlapping()
+    ->runInBackground()
+    ->appendOutputTo(storage_path('logs/subscriptions.log'));
 
 // Hourly — deactivate expired featured repo item slots and hot deals
 Schedule::command(ExpireFeaturedItemsCommand::class)

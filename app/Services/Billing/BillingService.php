@@ -179,8 +179,16 @@ class BillingService
             'paid_at' => now(),
         ]);
 
-        // Determine subscription period
-        $startsAt = now();
+        // Determine subscription period. Renewing the same plan early adds the new
+        // period after the one already paid for, instead of throwing the rest away.
+        $current = Subscription::where('tenant_id', $invoice->tenant_id)
+            ->where('status', 'active')
+            ->latest('ends_at')
+            ->first();
+
+        $startsAt = $current && $current->plan === $invoice->plan && $current->ends_at?->isFuture()
+            ? $current->ends_at->copy()
+            : now();
         $endsAt = $invoice->billing_cycle === 'annual'
             ? $startsAt->copy()->addYear()
             : $startsAt->copy()->addMonth();
@@ -207,12 +215,13 @@ class BillingService
         // Link invoice to subscription
         $invoice->update(['subscription_id' => $subscription->id]);
 
-        // Activate the tenant
+        // Activate the tenant. Paying ends a trial or a lapse — it doesn't lift a
+        // suspension or cancellation the landlord put in place.
         $tenant = Tenant::find($invoice->tenant_id);
         if ($tenant) {
             $tenant->update([
                 'plan' => $invoice->plan,
-                'status' => 'active',
+                'status' => in_array($tenant->status, ['suspended', 'cancelled'], true) ? $tenant->status : 'active',
                 'trial_ends_at' => null,
             ]);
         }

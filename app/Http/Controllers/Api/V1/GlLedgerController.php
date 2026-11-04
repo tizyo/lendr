@@ -153,14 +153,9 @@ class GlLedgerController extends BaseApiController
      */
     public function seedAccounts(): JsonResponse
     {
-        $seeded = 0;
+        GlAccount::ensureDefaults();
 
-        foreach (GlAccount::defaultAccounts() as $accountData) {
-            GlAccount::firstOrCreate(['code' => $accountData['code']], $accountData);
-            $seeded++;
-        }
-
-        return $this->success(['seeded' => $seeded], 'Chart of accounts seeded.');
+        return $this->success(['seeded' => count(GlAccount::defaultAccounts())], 'Chart of accounts seeded.');
     }
 
     // ─── Helpers ─────────────────────────────────────────────────────────────

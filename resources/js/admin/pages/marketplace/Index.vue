@@ -84,7 +84,7 @@
               <td class="px-5 py-3.5 text-right">
                 <div class="flex items-center justify-end gap-2">
                   <Link
-                    :href="route('marketplace.interests', listing.id)"
+                    :href="listing.status === 'active' ? route('marketplace.show', listing.id) : route('marketplace.interests', listing.id)"
                     class="text-xs text-neutral-500 hover:text-neutral-700 font-medium"
                   >
                     View

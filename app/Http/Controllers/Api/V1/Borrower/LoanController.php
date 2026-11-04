@@ -109,7 +109,7 @@ class LoanController extends BaseApiController
         $amount = (float) $data['principal_amount'];
         if ($amount < (float) $plan->min_amount || $amount > (float) $plan->max_amount) {
             return $this->error(
-                "Amount must be between {$plan->min_amount} and {$plan->max_amount} {$plan->tenure_type}.",
+                "Amount must be between K {$plan->min_amount} and K {$plan->max_amount}.",
                 422,
             );
         }
@@ -247,16 +247,18 @@ class LoanController extends BaseApiController
         /** @var Borrower $borrower */
         $borrower = $request->user();
 
+        // Defaulted and frozen loans still take repayments (the borrower is catching up).
         $loan = $borrower->loans()
-            ->whereIn('status', [LoanStatus::Active->value, LoanStatus::Disbursed->value ?? 'disbursed', 'overdue'])
+            ->whereIn('status', array_map(fn ($s) => $s->value, \App\Services\Payment\PaymentService::PAYABLE_STATUSES))
             ->findOrFail($id);
 
-        if ((float) $loan->outstanding_balance <= 0) {
+        $owed = (float) $loan->outstanding_balance + (float) $loan->penalty_balance;
+        if ($owed <= 0) {
             return $this->error('This loan has no outstanding balance.', 422);
         }
 
         $data = $request->validate([
-            'amount' => ['required', 'numeric', 'min:1', 'max:'.(float) $loan->outstanding_balance],
+            'amount' => ['required', 'numeric', 'min:1', 'max:'.$owed],
             'phone' => ['required', 'string', 'max:20'],
             'provider' => ['required', 'string', 'in:airtel_money,mtn_momo,zamtel_kwacha,lipila,pawapay'],
         ]);
@@ -320,7 +322,7 @@ class LoanController extends BaseApiController
 
         foreach ($candidates as $provider => $keys) {
             $allSet = collect($keys)->every(
-                fn ($k) => filled(DB::table('settings')->where('key', $k)->value('value')),
+                fn ($k) => filled(\App\Support\TenantSettings::get($k)),
             );
 
             if ($allSet) {

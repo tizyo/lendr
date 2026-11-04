@@ -3,13 +3,13 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Enums\LoanStatus;
+use App\Exceptions\LoanActionException;
 use App\Models\Tenant\Loan;
-use App\Models\Tenant\LoanSchedule;
 use App\Models\Tenant\LoanTopup;
 use App\Services\LoanCalculatorService;
+use App\Services\LoanLifecycleService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 
 class LoanTopupController extends BaseApiController
 {
@@ -42,9 +42,13 @@ class LoanTopupController extends BaseApiController
             return $this->error('A pending top-up request already exists for this loan.', 422);
         }
 
+        if ($loan->borrower?->is_blacklisted) {
+            return $this->error('This borrower is blacklisted and can\'t be lent more.', 422);
+        }
+
         $data = $request->validate([
             'topup_amount' => ['required', 'numeric', 'min:1'],
-            'new_tenure' => ['nullable', 'integer', 'min:1'],
+            'new_tenure' => ['nullable', 'integer', 'min:1', 'max:600'],
             'notes' => ['nullable', 'string', 'max:1000'],
         ]);
 
@@ -66,7 +70,7 @@ class LoanTopupController extends BaseApiController
      * Approve a pending top-up: increases principal and regenerates unpaid schedule.
      * POST /api/v1/loans/{loan}/topups/{topup}/approve
      */
-    public function approve(Request $request, Loan $loan, LoanTopup $topup): JsonResponse
+    public function approve(Request $request, Loan $loan, LoanTopup $topup, LoanLifecycleService $lifecycle): JsonResponse
     {
         if ($topup->loan_id !== $loan->id) {
             abort(404);
@@ -76,63 +80,17 @@ class LoanTopupController extends BaseApiController
             return $this->error('Only pending top-ups can be approved.', 422);
         }
 
-        DB::transaction(function () use ($loan, $topup) {
-            $addAmount = (float) $topup->topup_amount;
-            $outstanding = (float) $loan->outstanding_balance + $addAmount;
-            $newTenure = $topup->new_tenure ?? (int) $loan->tenure;
-            $plan = $loan->loanPlan;
+        $payout = $request->validate([
+            'disbursement_method' => ['required', 'in:cash,bank_transfer'],
+            'disbursement_date' => ['nullable', 'date', 'before_or_equal:today'],
+            'disbursement_reference' => ['nullable', 'string', 'max:100'],
+        ]);
 
-            $amounts = $this->calculator->calculateAmounts($plan, $outstanding, $newTenure);
-
-            $loan->update([
-                'principal_amount' => bcadd((string) $loan->principal_amount, (string) $addAmount, 2),
-                'tenure' => $newTenure,
-                'interest_amount' => $amounts['interest_amount'],
-                'total_payable' => bcadd((string) $loan->total_paid, (string) bcadd((string) $outstanding, (string) $amounts['interest_amount'], 2), 2),
-                'outstanding_balance' => bcadd((string) $outstanding, (string) $amounts['interest_amount'], 2),
-            ]);
-
-            // Delete remaining unpaid instalments and regenerate
-            $loan->schedule()->where('is_paid', false)->delete();
-
-            $scheduleRows = $this->calculator->generateSchedule(
-                $plan,
-                $outstanding,
-                $newTenure,
-                now()->toDateString(),
-                $amounts['interest_amount'],
-            );
-
-            $lastInstalment = $loan->schedule()->where('is_paid', true)->max('instalment_number') ?? 0;
-
-            foreach ($scheduleRows as $i => $row) {
-                LoanSchedule::create([
-                    'loan_id' => $loan->id,
-                    'instalment_number' => $lastInstalment + $i + 1,
-                    'due_date' => $row['due_date'],
-                    'principal_due' => $row['principal_due'],
-                    'interest_due' => $row['interest_due'],
-                    'fee_due' => $row['fee_due'],
-                    'total_due' => $row['total_due'],
-                    'outstanding' => $row['outstanding'],
-                ]);
-            }
-
-            $topup->update([
-                'status' => 'approved',
-                'approved_by' => auth()->id(),
-                'approved_at' => now(),
-            ]);
-
-            activity()
-                ->performedOn($loan)
-                ->causedBy(auth()->user())
-                ->withProperties([
-                    'topup_amount' => (float) $topup->topup_amount,
-                    'new_tenure' => $newTenure,
-                ])
-                ->log('topup_approved');
-        });
+        try {
+            $lifecycle->approveTopUp($loan, $topup, $request->user(), $payout);
+        } catch (LoanActionException $e) {
+            return $this->error($e->getMessage(), $e->status);
+        }
 
         return $this->success(
             $this->format($topup->fresh()->load(['requestedBy:id,name', 'approvedBy:id,name'])),

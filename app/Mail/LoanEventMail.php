@@ -18,10 +18,17 @@ class LoanEventMail extends Mailable
         public readonly string $event,
         public readonly string $loanNumber,
         public readonly array $context = [],
+        // From Settings → Message Templates (placeholders already filled in); plain text.
+        public readonly ?string $customSubject = null,
+        public readonly ?string $customBody = null,
     ) {}
 
     public function envelope(): Envelope
     {
+        if (filled($this->customSubject)) {
+            return new Envelope(subject: $this->customSubject);
+        }
+
         $subject = match ($this->event) {
             'approved' => "Your loan {$this->loanNumber} has been approved",
             'disbursed' => "Your loan {$this->loanNumber} funds have been disbursed",
@@ -70,6 +77,11 @@ class LoanEventMail extends Mailable
 
     private function bodyText(): string
     {
+        // The view prints the body as HTML; a staff-written template is text, so escape it.
+        if (filled($this->customBody)) {
+            return nl2br(e($this->customBody));
+        }
+
         $number = $this->loanNumber;
         $name = $this->borrowerName;
 

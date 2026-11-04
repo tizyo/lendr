@@ -47,6 +47,23 @@ class GlAccount extends Model
 
     // ─── Default Chart of Accounts ────────────────────────────────────────────
 
+    /**
+     * Create any missing default accounts (idempotent). Postings call this, so a
+     * workspace's ledger never silently drops entries for want of an account.
+     */
+    public static function ensureDefaults(): void
+    {
+        $codes = array_column(self::defaultAccounts(), 'code');
+
+        if (static::whereIn('code', $codes)->count() >= count($codes)) {
+            return;
+        }
+
+        foreach (self::defaultAccounts() as $account) {
+            static::firstOrCreate(['code' => $account['code']], $account + ['is_active' => true]);
+        }
+    }
+
     public static function defaultAccounts(): array
     {
         return [

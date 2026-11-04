@@ -1,4 +1,5 @@
 <template>
+  <AppLayout>
   <div class="max-w-5xl mx-auto py-8 px-4">
     <h1 class="text-2xl font-bold mb-6">Notification Templates</h1>
 
@@ -28,7 +29,7 @@
             <div class="p-4">
               <div class="flex items-center justify-between mb-2">
                 <span class="text-xs font-semibold uppercase tracking-wide text-gray-500">SMS</span>
-                <div class="flex gap-2">
+                <div v-if="can('settings.edit')" class="flex gap-2">
                   <button
                     v-if="row.sms"
                     @click="openEdit(row.event, 'sms', row.sms)"
@@ -53,7 +54,7 @@
             <div class="p-4">
               <div class="flex items-center justify-between mb-2">
                 <span class="text-xs font-semibold uppercase tracking-wide text-gray-500">Email</span>
-                <div class="flex gap-2">
+                <div v-if="can('settings.edit')" class="flex gap-2">
                   <button
                     v-if="row.email"
                     @click="openEdit(row.event, 'email', row.email)"
@@ -135,11 +136,16 @@
       </div>
     </div>
   </div>
+  </AppLayout>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue'
 import axios from 'axios'
+import AppLayout from '@/admin/components/layout/AppLayout.vue'
+import { useCan } from '@/admin/composables/useCan.js'
+
+const can = useCan()
 
 const loading   = ref(true)
 const templates = ref([])

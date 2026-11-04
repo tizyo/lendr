@@ -7,6 +7,26 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class ApprovalWorkflow extends Model
 {
+    /** Actions a workflow can gate, and where each is enforced. */
+    public const TYPES = [
+        'loan_approval' => 'Loan approval',          // LoanLifecycleService::approve
+        'loan_disbursement' => 'Loan disbursement',  // LoanLifecycleService::disburse
+        'expense' => 'Expense approval',             // Api\V1\ExpenseController::approve
+        'write_off' => 'Loan write-off',             // Api\V1\LoanController::writeOff
+    ];
+
+    /** Names the Approvals screen used to save, which matched nothing in code. */
+    private const ALIASES = [
+        'loan_approve' => 'loan_approval',
+        'loan_disburse' => 'loan_disbursement',
+        'writeoff' => 'write_off',
+    ];
+
+    public static function normaliseType(string $type): string
+    {
+        return self::ALIASES[$type] ?? $type;
+    }
+
     protected $fillable = [
         'name',
         'entity_type',
@@ -39,7 +59,9 @@ class ApprovalWorkflow extends Model
      */
     public static function findFor(string $entityType, float $amount = 0): ?self
     {
-        return static::where('entity_type', $entityType)
+        $entityType = self::normaliseType($entityType);
+
+        return static::whereIn('entity_type', [$entityType, ...array_keys(array_filter(self::ALIASES, fn ($t) => $t === $entityType))])
             ->where('is_active', true)
             ->where(function ($q) use ($amount) {
                 $q->whereNull('min_amount')->orWhere('min_amount', '<=', $amount);

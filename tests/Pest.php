@@ -40,6 +40,23 @@ function actingAsAdmin(): \App\Models\Tenant\User
     ]);
 }
 
+/**
+ * Put money in the loan fund, as a lender does before lending: disbursement is
+ * refused when the fund can't cover the principal (LoanLifecycleService).
+ */
+function fundTheBook(float $amount = 10_000_000): void
+{
+    $system = \App\Models\Tenant\User::first() ?? \App\Models\Tenant\User::factory()->create();
+
+    app(\App\Services\FundService::class)->credit(
+        $amount,
+        \App\Enums\FundTransactionType::Deposit,
+        $system,
+        $system->id,
+        'Test capital',
+    );
+}
+
 function makePlan(array $overrides = []): \App\Models\Tenant\LoanPlan
 {
     $type = \App\Models\Tenant\LoanType::factory()->create();

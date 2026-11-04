@@ -42,8 +42,11 @@
           <PlanDetails :plan="recommended" :highlight="featureKey" class="mt-5" />
 
           <div class="mt-6 pt-5 border-t border-neutral-100 dark:border-neutral-800">
+            <p v-if="!can('billing.manage')" class="text-sm text-neutral-500 text-center">
+              Ask your workspace administrator to upgrade the plan.
+            </p>
             <Link
-              v-if="!recommended.is_custom_price"
+              v-else-if="!recommended.is_custom_price"
               :href="route('billing.index', { plan: recommended.key })"
               class="btn-primary w-full justify-center py-2.5"
             >
@@ -67,7 +70,7 @@
       </div>
 
       <div class="mt-6 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
-        <Link :href="route('billing.index')" class="font-medium text-primary-600 hover:text-primary-700">Compare all plans →</Link>
+        <Link v-if="can('billing.manage')" :href="route('billing.index')" class="font-medium text-primary-600 hover:text-primary-700">Compare all plans →</Link>
         <button type="button" class="text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300" @click="goBack">← Go back</button>
       </div>
     </div>
@@ -78,6 +81,7 @@
 import { h } from 'vue'
 import { Link } from '@inertiajs/vue3'
 import AppLayout from '@/admin/components/layout/AppLayout.vue'
+import { useCan } from '@/admin/composables/useCan.js'
 import { CheckIcon, XMarkIcon } from '@heroicons/vue/20/solid'
 import { SparklesIcon, ArrowTrendingUpIcon, ChatBubbleLeftRightIcon } from '@heroicons/vue/24/outline'
 
@@ -88,6 +92,8 @@ const props = defineProps({
   current: { type: Object, default: null },
   recommended: { type: Object, default: null },
 })
+
+const can = useCan()
 
 const kwacha = new Intl.NumberFormat('en-ZM', { maximumFractionDigits: 0 })
 const price = (plan) => plan.is_custom_price ? 'Custom' : plan.price_zmw > 0 ? `K ${kwacha.format(plan.price_zmw)}` : 'Free'

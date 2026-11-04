@@ -78,6 +78,9 @@ class LoanController extends Controller
                 ->with(['plans' => fn ($q) => $q->where('is_active', true)->orderBy('name')])
                 ->orderBy('name')
                 ->get(),
+            'agents' => \App\Models\Tenant\Agent::where('status', 'active')->orderBy('first_name')
+                ->get(['id', 'agent_number', 'first_name', 'last_name'])
+                ->map(fn ($a) => ['id' => $a->id, 'agent_number' => $a->agent_number, 'name' => $a->full_name]),
         ]);
     }
 
@@ -96,9 +99,13 @@ class LoanController extends Controller
             'guarantor_phone' => ['nullable', 'string', 'max:20'],
             'guarantor_relationship' => ['nullable', 'string', 'max:100'],
             'notes' => ['nullable', 'string', 'max:2000'],
+            'agent_id' => ['nullable', \Illuminate\Validation\Rule::exists('agents', 'id')->where('status', 'active')->whereNull('deleted_at')],
         ]);
 
         $plan = \App\Models\Tenant\LoanPlan::findOrFail($data['loan_plan_id']);
+        if ($violations = $plan->violations((float) $data['principal_amount'], (int) $data['tenure'], (int) $data['loan_type_id'])) {
+            throw \Illuminate\Validation\ValidationException::withMessages($violations);
+        }
         $amounts = $this->calculator->calculateAmounts($plan, (float) $data['principal_amount'], (int) $data['tenure']);
 
         $loan = DB::transaction(function () use ($data, $plan, $amounts) {
@@ -234,12 +241,15 @@ class LoanController extends Controller
             'can' => [
                 'approve' => auth()->user()?->can('loans.approve'),
                 'disburse' => auth()->user()?->can('loans.disburse'),
-                'deny' => auth()->user()?->can('loans.approve'),
+                'deny' => auth()->user()?->can('loans.deny'),
                 'freeze' => auth()->user()?->can('loans.freeze'),
                 'write_off' => auth()->user()?->can('loans.write_off'),
                 'record_payment' => auth()->user()?->can('payments.create'),
-                'restructure' => auth()->user()?->can('loans.edit'),
+                'reverse_payment' => auth()->user()?->can('payments.delete'),
+                // New terms are a credit decision, like approving the loan.
+                'restructure' => auth()->user()?->can('loans.approve'),
                 'topup' => auth()->user()?->can('loans.edit'),
+                'approve_topup' => auth()->user()?->can('loans.approve'),
             ],
         ]);
     }

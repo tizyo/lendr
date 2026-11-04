@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Services\Mail\TenantMailService;
 use App\Services\TenantLogo;
+use App\Support\TenantSettings;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -21,9 +22,6 @@ class SettingController extends BaseApiController
         'pwa' => ['pwa_app_name', 'pwa_theme_color', 'pwa_short_name'],
     ];
 
-    // Keys that should never be returned in plaintext
-    private const MASKED_KEYS = ['smtp_password', 'sms_api_key', 'mobile_money_secret'];
-
     public function index(Request $request): JsonResponse
     {
         $grouped = Cache::remember('tenant_settings_'.tenant('id'), 600, function () {
@@ -34,7 +32,7 @@ class SettingController extends BaseApiController
                 foreach ($keys as $key) {
                     $row = $settings->get($key);
                     $grouped[$group][$key] = $row
-                        ? (in_array($key, self::MASKED_KEYS) ? '••••••••' : $row->value)
+                        ? (TenantSettings::isSecret($key) && filled($row->value) ? TenantSettings::MASK : $row->value)
                         : null;
                 }
             }
@@ -51,18 +49,8 @@ class SettingController extends BaseApiController
             'settings' => ['required', 'array'],
         ]);
 
-        foreach ($data['settings'] as $key => $value) {
-            $masked = in_array($key, self::MASKED_KEYS) && $value === '••••••••';
-
-            if ($masked) {
-                continue; // Skip if client sent the masked placeholder back
-            }
-
-            DB::table('settings')->updateOrInsert(
-                ['key' => $key],
-                ['value' => $value, 'updated_at' => now()],
-            );
-        }
+        // Validates, encrypts secrets, keeps Enterprise-only providers to Enterprise.
+        TenantSettings::save($data['settings']);
 
         $tenantId = tenant('id');
         Cache::forget("tenant_settings_{$tenantId}");

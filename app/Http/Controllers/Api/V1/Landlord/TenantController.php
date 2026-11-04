@@ -57,37 +57,66 @@ class TenantController extends BaseApiController
      */
     public function store(Request $request): JsonResponse
     {
+        $centralDomain = config('tenancy.central_domain');
+
         $data = $request->validate([
             'name' => ['required', 'string', 'max:100'],
             'plan' => ['required', Rule::in(['starter', 'growth', 'enterprise'])],
             'currency' => ['nullable', 'string', 'size:3'],
-            'timezone' => ['nullable', 'string', 'max:64'],
-            'subdomain' => ['nullable', 'string', 'alpha_dash', 'max:63',
-                Rule::unique('domains', 'domain'),
+            'timezone' => ['nullable', 'timezone:all'],
+            'subdomain' => ['nullable', 'string', 'regex:/^[a-z0-9][a-z0-9\-]{1,28}[a-z0-9]$/',
+                function ($attr, $value, $fail) use ($centralDomain) {
+                    if (\Illuminate\Support\Facades\DB::table('domains')->where('domain', strtolower($value).'.'.$centralDomain)->exists()) {
+                        $fail('This subdomain is already taken.');
+                    }
+                },
             ],
+            // The workspace's first Super Admin, invited by email once its database exists.
+            'admin_name' => ['nullable', 'required_with:admin_email', 'string', 'max:255'],
+            'admin_email' => ['nullable', 'email', 'max:191'],
         ]);
 
-        $slug = Str::slug($data['name']);
-        $id = (string) Str::uuid();
+        // Slugs identify a workspace at the shared-portal login, so they must be unique.
+        $base = Str::slug($data['name']) ?: 'workspace';
+        $slug = $base;
+        for ($i = 2; Tenant::where('slug', $slug)->exists(); $i++) {
+            $slug = "{$base}-{$i}";
+        }
 
-        $tenant = Tenant::create([
-            'id' => $id,
+        // Just the record: creating and migrating its database outlasts the request
+        // limit, so ProvisionTenantDatabase does it once the landlord has the answer.
+        // (Tenant::create() used to build it through TenantCreated and then this method
+        // tried to create the same database again.)
+        $tenant = Tenant::withoutEvents(fn () => Tenant::create([
+            'id' => (string) Str::uuid(),
             'name' => $data['name'],
             'slug' => $slug,
             'plan' => $data['plan'],
-            'status' => 'trial',
+            // Set up by LENDR, so live straight away: no trial clock, no email check
+            // (an unverified workspace refuses every sign-in).
+            'status' => 'active',
+            'email_verified_at' => now(),
+            'admin_email' => $data['admin_email'] ?? null,
             'currency' => strtoupper($data['currency'] ?? 'ZMW'),
             'timezone' => $data['timezone'] ?? 'Africa/Lusaka',
-        ]);
+        ]));
 
         if (! empty($data['subdomain'])) {
-            $tenant->domains()->create(['domain' => $data['subdomain'].'.'.config('app.central_domain', 'lendr.app')]);
+            $tenant->domains()->create(['domain' => strtolower($data['subdomain']).'.'.$centralDomain]);
         }
 
-        $tenant->createDatabase();
-        $tenant->migrateDatabase();
+        \App\Jobs\ProvisionTenantDatabase::dispatchAfterResponse(
+            $tenant->id,
+            filled($data['admin_email'] ?? null) ? ['name' => $data['admin_name'], 'email' => $data['admin_email']] : null,
+        );
 
-        return $this->success($this->format($tenant), 'Tenant provisioned.', 201);
+        return $this->success(
+            $this->format($tenant),
+            filled($data['admin_email'] ?? null)
+                ? 'Workspace created. Its database is being built and '.$data['admin_email'].' will get an invitation in a minute.'
+                : 'Workspace created. Its database is being built: add its first admin from the workspace\'s Users tab in a minute.',
+            201,
+        );
     }
 
     /**

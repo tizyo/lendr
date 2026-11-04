@@ -4,7 +4,6 @@ namespace App\Services\Mail;
 
 use Illuminate\Contracts\Mail\Mailer as MailerContract;
 use Illuminate\Mail\Mailable;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Schema;
 
@@ -70,9 +69,7 @@ class TenantMailService
                 return null;
             }
 
-            $s = DB::table('settings')
-                ->whereIn('key', ['smtp_host', 'smtp_port', 'smtp_username', 'smtp_password', 'smtp_from_email', 'smtp_from_name', 'smtp_encryption'])
-                ->pluck('value', 'key');
+            $s = \App\Support\TenantSettings::many(['smtp_host', 'smtp_port', 'smtp_username', 'smtp_password', 'smtp_from_email', 'smtp_from_name', 'smtp_encryption']);
 
             $host = $s->get('smtp_host');
             $user = $s->get('smtp_username');

@@ -75,9 +75,13 @@ class TenancyServiceProvider extends ServiceProvider
             ],
 
             Events\BootstrappingTenancy::class => [],
-            Events\TenancyBootstrapped::class => [],
+            Events\TenancyBootstrapped::class => [
+                \App\Listeners\ScopePermissionCacheToTenant::class,
+            ],
             Events\RevertingToCentralContext::class => [],
-            Events\RevertedToCentralContext::class => [],
+            Events\RevertedToCentralContext::class => [
+                \App\Listeners\ScopePermissionCacheToTenant::class,
+            ],
 
             // Resource syncing
             Events\SyncedResourceSaved::class => [

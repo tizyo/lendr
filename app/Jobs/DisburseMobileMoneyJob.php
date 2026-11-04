@@ -205,7 +205,8 @@ class DisburseMobileMoneyJob implements ShouldQueue
     private function mtn(Loan $loan, string $phone, string $reference): string
     {
         // MTN disbursement product uses a separate subscription key
-        $subscriptionKey = $this->setting('mtn_disbursement_subscription_key') ?? $this->setting('mtn_subscription_key');
+        // ?: not ??: the settings form saves an untouched field as "".
+        $subscriptionKey = $this->setting('mtn_disbursement_subscription_key') ?: $this->setting('mtn_subscription_key');
         $apiUser = $this->setting('mtn_api_user');
         $apiKey = $this->setting('mtn_api_key');
 
@@ -286,7 +287,7 @@ class DisburseMobileMoneyJob implements ShouldQueue
 
     private function setting(string $key, mixed $default = null): mixed
     {
-        return DB::table('settings')->where('key', $key)->value('value') ?? $default;
+        return \App\Support\TenantSettings::get($key) ?? $default; // decrypts credentials
     }
 
     private function e164(string $phone): string

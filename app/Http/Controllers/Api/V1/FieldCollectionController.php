@@ -67,31 +67,34 @@ class FieldCollectionController extends BaseApiController
         // Map field collection method to a valid PaymentMethod enum value
         $paymentMethod = $data['collection_method'] === 'mobile_money' ? 'mtn_momo' : 'cash';
 
-        $payment = $this->payments->record($loan, [
-            'amount' => $data['amount'],
-            'payment_method' => $paymentMethod,
-            'payment_date' => $data['collected_at'] ?? now()->toDateString(),
-            'source' => 'manual',
-            'reference' => $data['reference_number'] ?? null,
-            'notes' => $data['notes'] ?? null,
-            'recorded_by' => auth()->id(),
-        ]);
+        // One unit: a payment is never left without its field-collection record.
+        $collection = \Illuminate\Support\Facades\DB::transaction(function () use ($loan, $data, $paymentMethod) {
+            $payment = $this->payments->record($loan, [
+                'amount' => $data['amount'],
+                'payment_method' => $paymentMethod,
+                'payment_date' => $data['collected_at'] ?? now()->toDateString(),
+                'source' => 'manual',
+                'reference' => $data['reference_number'] ?? null,
+                'notes' => $data['notes'] ?? null,
+                'recorded_by' => auth()->id(),
+            ]);
 
-        $collection = FieldCollection::create([
-            'user_id' => auth()->id(),
-            'loan_id' => $loan->id,
-            'borrower_id' => $loan->borrower_id,
-            'amount' => $data['amount'],
-            'collection_method' => $data['collection_method'],
-            'reference_number' => $data['reference_number'] ?? null,
-            'latitude' => $data['latitude'] ?? null,
-            'longitude' => $data['longitude'] ?? null,
-            'receipt_number' => $payment->receipt_number,
-            'notes' => $data['notes'] ?? null,
-            'payment_id' => $payment->id,
-            'collected_at' => $data['collected_at'] ?? now(),
-            'synced_at' => now(),
-        ]);
+            return FieldCollection::create([
+                'user_id' => auth()->id(),
+                'loan_id' => $loan->id,
+                'borrower_id' => $loan->borrower_id,
+                'amount' => $data['amount'],
+                'collection_method' => $data['collection_method'],
+                'reference_number' => $data['reference_number'] ?? null,
+                'latitude' => $data['latitude'] ?? null,
+                'longitude' => $data['longitude'] ?? null,
+                'receipt_number' => $payment->receipt_number,
+                'notes' => $data['notes'] ?? null,
+                'payment_id' => $payment->id,
+                'collected_at' => $data['collected_at'] ?? now(),
+                'synced_at' => now(),
+            ]);
+        });
 
         return $this->success($this->formatCollection($collection), 'Collection recorded.', 201);
     }
@@ -134,22 +137,42 @@ class FieldCollectionController extends BaseApiController
     public function syncSubmit(Request $request): JsonResponse
     {
         $data = $request->validate([
-            'items' => ['required', 'array', 'min:1'],
+            'items' => ['required', 'array', 'min:1', 'max:200'],
             'items.*.action' => ['required', 'in:check_in,collect_payment'],
             'items.*.payload' => ['required', 'array'],
+            // The device's own id for the item; resending it never repeats the item.
+            'items.*.client_id' => ['nullable', 'string', 'max:64'],
         ]);
 
         $results = [];
         foreach ($data['items'] as $item) {
-            $sync = OfflineSyncItem::create([
-                'user_id' => auth()->id(),
-                'action' => $item['action'],
-                'payload' => $item['payload'],
-                'status' => 'pending',
-            ]);
+            // Without a device id, the item's contents are its key (a collection
+            // carries its own collected_at, so two real ones don't collide).
+            $key = $item['client_id'] ?? hash('sha256', $item['action'].'|'.json_encode($item['payload']));
 
-            $result = $this->processSyncItem($sync);
-            $results[] = $result;
+            $previous = OfflineSyncItem::where('user_id', auth()->id())->where('client_key', $key)->first();
+            if ($previous && $previous->status !== 'failed') {
+                $results[] = ['id' => $previous->id, 'action' => $previous->action, 'status' => 'completed', 'duplicate' => true];
+
+                continue;
+            }
+
+            try {
+                $sync = $previous ?? OfflineSyncItem::create([
+                    'user_id' => auth()->id(),
+                    'action' => $item['action'],
+                    'client_key' => $key,
+                    'payload' => $item['payload'],
+                    'status' => 'pending',
+                ]);
+            } catch (\Illuminate\Database\UniqueConstraintViolationException) {
+                // The same item in a request running at this very moment (a double tap).
+                $results[] = ['action' => $item['action'], 'status' => 'completed', 'duplicate' => true];
+
+                continue;
+            }
+
+            $results[] = $this->processSyncItem($sync);
         }
 
         $processed = collect($results)->where('status', 'completed')->count();
@@ -202,33 +225,37 @@ class FieldCollectionController extends BaseApiController
                 $loan = Loan::findOrFail($payload['loan_id']);
 
                 $syncMethod = $payload['collection_method'] ?? 'cash';
-                $paymentMethod = $syncMethod === 'mobile_money' ? 'mtn_momo' : 'cash';
+                // The device may name the network; "mobile_money" alone used to be booked as MTN.
+                $paymentMethod = \App\Enums\PaymentMethod::tryFrom((string) ($payload['payment_method'] ?? ''))?->value
+                    ?? ($syncMethod === 'mobile_money' ? 'mtn_momo' : 'cash');
 
-                $payment = $this->payments->record($loan, [
-                    'amount' => $payload['amount'],
-                    'payment_method' => $paymentMethod,
-                    'payment_date' => $payload['collected_at'] ?? now()->toDateString(),
-                    'source' => 'manual',
-                    'reference' => $payload['reference_number'] ?? null,
-                    'notes' => $payload['notes'] ?? null,
-                    'recorded_by' => auth()->id(),
-                ]);
+                \Illuminate\Support\Facades\DB::transaction(function () use ($loan, $payload, $paymentMethod, $syncMethod) {
+                    $payment = $this->payments->record($loan, [
+                        'amount' => $payload['amount'],
+                        'payment_method' => $paymentMethod,
+                        'payment_date' => $payload['collected_at'] ?? now()->toDateString(),
+                        'source' => 'manual',
+                        'reference' => $payload['reference_number'] ?? null,
+                        'notes' => $payload['notes'] ?? null,
+                        'recorded_by' => auth()->id(),
+                    ]);
 
-                FieldCollection::create([
-                    'user_id' => auth()->id(),
-                    'loan_id' => $loan->id,
-                    'borrower_id' => $loan->borrower_id,
-                    'amount' => $payload['amount'],
-                    'collection_method' => $syncMethod,
-                    'reference_number' => $payload['reference_number'] ?? null,
-                    'latitude' => $payload['latitude'] ?? null,
-                    'longitude' => $payload['longitude'] ?? null,
-                    'receipt_number' => $payment->receipt_number,
-                    'notes' => $payload['notes'] ?? null,
-                    'payment_id' => $payment->id,
-                    'collected_at' => $payload['collected_at'] ?? now(),
-                    'synced_at' => now(),
-                ]);
+                    FieldCollection::create([
+                        'user_id' => auth()->id(),
+                        'loan_id' => $loan->id,
+                        'borrower_id' => $loan->borrower_id,
+                        'amount' => $payload['amount'],
+                        'collection_method' => $syncMethod,
+                        'reference_number' => $payload['reference_number'] ?? null,
+                        'latitude' => $payload['latitude'] ?? null,
+                        'longitude' => $payload['longitude'] ?? null,
+                        'receipt_number' => $payment->receipt_number,
+                        'notes' => $payload['notes'] ?? null,
+                        'payment_id' => $payment->id,
+                        'collected_at' => $payload['collected_at'] ?? now(),
+                        'synced_at' => now(),
+                    ]);
+                });
             }
 
             $sync->update(['status' => 'completed', 'processed_at' => now()]);

@@ -1,6 +1,6 @@
 @extends('emails.layout')
 
-@php($supportEmail = $brand['email'] ?: 'support@lendr.app')
+@php($supportEmail = $brand['email'] ?: config('lendr.support_email'))
 @php($upgradeUrl = route('billing.index', ['plan' => 'growth']))
 
 @section('title', 'Your trial is ending soon — '.$brand['name'])

@@ -91,6 +91,11 @@ class AppController extends Controller
         return Inertia::render('marketplace/PublicProducts');
     }
 
+    public function creditScore(): Response
+    {
+        return Inertia::render('marketplace/CreditScore');
+    }
+
     // ─── Repo Marketplace (ghost user) ────────────────────────
 
     public function repoBrowse(): Response

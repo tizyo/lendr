@@ -144,6 +144,25 @@ class CreditScoringService
             return null;
         }
 
+        $record = DB::connection('mysql')->table('credit_scores')->updateOrInsert(
+            ['borrower_global_id' => $borrowerGlobalId],
+            [...$this->breakdown($borrower), 'last_updated' => now(), 'updated_at' => now()],
+        );
+
+        return DB::connection('mysql')->table('credit_scores')
+            ->where('borrower_global_id', $borrowerGlobalId)
+            ->first();
+    }
+
+    /**
+     * The score with its five factors (0–100 each) and loan counts, from this
+     * workspace's records: what the borrower app shows and what the central
+     * ledger stores.
+     *
+     * @return array{score: int, score_band: string, repayment_history_score: int, debt_load_score: int, history_length_score: int, account_mix_score: int, new_credit_score: int, total_loans: int, total_completed: int, total_defaulted: int}
+     */
+    public function breakdown(Borrower $borrower): array
+    {
         $loans = Loan::where('borrower_id', $borrower->id)
             ->whereIn('status', ['disbursed', 'active', 'completed', 'defaulted', 'written_off'])
             ->get();
@@ -158,38 +177,27 @@ class CreditScoringService
         $mixScore = $this->computeAccountMixFactor($loans);
         $newCreditScore = $this->computeNewCreditFactor($loans);
 
-        // Weighted composite raw score (0–100)
+        // Weighted composite raw score (0–100), converted to the 300–850 range
         $raw = ($repaymentScore * 0.40)
              + ($debtScore * 0.25)
              + ($historyScore * 0.15)
              + ($mixScore * 0.10)
              + ($newCreditScore * 0.10);
 
-        // Convert to 300–850 range
         $score = (int) max(300, min(850, round($raw * 5.5 + 300)));
-        $band = $this->scoreBand($score);
 
-        $record = DB::connection('mysql')->table('credit_scores')->updateOrInsert(
-            ['borrower_global_id' => $borrowerGlobalId],
-            [
-                'score' => $score,
-                'score_band' => $band,
-                'repayment_history_score' => $repaymentScore,
-                'debt_load_score' => $debtScore,
-                'history_length_score' => $historyScore,
-                'account_mix_score' => $mixScore,
-                'new_credit_score' => $newCreditScore,
-                'total_loans' => $loans->count(),
-                'total_completed' => $loans->where('status', 'completed')->count(),
-                'total_defaulted' => $loans->whereIn('status', ['defaulted', 'written_off'])->count(),
-                'last_updated' => now(),
-                'updated_at' => now(),
-            ],
-        );
-
-        return DB::connection('mysql')->table('credit_scores')
-            ->where('borrower_global_id', $borrowerGlobalId)
-            ->first();
+        return [
+            'score' => $score,
+            'score_band' => $this->scoreBand($score),
+            'repayment_history_score' => $repaymentScore,
+            'debt_load_score' => $debtScore,
+            'history_length_score' => $historyScore,
+            'account_mix_score' => $mixScore,
+            'new_credit_score' => $newCreditScore,
+            'total_loans' => $loans->count(),
+            'total_completed' => $loans->where('status', 'completed')->count(),
+            'total_defaulted' => $loans->whereIn('status', ['defaulted', 'written_off'])->count(),
+        ];
     }
 
     public function scoreBand(int $score): string

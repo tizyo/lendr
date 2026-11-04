@@ -12,8 +12,9 @@
 
       <h1 class="text-2xl font-bold text-neutral-900 mb-2">Free Trial Ended</h1>
       <p class="text-neutral-500 text-sm mb-1">
-        The free trial for <span class="font-semibold text-neutral-700">{{ tenantName }}</span> expired on
-        <span class="font-medium text-neutral-600">{{ trialEndedAt }}</span>.
+        The free trial for <span class="font-semibold text-neutral-700">{{ tenantName }}</span>
+        <template v-if="trialEndedAt"> expired on <span class="font-medium text-neutral-600">{{ trialEndedAt }}</span>.</template>
+        <template v-else> has ended.</template>
       </p>
       <p class="text-neutral-400 text-xs mb-8">
         Your data is safe and preserved. Upgrade to restore full access immediately.
@@ -45,7 +46,10 @@
       </div>
 
       <!-- Billing stays reachable when the trial has ended, so payment restores access. -->
-      <Link :href="route('billing.index')"
+      <p v-if="!can('billing.manage')" class="text-sm text-neutral-600 mb-6">
+        Ask your workspace administrator to choose a plan and restore access.
+      </p>
+      <Link v-else :href="route('billing.index')"
         class="inline-flex items-center gap-2 bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white font-semibold px-8 py-3 rounded-xl shadow-lg shadow-emerald-200 transition text-sm mb-4">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
@@ -67,6 +71,9 @@
 <script setup>
 import { computed } from 'vue'
 import { Link } from '@inertiajs/vue3'
+import { useCan } from '@/admin/composables/useCan.js'
+
+const can = useCan()
 
 defineProps({
   tenantName:   { type: String, default: '' },

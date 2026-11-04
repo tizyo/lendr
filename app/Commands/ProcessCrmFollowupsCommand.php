@@ -52,19 +52,21 @@ class ProcessCrmFollowupsCommand extends Command
                 continue;
             }
 
-            // In-app notification (reuse NotificationService pattern if available)
+            // This called a static NotificationService::send() that never existed, and the
+            // catch swallowed the error: no reminder was ever sent, yet it reported success.
             try {
-                \App\Services\NotificationService::send(
+                app(\App\Services\NotificationService::class)->notifyUser(
                     $officer->id,
                     'lead_followup',
-                    "Follow-up due: {$lead->full_name} ({$lead->lead_number})",
+                    "Follow-up due: {$lead->full_name}",
+                    "Lead {$lead->lead_number} was due for follow-up on ".$lead->follow_up_date?->format('d M Y').'.',
                     ['lead_id' => $lead->id],
                 );
-            } catch (\Throwable) {
-                // Notification service may not be bootstrapped in all contexts
+                $notified++;
+            } catch (\Throwable $e) {
+                report($e);
+                $this->warn("  Could not notify {$officer->name} for lead {$lead->lead_number}: {$e->getMessage()}");
             }
-
-            $notified++;
         }
 
         $this->info($dryRun

@@ -28,6 +28,8 @@ class DisburseRequest extends FormRequest
             'disbursement_date' => ['required', 'date'],
             'first_repayment_date' => ['nullable', 'date', 'after:disbursement_date'],
             'notes' => ['nullable', 'string', 'max:1000'],
+            'crb_override' => ['sometimes', 'boolean'],
+            'crb_override_reason' => ['nullable', 'required_if:crb_override,true,1', 'string', 'max:500'],
         ];
     }
 }

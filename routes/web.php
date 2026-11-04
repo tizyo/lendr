@@ -128,14 +128,14 @@ Route::middleware([InitializeTenancy::class])->group(function () {
         ->name('logout');
 
     // ─── Billing (auth only — bypasses tenant.status so expired tenants can pay) ──
-    Route::middleware('auth')->group(function () {
+    Route::middleware(['auth', 'permission:billing.manage'])->group(function () {
         Route::get('/billing', [BillingController::class, 'index'])->name('billing.index');
         Route::post('/billing/checkout', [BillingController::class, 'checkout'])->name('billing.checkout');
         Route::get('/billing/callback', [BillingController::class, 'callback'])->name('billing.callback');
     });
 
     // ─── Authenticated Admin ────────────────────────────────────────────
-    Route::middleware(['auth', 'tenant.status'])->group(function () {
+    Route::middleware(['auth', 'tenant.status', \App\Http\Middleware\EnforceStaffSecurity::class])->group(function () {
         Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
         Route::get('/portal/dashboard', [DashboardController::class, 'index'])->name('portal.dashboard');
         Route::post('/banners/{banner}/dismiss', DismissBannerController::class)
@@ -206,6 +206,7 @@ Route::middleware([InitializeTenancy::class])->group(function () {
         require __DIR__.'/admin/crb.php';
         require __DIR__.'/admin/featured-items.php';
         require __DIR__.'/admin/hot-deals.php';
+        require __DIR__.'/admin/agents.php';
     });
 });
 

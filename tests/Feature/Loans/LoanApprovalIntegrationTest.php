@@ -11,6 +11,8 @@ use App\Models\Tenant\LoanType;
 use App\Models\Tenant\User;
 use Spatie\Permission\Models\Permission;
 
+beforeEach(fn () => fundTheBook());
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function disbApprovalAdmin(): User

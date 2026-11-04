@@ -51,10 +51,12 @@ class StaffProfileController extends Controller
 
         $request->validate([
             'current_password' => ['required', 'current_password'],
-            'password' => ['required', 'confirmed', Password::min(8)],
+            // Same strength as a reset link requires, and actually new.
+            'password' => ['required', 'confirmed', 'different:current_password', Password::min(8)->mixedCase()->numbers()],
         ]);
 
-        $user->update(['password' => Hash::make($request->password)]);
+        // Choosing their own password clears a forced change (EnforceStaffSecurity).
+        $user->forceFill(['password' => Hash::make($request->password), 'force_password_reset' => false])->save();
 
         return back()->with('success', 'Password changed successfully.');
     }

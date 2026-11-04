@@ -153,24 +153,20 @@
           </div>
         </div>
 
-        <!-- Express Interest CTA -->
+        <!-- Make an offer. Only the borrower withdraws a listing (in their app); staff can
+             expire it from the marketplace list. -->
         <button
-          v-if="listing.status === 'active'"
+          v-if="listing.status === 'active' && can('marketplace.manage')"
           @click="openInterestModal = true"
           class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-3 rounded-xl transition-colors text-sm"
         >
           Express Interest
         </button>
-
-        <!-- Withdraw (for admin) -->
-        <button
-          v-if="['active','draft'].includes(listing.status)"
-          @click="confirmWithdraw"
-          class="w-full border border-red-200 text-red-600 hover:bg-red-50 font-medium py-2.5 rounded-xl transition-colors text-sm"
-        >
-          Withdraw Listing
-        </button>
       </div>
+    </div>
+
+    <div v-else class="lendr-card p-10 text-center text-sm text-neutral-500">
+      This listing isn't open any more (it was funded, withdrawn or has expired).
     </div>
 
     <!-- Express Interest Modal -->
@@ -210,6 +206,9 @@ import { pushToast } from '@/admin/composables/useToast.js'
 import { ref, computed, onMounted } from 'vue'
 import AppLayout from '@/admin/components/layout/AppLayout.vue'
 import axios from 'axios'
+import { useCan } from '@/admin/composables/useCan.js'
+
+const can = useCan()
 
 const props = defineProps({ id: Number })
 
@@ -249,6 +248,7 @@ const scoreColor = computed(() => {
   return '#ef4444'
 })
 const scoreBand = computed(() => {
+  if (listing.value?.borrower?.credit_score == null) return 'No score yet'
   if (scoreVal.value >= 750) return 'Excellent'
   if (scoreVal.value >= 650) return 'Good'
   if (scoreVal.value >= 550) return 'Fair'
@@ -296,13 +296,4 @@ async function submitInterest() {
   }
 }
 
-async function confirmWithdraw() {
-  if (!confirm('Withdraw this listing? This cannot be undone.')) return
-  try {
-    await axios.put(`/api/v1/marketplace/listings/${props.id}/withdraw`)
-    listing.value.status = 'withdrawn'
-  } catch (e) {
-    pushToast('error', e.response?.data?.message ?? 'Failed to withdraw listing.')
-  }
-}
 </script>

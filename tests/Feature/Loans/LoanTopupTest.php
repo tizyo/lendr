@@ -10,6 +10,8 @@ use App\Models\Tenant\LoanTopup;
 use App\Models\Tenant\LoanType;
 use App\Models\Tenant\User;
 
+beforeEach(fn () => fundTheBook());
+
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function topupAdmin(): User
@@ -156,9 +158,12 @@ test('approving a top-up increases principal and regenerates schedule', function
     ]);
 
     $unpaidBefore = LoanSchedule::where('loan_id', $loan->id)->where('is_paid', false)->count();
+    $fundBefore = (float) \App\Models\Tenant\FundBalance::current()->available_balance;
 
     $this->actingAs($admin)
-        ->postJson(route('api.v1.loans.topups.approve', ['loan' => $loan->id, 'topup' => $topup->id]))
+        ->postJson(route('api.v1.loans.topups.approve', ['loan' => $loan->id, 'topup' => $topup->id]), [
+            'disbursement_method' => 'cash',
+        ])
         ->assertOk()
         ->assertJsonPath('data.status', 'approved');
 
@@ -170,6 +175,25 @@ test('approving a top-up increases principal and regenerates schedule', function
     $unpaidAfter = LoanSchedule::where('loan_id', $loan->id)->where('is_paid', false)->count();
     $this->assertGreaterThan(0, $unpaidAfter);
     $this->assertNotEquals($unpaidBefore, $unpaidAfter);
+
+    // The extra money left the fund and the schedule agrees with the new balance.
+    expect((float) \App\Models\Tenant\FundBalance::current()->available_balance)->toBe($fundBefore - 2000)
+        ->and(round((float) LoanSchedule::where('loan_id', $loan->id)->where('is_paid', false)->sum('outstanding'), 2))
+        ->toBe(round((float) $loan->outstanding_balance, 2));
+})->group('topup');
+
+test('a top-up must be recorded as paid out by cash or bank transfer', function () {
+    $admin = topupAdmin();
+    $loan = topupLoan();
+    seedTopupSchedule($loan);
+    $topup = LoanTopup::create(['loan_id' => $loan->id, 'requested_by' => $admin->id, 'topup_amount' => 1000, 'status' => 'pending']);
+
+    $this->actingAs($admin)
+        ->postJson(route('api.v1.loans.topups.approve', ['loan' => $loan->id, 'topup' => $topup->id]))
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors(['disbursement_method']);
+
+    expect($topup->fresh()->status)->toBe('pending');
 })->group('topup');
 
 test('approving a top-up logs activity', function () {
@@ -185,7 +209,7 @@ test('approving a top-up logs activity', function () {
     ]);
 
     $this->actingAs($admin)
-        ->postJson(route('api.v1.loans.topups.approve', ['loan' => $loan->id, 'topup' => $topup->id]))
+        ->postJson(route('api.v1.loans.topups.approve', ['loan' => $loan->id, 'topup' => $topup->id]), ['disbursement_method' => 'bank_transfer'])
         ->assertOk();
 
     $this->assertDatabaseHas('activity_log', [

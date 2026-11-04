@@ -126,8 +126,20 @@ abstract class BaseWebhookController extends Controller
             ],
         );
 
+        if ($status === 'failed') {
+            if ($intent->status !== 'confirmed') {
+                $intent->update(['status' => 'failed']);
+            }
+
+            return;
+        }
+
+        // Still in progress at the provider: wait for the final callback (or the
+        // status check) instead of telling the borrower it failed.
         if ($status !== 'success') {
-            $intent->update(['status' => 'failed']);
+            if (! in_array($intent->status, ['confirmed', 'failed'], true)) {
+                $intent->update(['status' => 'processing']);
+            }
 
             return;
         }
@@ -144,8 +156,18 @@ abstract class BaseWebhookController extends Controller
             return;
         }
 
+        // Book what the provider says arrived. Amount-less callbacks fall back to
+        // the amount asked for; a different amount is noted for staff.
+        $reported = (float) ($payload['amount'] ?? 0);
+        $amount = $reported > 0 ? $reported : (float) $intent->amount;
+        if ($reported > 0 && abs($reported - (float) $intent->amount) >= 0.01) {
+            Log::warning("[Webhook:{$this->providerName()}] Paid amount differs from the request", [
+                'ref' => $internalRef, 'requested' => (float) $intent->amount, 'paid' => $reported,
+            ]);
+        }
+
         $payment = $this->payments->record($loan, [
-            'amount' => (float) $intent->amount,
+            'amount' => $amount,
             'payment_method' => $intent->provider,
             'payment_date' => now()->toDateString(),
             'source' => 'mobile_money_webhook',
@@ -153,7 +175,7 @@ abstract class BaseWebhookController extends Controller
             'momo_transaction_id' => $payload['transaction_id'],
             'momo_provider' => $this->providerName(),
             'notes' => "Self-service payment via {$this->providerName()}",
-        ]);
+        ], allowOverpayment: true); // the borrower has already paid: keep any excess as a credit
 
         $intent->update([
             'status' => 'confirmed',

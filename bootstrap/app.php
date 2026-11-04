@@ -15,6 +15,7 @@ return Application::configure(basePath: dirname(__DIR__))
         \App\Commands\ProcessOverdueLoansCommand::class,
         \App\Commands\ProcessUpcomingPaymentRemindersCommand::class,
         \App\Commands\ProcessTrialExpiryCommand::class,
+        \App\Commands\ProcessSubscriptionsCommand::class,
         \App\Commands\SendBorrowerStatementsCommand::class,
         \App\Commands\AccrueInterestCommand::class,
         \App\Commands\ApplyPenaltiesCommand::class,
@@ -83,15 +84,26 @@ return Application::configure(basePath: dirname(__DIR__))
             'api-gateway' => \App\Http\Middleware\ApiGatewayAuth::class,
             'marketplace' => \App\Http\Middleware\RequiresMarketplaceEnabled::class,
             'landlord.token' => \App\Http\Middleware\EnsureLandlordToken::class,
+            'actor' => \App\Http\Middleware\EnsureActor::class,
         ]);
 
         // Exclude mobile money webhook routes from CSRF (they use HMAC signature verification instead)
         $middleware->validateCsrfTokens(except: [
-            'api/webhooks/*',
+            'api/v1/webhooks/*',
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         SentryIntegration::handles($exceptions);
+
+        // A refused loan action is a business rule, not a crash: say why, wherever it came from.
+        $exceptions->dontReport(\App\Exceptions\LoanActionException::class);
+        $exceptions->render(function (\App\Exceptions\LoanActionException $e, $request) {
+            if ($request->expectsJson() || $request->is('api/*')) {
+                return response()->json(['success' => false, 'message' => $e->getMessage(), ...$e->context], $e->status);
+            }
+
+            return back()->withInput()->with('error', $e->getMessage());
+        });
 
         // Branded error screens (tenant colours inside a workspace, LENDR's elsewhere).
         $exceptions->respond(fn ($response, $e, $request) => \App\Support\ErrorPage::respond($response, $e, $request));

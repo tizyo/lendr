@@ -6,7 +6,7 @@
           <Link :href="route('payments.index')" class="text-neutral-400 hover:text-neutral-600">← Back</Link>
           <h1 class="text-2xl font-bold text-neutral-900">{{ payment.receipt_number }}</h1>
         </div>
-        <button class="btn-danger" @click="openReverse">Reverse Payment</button>
+        <button v-if="can('payments.delete')" class="btn-danger" @click="openReverse">Reverse Payment</button>
       </div>
     </template>
 
@@ -99,7 +99,10 @@
     <div v-if="showReverse" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
       <div class="bg-white rounded-xl shadow-xl w-full max-w-sm p-6">
         <h2 class="text-lg font-semibold mb-2">Reverse Payment?</h2>
-        <p class="text-sm text-neutral-600 mb-3">This will void the payment record. Provide a reason.</p>
+        <p class="text-sm text-neutral-600 mb-3">
+          The instalments it paid, the loan balance, the fund and the ledger are all put back as they were before it.
+          The payment stays on record as reversed. Give a reason.
+        </p>
         <textarea v-model="reverseReason" rows="3" class="input w-full resize-none mb-4" placeholder="Reason for reversal…"></textarea>
         <div class="flex justify-end gap-3">
           <button class="btn-secondary" @click="showReverse = false">Cancel</button>
@@ -114,14 +117,17 @@
 
 <script setup>
 import { pushToast } from '@/admin/composables/useToast.js'
+import { useCan } from '@/admin/composables/useCan.js'
 import { computed, ref } from 'vue'
 import { Link, router } from '@inertiajs/vue3'
+import axios from 'axios'
 import AppLayout from '@/admin/components/layout/AppLayout.vue'
 
 const props = defineProps({
   payment: { type: Object, required: true },
 })
 
+const can = useCan()
 const showReverse = ref(false)
 const reverseReason = ref('')
 const saving = ref(false)
@@ -129,8 +135,10 @@ const saving = ref(false)
 const allocation = computed(() => [
   { label: 'Principal',  value: props.payment.principal_allocated },
   { label: 'Interest',   value: props.payment.interest_allocated },
+  { label: 'Fees',       value: props.payment.fee_allocated },
   { label: 'Penalties',  value: props.payment.penalty_allocated },
-])
+  { label: 'Held as credit (overpaid)', value: props.payment.unallocated_amount },
+].filter(row => row.value && row.value !== '0.00' || ['Principal', 'Interest'].includes(row.label)))
 
 const openReverse = () => { showReverse.value = true; reverseReason.value = '' }
 
@@ -142,9 +150,11 @@ const confirmReverse = async () => {
       data: { reason: reverseReason.value },
     })
     showReverse.value = false
-    router.visit(route('payments.index'))
+    pushToast('success', 'Payment reversed.')
+    router.visit(route('loans.show', props.payment.loan_id))
   } catch (e) {
-    pushToast('error', e.response?.data?.message ?? 'Failed to reverse payment.')
+    const errors = e.response?.data?.errors
+    pushToast('error', errors ? Object.values(errors).flat()[0] : (e.response?.data?.message ?? 'Failed to reverse payment.'))
   } finally {
     saving.value = false
   }

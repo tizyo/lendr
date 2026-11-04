@@ -57,6 +57,17 @@ class OpenBankingController extends BaseApiController
 
         $plan = LoanPlan::with('loanType')->findOrFail($data['loan_plan_id']);
 
+        // Same limits as every other channel: an active plan, its amount and tenure ranges.
+        if (! $plan->is_active || ! $plan->loanType?->is_active) {
+            return $this->error('That loan plan is not available.', 422);
+        }
+        if ((float) $data['amount'] < (float) $plan->min_amount || (float) $data['amount'] > (float) $plan->max_amount) {
+            return $this->error("Amount must be between K {$plan->min_amount} and K {$plan->max_amount}.", 422);
+        }
+        if ($data['tenure'] < $plan->min_tenure || $data['tenure'] > $plan->max_tenure) {
+            return $this->error("Tenure must be between {$plan->min_tenure} and {$plan->max_tenure} {$plan->tenure_type}.", 422);
+        }
+
         // Find or create borrower
         $borrower = Borrower::firstOrCreate(
             ['phone' => $data['phone']],
@@ -68,6 +79,12 @@ class OpenBankingController extends BaseApiController
             ],
         );
 
+        if ($borrower->is_blacklisted || $borrower->is_active === false) {
+            return $this->error('This applicant cannot be offered a loan.', 422);
+        }
+
+        // Interest and fees worked out like any application, so the loan owes what the plan says.
+        $amounts = app(\App\Services\LoanCalculatorService::class)->calculateAmounts($plan, (float) $data['amount'], (int) $data['tenure']);
         $reference = 'LN-EXT-'.strtoupper(Str::random(8));
 
         $loan = Loan::create([
@@ -76,16 +93,30 @@ class OpenBankingController extends BaseApiController
             'loan_plan_id' => $plan->id,
             'loan_number' => $reference,
             'principal_amount' => $data['amount'],
-            'outstanding_balance' => $data['amount'],
+            'interest_amount' => $amounts['interest_amount'],
+            'processing_fee' => $amounts['processing_fee'],
+            'insurance_fee' => $amounts['insurance_fee'],
+            'total_payable' => $amounts['total_payable'],
+            'outstanding_balance' => $amounts['total_payable'],
             'interest_rate' => $plan->interest_rate,
             'interest_type' => $plan->interest_type ?? 'flat',
             'interest_period' => $plan->interest_period ?? 'monthly',
             'tenure' => $data['tenure'],
             'tenure_type' => $plan->tenure_type ?? 'months',
             'repayment_schedule' => $plan->repayment_schedule ?? 'monthly',
-            'purpose' => $data['purpose'] ?? null,
+            'penalty_rate' => $plan->penalty_rate,
+            'grace_period_days' => $plan->grace_period_days,
+            'loan_purpose' => $data['purpose'] ?? null,
             'status' => 'submitted',
             'application_date' => now()->toDateString(),
+            'currency' => tenancy()->tenant?->currency ?? 'ZMW',
+        ]);
+
+        $loan->statusLogs()->create([
+            'changed_by' => null,
+            'from_status' => null,
+            'to_status' => 'submitted',
+            'notes' => 'Submitted through the open API ('.($request->attributes->get('api_client')?->name ?? 'API client').').',
         ]);
 
         return $this->success([
@@ -128,8 +159,9 @@ class OpenBankingController extends BaseApiController
     {
         $data = $request->validate([
             'loan_reference' => ['required', 'string'],
-            'amount' => ['required', 'numeric', 'min:0.01'],
-            'phone' => ['required', 'string'],
+            'amount' => ['required', 'numeric', 'min:1'],
+            'phone' => ['required', 'string', 'max:20'],
+            'provider' => ['required', 'in:airtel_money,mtn_momo,zamtel_kwacha,lipila,pawapay'],
             'notes' => ['nullable', 'string', 'max:300'],
         ]);
 
@@ -139,18 +171,37 @@ class OpenBankingController extends BaseApiController
             return $this->error('Loan not found.', 404);
         }
 
-        if (! in_array($loan->status instanceof \BackedEnum ? $loan->status->value : $loan->status, ['active', 'disbursed'])) {
-            return $this->error('Loan is not active.', 422);
+        if (! in_array($loan->status, \App\Services\Payment\PaymentService::PAYABLE_STATUSES, true)) {
+            return $this->error('Loan is not accepting repayments.', 422);
         }
 
-        $paymentRef = 'PAY-EXT-'.strtoupper(Str::random(8));
+        $owed = (float) $loan->outstanding_balance + (float) $loan->penalty_balance;
+        if ((float) $data['amount'] > $owed) {
+            return $this->error('Amount is more than the K '.number_format($owed, 2).' owed on this loan.', 422);
+        }
+
+        // A real collection request, like the borrower app's: the payment is posted
+        // when the provider's callback confirms it.
+        $intent = \App\Models\Tenant\MobileMoneyIntent::create([
+            'loan_id' => $loan->id,
+            'borrower_id' => $loan->borrower_id,
+            'reference' => 'PAY-EXT-'.strtoupper(Str::random(10)),
+            'provider' => $data['provider'],
+            'phone' => $data['phone'],
+            'amount' => $data['amount'],
+            'currency' => $loan->currency ?? 'ZMW',
+            'status' => 'pending',
+            'expires_at' => now()->addMinutes(15),
+        ]);
+
+        dispatch(new \App\Jobs\InitiateMobileMoneyPaymentJob($intent));
 
         return $this->success([
-            'payment_reference' => $paymentRef,
+            'payment_reference' => $intent->reference,
             'loan_reference' => $data['loan_reference'],
-            'amount' => (float) $data['amount'],
+            'amount' => (float) $intent->amount,
             'status' => 'pending',
-            'message' => 'Payment initiated. Use the reference to confirm.',
+            'message' => 'Payment request sent to the payer\'s phone. Check the loan status for the result.',
         ], 'Payment initiated.', 201);
     }
 }

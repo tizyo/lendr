@@ -96,6 +96,30 @@ class FundService
         });
     }
 
+    /** Take a reversed repayment back out of the fund. */
+    public function reverseRepayment(Model $payment, float $amount, ?int $userId): FundTransaction
+    {
+        return DB::transaction(fn () => $this->debit(
+            $amount,
+            FundTransactionType::RepaymentReversal,
+            $payment,
+            $userId,
+            "Repayment reversed: {$payment->receipt_number}",
+        ));
+    }
+
+    /** Take a reversed payment's penalty share back out of the fund. */
+    public function reversePenalty(Model $payment, float $amount, ?int $userId): FundTransaction
+    {
+        return DB::transaction(fn () => $this->debit(
+            $amount,
+            FundTransactionType::PenaltyReversal,
+            $payment,
+            $userId,
+            "Penalty reversed: {$payment->receipt_number}",
+        ));
+    }
+
     /**
      * Debit fund for an expense.
      */
@@ -216,6 +240,9 @@ class FundService
         $fields += match ($type) {
             FundTransactionType::Disburse => ['total_disbursed' => (float) $this->bcround(bcadd((string) $balance->total_disbursed, (string) $amount, 10))],
             FundTransactionType::Withdrawal => ['total_expenses' => (float) $this->bcround(bcadd((string) $balance->total_expenses, (string) $amount, 10))],
+            // Undo the repayment in the totals too, so the fund still reconciles.
+            FundTransactionType::RepaymentReversal => ['total_repaid' => (float) $this->bcround(bcsub((string) $balance->total_repaid, (string) $amount, 10))],
+            FundTransactionType::PenaltyReversal => ['total_penalties' => (float) $this->bcround(bcsub((string) $balance->total_penalties, (string) $amount, 10))],
             default => [],
         };
 

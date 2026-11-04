@@ -35,9 +35,9 @@
         <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
           <div class="flex items-center justify-between mb-3">
             <p class="text-sm font-semibold text-gray-800">Credit Score</p>
-            <span v-if="creditScore.score" class="text-xs font-mono text-gray-400">
-              Updated {{ creditScore.updated_at ?? 'recently' }}
-            </span>
+            <Link v-if="creditScore.score && creditScore.total_loans" :href="route('pwa.credit-score')" class="text-xs font-medium text-emerald-600">
+              See what shapes it →
+            </Link>
           </div>
           <div v-if="loadingScore" class="h-16 flex items-center justify-center">
             <svg class="w-5 h-5 animate-spin text-emerald-400" fill="none" viewBox="0 0 24 24">
@@ -45,7 +45,7 @@
               <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
             </svg>
           </div>
-          <div v-else-if="!creditScore.score" class="text-sm text-gray-400 italic text-center py-2">
+          <div v-else-if="!creditScore.score || !creditScore.total_loans" class="text-sm text-gray-400 italic text-center py-2">
             No score yet — complete KYC and make a loan payment to build your score.
           </div>
           <div v-else>
@@ -224,7 +224,7 @@
 
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
-import { router } from '@inertiajs/vue3'
+import { Link, router } from '@inertiajs/vue3'
 import axios from 'axios'
 import PwaLayout from '@/pwa/components/PwaLayout.vue'
 import { usePwaAuthStore } from '@/pwa/stores/auth.js'
@@ -336,7 +336,7 @@ async function logout() {
   try {
     // Stop this phone receiving the borrower's alerts before the token is revoked.
     await usePushNotifications().disable().catch(() => {})
-    await axios.post('/api/v1/auth/logout')
+    await axios.post('/api/v1/borrower/auth/logout')
   } finally {
     auth.clearAuth()
     router.visit(route('pwa.auth.login'))

@@ -12,10 +12,12 @@ enum PaymentMethod: string
     case Cheque = 'cheque';
     case Flutterwave = 'flutterwave';
     case Pawapay = 'pawapay';
+    case Lipila = 'lipila'; // borrower app mobile-money aggregator
 
     public function label(): string
     {
         return match ($this) {
+            self::Lipila => 'Lipila',
             self::Cash => 'Cash',
             self::BankTransfer => 'Bank Transfer',
             self::AirtelMoney => 'Airtel Money',
@@ -35,6 +37,7 @@ enum PaymentMethod: string
             self::ZamtelKwacha,
             self::Flutterwave,
             self::Pawapay,
+            self::Lipila,
         ]);
     }
 }

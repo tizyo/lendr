@@ -31,7 +31,7 @@
       </p>
 
       <!-- Contact CTA -->
-      <a href="mailto:support@lendr.app"
+      <a :href="`mailto:${supportEmail}`"
         class="inline-flex items-center gap-2 font-semibold px-6 py-3 rounded-xl text-sm transition shadow-sm mb-4"
         :class="isCancelled
           ? 'bg-neutral-800 hover:bg-neutral-700 text-white shadow-neutral-200'
@@ -61,6 +61,7 @@ import { Link, usePage } from '@inertiajs/vue3'
 const props = defineProps({
   status:     { type: String, default: 'suspended' },
   tenantName: { type: String, default: '' },
+  supportEmail: { type: String, default: 'support@lendr.app' },
 })
 
 const isCancelled = computed(() => props.status === 'cancelled')

@@ -76,6 +76,7 @@ function staffAlerted(string $type): bool
 
 beforeEach(function () {
     momoSettings(['airtel_client_id' => 'id', 'airtel_client_secret' => 'secret', 'pawapay_api_key' => 'pp-key']);
+    fundTheBook();
 });
 
 // ─── Rejected → reversed ─────────────────────────────────────────────────────

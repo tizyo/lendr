@@ -5,7 +5,6 @@ namespace App\Services\Payment;
 use App\Models\Landlord\TenantWallet;
 use App\Models\Tenant\DisbursementLog;
 use Illuminate\Http\Client\Response;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 
 /**
@@ -166,7 +165,7 @@ class PayoutStatusChecker
             ];
         }
 
-        $s = DB::table('settings')->pluck('value', 'key');
+        $s = \App\Support\TenantSettings::all(); // decrypts credentials
         $env = fn (string $key) => $s->get($key) === 'production';
 
         return match ($log->gateway) {

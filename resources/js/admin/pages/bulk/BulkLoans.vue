@@ -100,11 +100,13 @@
         <div>
           <label class="label">Disbursement Method *</label>
           <select v-model="disburseForm.method" class="input w-full">
-            <option value="mobile_money">Mobile Money</option>
-            <option value="bank_transfer">Bank Transfer</option>
             <option value="cash">Cash</option>
-            <option value="cheque">Cheque</option>
+            <option value="bank_transfer">Bank Transfer</option>
+            <option value="airtel_money">Airtel Money (payout to borrower's number)</option>
+            <option value="mtn_momo">MTN MoMo (payout to borrower's number)</option>
+            <option value="zamtel_kwacha">Zamtel Kwacha (payout to borrower's number)</option>
           </select>
+          <p class="text-xs text-neutral-500 mt-1">Each loan goes through the same checks as disbursing it from its own page. Loans that can't go ahead are listed with the reason.</p>
         </div>
         <div>
           <label class="label">Disbursement Date *</label>
@@ -140,7 +142,7 @@ const resultErrors     = ref([])
 const showDisburseModal = ref(false)
 const today = new Date().toISOString().slice(0, 10)
 
-const disburseForm = ref({ method: 'mobile_money', date: today })
+const disburseForm = ref({ method: 'cash', date: today })
 
 const filteredLoans = computed(() => {
   if (!statusFilter.value) return props.loans

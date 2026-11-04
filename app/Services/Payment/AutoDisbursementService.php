@@ -147,7 +147,10 @@ class AutoDisbursementService
                 'narration' => "LENDR Loan {$loan->loan_number} disbursement",
                 'currency' => $loan->currency ?? 'ZMW',
                 'reference' => $reference,
-                'callback_url' => url('/api/webhooks/flutterwave'),
+                // Was /api/webhooks/flutterwave, which doesn't exist (routes live under /api/v1).
+                'callback_url' => tenant('id')
+                    ? route('api.v1.webhooks.tenant', ['provider' => 'flutterwave', 'tenant' => tenant('id')])
+                    : route('api.v1.webhooks.flutterwave'),
                 'beneficiary_name' => $loan->borrower?->first_name.' '.($loan->borrower?->last_name ?? ''),
             ]);
 

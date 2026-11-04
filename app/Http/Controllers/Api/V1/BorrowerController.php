@@ -72,7 +72,7 @@ class BorrowerController extends BaseApiController
             );
         }
 
-        $data = $request->validated();
+        $data = $request->borrowerData(); // individual or corporate, the other type's fields blank
         $data['borrower_number'] = $this->generateBorrowerNumber();
 
         $borrower = Borrower::create($data);
@@ -90,7 +90,7 @@ class BorrowerController extends BaseApiController
 
     public function update(UpdateBorrowerRequest $request, Borrower $borrower): JsonResponse
     {
-        $borrower->update($request->validated());
+        $borrower->update($request->updateData());
 
         return $this->success($this->formatBorrower($borrower->fresh()), 'Borrower updated successfully.');
     }

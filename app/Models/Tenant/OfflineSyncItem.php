@@ -12,6 +12,7 @@ class OfflineSyncItem extends Model
     protected $fillable = [
         'user_id',
         'action',
+        'client_key',
         'payload',
         'status',
         'error_message',

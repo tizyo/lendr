@@ -40,6 +40,22 @@ class StoreLoanRequest extends FormRequest
             'guarantor_phone' => ['nullable', 'string', 'max:20'],
             'guarantor_relationship' => ['nullable', 'string', 'max:100'],
             'notes' => ['nullable', 'string', 'max:2000'],
+            'agent_id' => ['nullable', \Illuminate\Validation\Rule::exists('agents', 'id')->where('status', 'active')->whereNull('deleted_at')],
         ];
+    }
+
+    /** The plan's own limits (amount, tenure, loan type, switched on). */
+    public function after(): array
+    {
+        return [function (\Illuminate\Validation\Validator $validator) {
+            if ($validator->errors()->isNotEmpty()) {
+                return;
+            }
+
+            $plan = \App\Models\Tenant\LoanPlan::find($this->loan_plan_id);
+            foreach ($plan?->violations((float) $this->principal_amount, (int) $this->tenure, (int) $this->loan_type_id) ?? [] as $field => $message) {
+                $validator->errors()->add($field, $message);
+            }
+        }];
     }
 }

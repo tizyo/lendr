@@ -196,7 +196,7 @@ test('cannot restructure a submitted loan', function () {
             'reason' => 'Not allowed.',
         ])
         ->assertUnprocessable()
-        ->assertJsonPath('message', 'Only active, frozen, or defaulted loans can be restructured.');
+        ->assertJsonPath('message', 'Only running loans (active, frozen or defaulted) can be restructured.');
 })->group('restructure');
 
 test('cannot restructure a completed loan', function () {

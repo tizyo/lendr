@@ -56,19 +56,20 @@ test('schedule row count matches tenure in months', function () {
     expect(count($result['schedule']))->toBe(6);
 });
 
-test('schedule instalment amounts sum to principal plus interest', function () {
-    // Processing/insurance fees are collected upfront at disbursement, not
-    // amortized into the repayment schedule — schedule rows carry principal
-    // + interest only, so they sum to less than total_payable by the fee amount.
+test('schedule instalments add up to everything the borrower owes', function () {
+    // The full principal is paid out and processing/insurance fees are owed on top
+    // (total_payable), so the fees are spread over the instalments as fee_due.
+    // Without them the schedule could be fully paid while the loan still had a balance.
     $plan = makePlan(['interest_type' => 'flat', 'repayment_schedule' => 'monthly']);
     $svc = new LoanCalculatorService;
     $result = $svc->calculate($plan, 12000, 12, now()->toDateString());
 
     $scheduleSum = array_sum(array_column($result['schedule'], 'total_due'));
-    $expected = $result['principal_amount'] + $result['interest_amount'];
+    $feeSum = array_sum(array_column($result['schedule'], 'fee_due'));
 
     // Allow ±0.02 for rounding across instalments
-    expect(abs($scheduleSum - $expected))->toBeLessThan(0.03);
+    expect(abs($scheduleSum - $result['total_payable']))->toBeLessThan(0.03)
+        ->and(round($feeSum, 2))->toBe(round($result['processing_fee'] + $result['insurance_fee'], 2));
 });
 
 test('schedule due dates are sequential and monthly', function () {

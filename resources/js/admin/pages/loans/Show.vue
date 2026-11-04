@@ -305,7 +305,43 @@
     </div>
 
     <!-- Tab: Documents -->
-    <div v-else-if="activeTab === 'documents'">
+    <div v-else-if="activeTab === 'documents'" class="space-y-5">
+      <!-- E-signature: the borrower signs the agreement with a code sent to their phone -->
+      <div class="lendr-card p-6 space-y-3">
+        <div class="flex items-center justify-between gap-3">
+          <div>
+            <h3 class="font-semibold text-neutral-800">Agreement e-signature</h3>
+            <p class="text-xs text-neutral-500 mt-0.5">The borrower reads back a code we text to {{ loan.borrower?.phone || 'their phone' }}.</p>
+          </div>
+          <span v-if="agreement" class="text-xs rounded-full px-2.5 py-0.5 capitalize"
+            :class="agreement.status === 'signed' ? 'bg-emerald-50 text-emerald-700' : 'bg-neutral-100 text-neutral-600'">
+            {{ agreement.status.replace('_', ' ') }}
+          </span>
+        </div>
+
+        <p v-if="agreement?.status === 'signed'" class="text-sm text-neutral-700">
+          Signed by {{ agreement.signed_by_name }} ({{ agreement.signed_by_phone }}) on {{ agreement.signed_at }}.
+        </p>
+
+        <div v-else-if="canDo('loans.edit')" class="flex flex-wrap items-end gap-3">
+          <button v-if="!agreement?.has_pdf" @click="generateAgreement" :disabled="esign.busy" class="btn-secondary text-sm">
+            {{ esign.busy ? 'Preparing…' : 'Prepare agreement' }}
+          </button>
+          <template v-else>
+            <button @click="sendSigningCode" :disabled="esign.busy" class="btn-secondary text-sm">
+              {{ agreement.status === 'otp_sent' ? 'Send a new code' : 'Text signing code' }}
+            </button>
+            <template v-if="agreement.status === 'otp_sent'">
+              <input v-model="esign.code" maxlength="6" inputmode="numeric" class="input w-32 text-sm" placeholder="6-digit code" />
+              <button @click="signAgreement" :disabled="esign.busy || esign.code.length !== 6" class="btn-primary text-sm">Sign</button>
+            </template>
+          </template>
+        </div>
+        <a v-if="agreement?.has_pdf" :href="route('api.v1.loans.agreement.download', loan.id)" target="_blank" class="text-xs text-primary-600 hover:underline">
+          View agreement PDF
+        </a>
+      </div>
+
       <div class="lendr-card p-6">
         <div class="flex items-center justify-between mb-4">
           <h3 class="font-semibold text-neutral-800">Loan Documents</h3>
@@ -497,8 +533,8 @@
                 <td class="px-4 py-3 text-neutral-600">{{ t.requested_by ?? '—' }}</td>
                 <td class="px-4 py-3 text-neutral-600">{{ t.approved_by ?? '—' }}</td>
                 <td v-if="can.topup" class="px-4 py-3 text-right">
-                  <template v-if="t.status === 'pending'">
-                    <button @click="approveTopup(t)" class="text-xs text-emerald-600 hover:underline mr-3">Approve</button>
+                  <template v-if="t.status === 'pending' && can.approve_topup">
+                    <button @click="openApproveTopup(t)" class="text-xs text-emerald-600 hover:underline mr-3">Approve</button>
                     <button @click="openRejectTopup(t)" class="text-xs text-red-500 hover:underline">Reject</button>
                   </template>
                 </td>
@@ -511,11 +547,59 @@
 
     <!-- ─── Modals ──────────────────────────────────────────────────────────── -->
 
+    <!-- Approve top-up: record how the extra money was paid out -->
+    <div v-if="approveTopupModal.show" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+      <div class="bg-white rounded-xl shadow-xl w-full max-w-md p-6">
+        <h3 class="text-lg font-semibold text-neutral-900 mb-1">Approve top-up of K {{ approveTopupModal.topup?.topup_amount }}</h3>
+        <p class="text-sm text-neutral-500 mb-4">
+          Pay the borrower first, then record it here. The amount leaves the fund and the unpaid balance is rescheduled over the new tenure.
+        </p>
+        <div class="space-y-4">
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="label">Paid by <span class="text-red-500">*</span></label>
+              <select v-model="approveTopupModal.method" class="input w-full">
+                <option value="cash">Cash</option>
+                <option value="bank_transfer">Bank Transfer</option>
+              </select>
+            </div>
+            <div>
+              <label class="label">Date paid</label>
+              <input v-model="approveTopupModal.date" type="date" class="input w-full" />
+            </div>
+          </div>
+          <div>
+            <label class="label">Reference</label>
+            <input v-model="approveTopupModal.reference" type="text" class="input w-full" placeholder="Receipt or bank reference" />
+          </div>
+        </div>
+        <div class="flex gap-3 justify-end mt-5">
+          <button @click="approveTopupModal.show = false" class="btn-secondary">Cancel</button>
+          <button @click="confirmApproveTopup" :disabled="approveTopupModal.submitting" class="btn-primary">
+            {{ approveTopupModal.submitting ? 'Approving…' : 'Approve & record payout' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- Generic action modal (approve / deny / freeze / write_off / unfreeze) -->
     <div v-if="actionModal.show" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
       <div class="bg-white rounded-xl shadow-xl w-full max-w-md p-6">
         <h3 class="text-lg font-semibold text-neutral-900 mb-1 capitalize">{{ actionModal.title }}</h3>
         <p class="text-sm text-neutral-500 mb-4">{{ actionModal.desc }}</p>
+
+        <!-- Risk policies this application breaks (approval refused until each is overridden) -->
+        <div v-if="riskBlocks.length" class="rounded-lg border border-red-200 bg-red-50 p-4 mb-4 space-y-3">
+          <p class="text-sm font-semibold text-red-800">Blocked by your risk policies</p>
+          <div v-for="f in riskBlocks" :key="f.id" class="space-y-1">
+            <p class="text-sm text-red-900"><span class="font-medium">{{ f.policy }}:</span> {{ f.detail }}</p>
+            <input v-model="f.reason" type="text" class="input w-full text-sm" placeholder="Reason for overriding (required)" />
+          </div>
+          <button @click="overrideRiskAndApprove" :disabled="actionModal.submitting || riskBlocks.some(f => !f.reason?.trim())" class="btn-primary text-sm">
+            Override and approve
+          </button>
+        </div>
+
         <textarea
           v-model="actionModal.notes"
           :placeholder="actionModal.required ? 'Reason is required…' : 'Optional notes…'"
@@ -571,10 +655,24 @@
             <label class="label">Notes</label>
             <input v-model="disburseForm.notes" type="text" class="input w-full" />
           </div>
+
+          <!-- CRB alert: borrower has active loans at another lender -->
+          <div v-if="crbAlert" class="rounded-lg border border-amber-300 bg-amber-50 p-4 space-y-2">
+            <p class="text-sm font-semibold text-amber-900">This borrower has {{ crbAlert.active_loan_count }} active loan{{ crbAlert.active_loan_count === 1 ? '' : 's' }} at another lender.</p>
+            <p class="text-xs text-amber-800">
+              Credit score {{ crbAlert.credit_score ?? '—' }}<template v-if="crbAlert.score_band"> ({{ crbAlert.score_band }})</template>
+              · Risk {{ crbAlert.risk_level ?? '—' }}
+            </p>
+            <label class="label text-amber-900">Why are you going ahead? <span class="text-red-500">*</span></label>
+            <textarea v-model="crbOverrideReason" rows="2" class="input w-full" placeholder="e.g. Confirmed the other loan is nearly settled" />
+          </div>
         </div>
         <div class="flex gap-3 justify-end mt-5">
-          <button @click="showDisburse = false" class="btn-secondary">Cancel</button>
-          <button @click="confirmDisburse" :disabled="disburseSubmitting" class="btn-primary">
+          <button @click="showDisburse = false; crbAlert = null" class="btn-secondary">Cancel</button>
+          <button v-if="crbAlert" @click="confirmDisburse(true)" :disabled="disburseSubmitting || !crbOverrideReason.trim()" class="btn-primary">
+            {{ disburseSubmitting ? 'Processing…' : 'Disburse anyway' }}
+          </button>
+          <button v-else @click="confirmDisburse(false)" :disabled="disburseSubmitting" class="btn-primary">
             {{ disburseSubmitting ? 'Processing…' : 'Disburse & Activate' }}
           </button>
         </div>
@@ -840,6 +938,7 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { Link, router } from '@inertiajs/vue3'
 import axios from 'axios'
 import AppLayout from '@/admin/components/layout/AppLayout.vue'
+import { useCan } from '@/admin/composables/useCan.js'
 import LoanStatusBadge from '@/admin/components/loans/LoanStatusBadge.vue'
 
 // Inline detail row component
@@ -887,7 +986,26 @@ const actionConfig = {
 
 function openAction(type) {
   const cfg = actionConfig[type]
+  riskBlocks.value = []
   actionModal.value = { show: true, type, title: cfg.title, desc: cfg.desc, notes: '', required: cfg.required, submitting: false }
+}
+
+// Risk-policy blocks returned by a refused approval (409, reason risk_block).
+const riskBlocks = ref([])
+
+async function overrideRiskAndApprove() {
+  actionModal.value.submitting = true
+  try {
+    for (const f of riskBlocks.value) {
+      await axios.post(route('api.v1.risk-flags.override', f.id), { override_reason: f.reason })
+    }
+    riskBlocks.value = []
+    actionModal.value.submitting = false
+    await confirmAction()
+  } catch (e) {
+    pushToast('error', e.response?.data?.message ?? 'Could not override the risk flags.')
+    actionModal.value.submitting = false
+  }
 }
 
 async function confirmAction() {
@@ -906,6 +1024,9 @@ async function confirmAction() {
     actionModal.value.show = false
     router.reload({ only: ['loan'] })
   } catch (e) {
+    if (e.response?.status === 409 && e.response.data?.risk_flags) {
+      riskBlocks.value = e.response.data.risk_flags.map(f => ({ ...f, reason: '' }))
+    }
     pushToast('error', e.response?.data?.message ?? 'Action failed.')
     actionModal.value.submitting = false
   }
@@ -921,19 +1042,32 @@ const disburseForm = ref({
   notes: '',
 })
 const disburseSubmitting = ref(false)
+const crbAlert = ref(null)
+const crbOverrideReason = ref('')
 
-async function confirmDisburse() {
+async function confirmDisburse(override = false) {
   if (!disburseForm.value.disbursement_method || !disburseForm.value.disbursement_date) {
     pushToast('warning', 'Disbursement method and date are required.')
     return
   }
   disburseSubmitting.value = true
   try {
-    await axios.post(route('api.v1.loans.disburse', props.loan.id), disburseForm.value)
+    const payload = override
+      ? { ...disburseForm.value, crb_override: true, crb_override_reason: crbOverrideReason.value }
+      : disburseForm.value
+    const { data } = await axios.post(route('api.v1.loans.disburse', props.loan.id), payload)
     showDisburse.value = false
+    crbAlert.value = null
+    pushToast('success', data.message ?? 'Loan disbursed.')
     router.reload({ only: ['loan'] })
   } catch (e) {
-    pushToast('error', e.response?.data?.message ?? 'Disbursement failed.')
+    if (e.response?.status === 409 && e.response.data?.crb) {
+      crbAlert.value = e.response.data.crb
+    } else {
+      const errors = e.response?.data?.errors
+      pushToast('error', errors ? Object.values(errors).flat()[0] : (e.response?.data?.message ?? 'Disbursement failed.'))
+    }
+  } finally {
     disburseSubmitting.value = false
   }
 }
@@ -976,6 +1110,40 @@ const paymentForm = ref({
   notes: '',
 })
 const paymentSubmitting = ref(false)
+
+// ─── E-signature ─────────────────────────────────────────────────────────────
+const canDo = useCan()
+const agreement = ref(null)
+const esign = ref({ busy: false, code: '' })
+
+async function esignCall(fn, success) {
+  esign.value.busy = true
+  try {
+    const { data } = await fn()
+    if (data?.data?.status) agreement.value = data.data
+    if (success) pushToast('success', typeof success === 'function' ? success(data) : success)
+  } catch (e) {
+    const errors = e.response?.data?.errors
+    pushToast('error', errors ? Object.values(errors).flat()[0] : (e.response?.data?.message ?? 'Something went wrong.'))
+  } finally {
+    esign.value.busy = false
+  }
+}
+
+function generateAgreement() {
+  esignCall(() => axios.post(route('api.v1.loans.agreement.generate', props.loan.id)), 'Agreement prepared.')
+}
+
+async function sendSigningCode() {
+  await esignCall(() => axios.post(route('api.v1.loans.agreement.send-otp', props.loan.id)), 'Code sent to the borrower\'s phone.')
+  const { data } = await axios.get(route('api.v1.loans.agreement.show', props.loan.id))
+  agreement.value = data.data
+}
+
+function signAgreement() {
+  esignCall(() => axios.post(route('api.v1.loans.agreement.sign', props.loan.id), { otp: esign.value.code }), 'Agreement signed.')
+    .then(() => { esign.value.code = '' })
+}
 
 // ─── Documents ───────────────────────────────────────────────────────────────
 const documents   = ref([])
@@ -1075,6 +1243,10 @@ onMounted(async () => {
     collateralItems.value = coll.data.data  ?? []
     topups.value          = tups.data.data  ?? []
   } catch { /* silent */ }
+
+  try {
+    agreement.value = (await axios.get(route('api.v1.loans.agreement.show', props.loan.id))).data.data
+  } catch { /* the e-signature card shows "Prepare agreement" */ }
 })
 
 function openGuarantorForm(g = null) {
@@ -1196,15 +1368,31 @@ async function submitTopup() {
   }
 }
 
-async function approveTopup(t) {
-  if (!confirm(`Approve top-up of K ${t.topup_amount}? This will increase the loan principal and regenerate the schedule.`)) return
+const approveTopupModal = ref({ show: false, topup: null, method: 'cash', date: new Date().toISOString().slice(0, 10), reference: '', submitting: false })
+
+function openApproveTopup(t) {
+  approveTopupModal.value = { show: true, topup: t, method: 'cash', date: new Date().toISOString().slice(0, 10), reference: '', submitting: false }
+}
+
+async function confirmApproveTopup() {
+  const m = approveTopupModal.value
+  m.submitting = true
   try {
-    const { data } = await axios.post(route('api.v1.loans.topups.approve', { loan: props.loan.id, topup: t.id }))
-    const idx = topups.value.findIndex(x => x.id === t.id)
+    const { data } = await axios.post(route('api.v1.loans.topups.approve', { loan: props.loan.id, topup: m.topup.id }), {
+      disbursement_method: m.method,
+      disbursement_date: m.date || null,
+      disbursement_reference: m.reference || null,
+    })
+    const idx = topups.value.findIndex(x => x.id === m.topup.id)
     if (idx !== -1) topups.value[idx] = data.data
+    m.show = false
+    pushToast('success', 'Top-up approved and payout recorded.')
     router.reload({ only: ['loan'] })
   } catch (e) {
-    pushToast('error', e.response?.data?.message ?? 'Approval failed.')
+    const errors = e.response?.data?.errors
+    pushToast('error', errors ? Object.values(errors).flat()[0] : (e.response?.data?.message ?? 'Approval failed.'))
+  } finally {
+    m.submitting = false
   }
 }
 

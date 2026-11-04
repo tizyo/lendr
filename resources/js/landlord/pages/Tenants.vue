@@ -181,6 +181,19 @@
               <input v-model="createForm.timezone" type="text" placeholder="Africa/Lusaka" class="w-full border border-neutral-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" />
             </div>
           </div>
+          <div class="pt-2 border-t border-neutral-100">
+            <p class="text-xs text-neutral-500 mb-3">First Super Admin (optional): they get an email invitation to choose their password. You can also add them later from the workspace's Users tab.</p>
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-sm font-medium text-neutral-700 mb-1">Admin name</label>
+                <input v-model="createForm.admin_name" type="text" class="w-full border border-neutral-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" />
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-neutral-700 mb-1">Admin email</label>
+                <input v-model="createForm.admin_email" type="email" class="w-full border border-neutral-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" />
+              </div>
+            </div>
+          </div>
           <p v-if="createError" class="text-sm text-red-600">{{ createError }}</p>
         </div>
         <div class="px-6 py-4 border-t border-neutral-200 flex justify-end gap-3">
@@ -478,7 +491,7 @@ const filters    = reactive({ search: '', status: '', plan: '', page: 1 })
 const showCreate  = ref(false)
 const creating    = ref(false)
 const createError = ref('')
-const createForm  = reactive({ name: '', plan: 'starter', subdomain: '', currency: 'ZMW', timezone: 'Africa/Lusaka' })
+const createForm  = reactive({ name: '', plan: 'starter', subdomain: '', currency: 'ZMW', timezone: 'Africa/Lusaka', admin_name: '', admin_email: '' })
 
 // Edit
 const showEdit    = ref(false)
@@ -570,7 +583,7 @@ function changePage(page) {
 function closeCreate() {
   showCreate.value  = false
   createError.value = ''
-  Object.assign(createForm, { name: '', plan: 'starter', subdomain: '', currency: 'ZMW', timezone: 'Africa/Lusaka' })
+  Object.assign(createForm, { name: '', plan: 'starter', subdomain: '', currency: 'ZMW', timezone: 'Africa/Lusaka', admin_name: '', admin_email: '' })
 }
 
 async function submitCreate() {
@@ -578,12 +591,14 @@ async function submitCreate() {
   creating.value    = true
   createError.value = ''
   try {
-    await axios.post('/api/v1/landlord/tenants', createForm)
+    const { data } = await axios.post('/api/v1/landlord/tenants', createForm)
     closeCreate()
     filters.page = 1
     await fetchTenants()
+    if (data?.message) window.alert(data.message)
   } catch (e) {
-    createError.value = e.response?.data?.message ?? 'Failed to create tenant.'
+    const errors = e.response?.data?.errors
+    createError.value = errors ? Object.values(errors).flat().join(' ') : (e.response?.data?.message ?? 'Failed to create tenant.')
   } finally {
     creating.value = false
   }

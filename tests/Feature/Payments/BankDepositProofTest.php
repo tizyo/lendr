@@ -17,6 +17,7 @@ use Illuminate\Support\Facades\Storage;
 
 beforeEach(function () {
     Storage::fake('private');
+    fundTheBook();
 });
 
 function withBankAccount(): void
@@ -39,7 +40,8 @@ function disbursedLoanFor(Borrower $borrower, User $admin): Loan
 
     test()->actingAs($admin)->postJson(route('api.v1.loans.disburse', $loan), [
         'disbursement_method' => 'cash',
-        'disbursement_date' => now()->toDateString(),
+        // A week back, so deposits dated "yesterday" fall after the money went out.
+        'disbursement_date' => now()->subWeek()->toDateString(),
     ])->assertOk();
 
     return $loan->fresh();

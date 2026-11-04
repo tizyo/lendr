@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Webhook;
 
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -19,7 +18,7 @@ class MtnWebhookController extends BaseWebhookController
 
     protected function verifySignature(Request $request): bool
     {
-        $secret = DB::table('settings')->where('key', 'mtn_callback_api_key')->value('value');
+        $secret = \App\Support\TenantSettings::get('mtn_callback_api_key');
 
         if (! $secret) {
             Log::warning('[Webhook:mtn_momo] No callback API key configured — rejecting unsigned request', ['ip' => $request->ip()]);
@@ -27,8 +26,12 @@ class MtnWebhookController extends BaseWebhookController
             return false;
         }
 
-        // MTN uses a static callback API key rather than HMAC
-        return hash_equals($secret, $request->header('X-MTN-Callback-Api-Key', ''));
+        // MTN signs nothing and can't add headers to its callbacks, so the key also
+        // travels in the callback URL we give it (X-Callback-Url, see
+        // InitiateMobileMoneyPaymentJob). Either way it must match exactly.
+        $given = (string) ($request->header('X-MTN-Callback-Api-Key') ?: $request->query('key', ''));
+
+        return $given !== '' && hash_equals($secret, $given);
     }
 
     protected function parsePayload(Request $request): array

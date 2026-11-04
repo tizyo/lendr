@@ -41,7 +41,8 @@ class LoanCalculatorService
     public function calculate(LoanPlan $plan, float $principal, int $tenure, string $disbursementDate): array
     {
         $amounts = $this->calculateAmounts($plan, $principal, $tenure);
-        $schedule = $this->generateSchedule($plan, $principal, $tenure, $disbursementDate, $amounts['interest_amount']);
+        $schedule = $this->generateSchedule($plan, $principal, $tenure, $disbursementDate, $amounts['interest_amount'],
+            $amounts['processing_fee'] + $amounts['insurance_fee']);
 
         return array_merge($amounts, ['schedule' => $schedule]);
     }
@@ -73,7 +74,46 @@ class LoanCalculatorService
     /**
      * Generate instalment schedule rows.
      */
-    public function generateSchedule(LoanPlan $plan, float $principal, int $tenure, string $disbursementDate, float $interestAmount): array
+    /**
+     * $feeAmount: processing and insurance fees. They're part of what the borrower
+     * owes (total_payable), so they're spread over the instalments as fee_due;
+     * without them the schedule could be fully paid while the loan still showed a
+     * balance.
+     */
+    public function generateSchedule(LoanPlan $plan, float $principal, int $tenure, string $disbursementDate, float $interestAmount, float $feeAmount = 0): array
+    {
+        return $this->spread($this->buildSchedule($plan, $principal, $tenure, $disbursementDate, $interestAmount), 'fee_due', $feeAmount);
+    }
+
+    /**
+     * Add an amount to one component of every instalment (evenly, the last one
+     * taking the cents), keeping total_due and outstanding in step.
+     */
+    public function spread(array $schedule, string $field, float $amount): array
+    {
+        $count = count($schedule);
+        $total = $this->bcround((string) $amount);
+
+        if ($count === 0 || bccomp($total, '0', self::SCALE) <= 0) {
+            return $schedule;
+        }
+
+        $share = $this->bcround(bcdiv($total, (string) $count, self::RATE_SCALE));
+
+        foreach ($schedule as $i => $row) {
+            $add = $i === $count - 1
+                ? $this->bcround(bcsub($total, bcmul($share, (string) ($count - 1), self::RATE_SCALE), self::RATE_SCALE))
+                : $share;
+
+            $schedule[$i][$field] = (float) $this->bcround(bcadd((string) $row[$field], $add, self::RATE_SCALE));
+            $schedule[$i]['total_due'] = (float) $this->bcround(bcadd((string) $row['total_due'], $add, self::RATE_SCALE));
+            $schedule[$i]['outstanding'] = (float) $this->bcround(bcadd((string) $row['outstanding'], $add, self::RATE_SCALE));
+        }
+
+        return $schedule;
+    }
+
+    private function buildSchedule(LoanPlan $plan, float $principal, int $tenure, string $disbursementDate, float $interestAmount): array
     {
         $disbursed = Carbon::parse($disbursementDate);
         $schedule = [];

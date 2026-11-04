@@ -7,6 +7,7 @@ use Database\Factories\Tenant\PaymentFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
@@ -29,6 +30,10 @@ class Payment extends Model
         'interest_allocated',
         'penalty_allocated',
         'fee_allocated',
+        'unallocated_amount',
+        'reversed_at',
+        'reversed_by',
+        'reversal_reason',
         'payment_method',
         'payment_date',
         'reference',
@@ -50,6 +55,8 @@ class Payment extends Model
             'interest_allocated' => 'decimal:2',
             'penalty_allocated' => 'decimal:2',
             'fee_allocated' => 'decimal:2',
+            'unallocated_amount' => 'decimal:2',
+            'reversed_at' => 'datetime',
             'is_overdue_payment' => 'boolean',
         ];
     }
@@ -70,5 +77,11 @@ class Payment extends Model
     public function recordedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'recorded_by');
+    }
+
+    /** Which instalments this payment paid, and how much of each part. */
+    public function allocations(): HasMany
+    {
+        return $this->hasMany(PaymentAllocation::class);
     }
 }

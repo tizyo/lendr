@@ -57,12 +57,21 @@ class User extends Authenticatable
             'password' => 'hashed',
             'is_active' => 'boolean',
             'force_password_reset' => 'boolean',
+            'password_changed_at' => 'datetime',
             'role' => UserRole::class,
         ];
     }
 
     protected static function booted(): void
     {
+        // Every way a password gets set (profile, reset link, invitation, admin)
+        // starts the expiry clock again (Settings → Security → password expiry).
+        static::saving(function (self $user) {
+            if ($user->isDirty('password') && $user->password && \Illuminate\Support\Facades\Schema::hasColumn('users', 'password_changed_at')) {
+                $user->password_changed_at = now();
+            }
+        });
+
         // Keep the spatie role assignment in sync with the `role` enum column
         // whenever it changes, regardless of which code path saved the model.
         static::saved(function (self $user) {

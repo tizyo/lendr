@@ -38,7 +38,7 @@
           </span>
         </div>
         <div class="flex items-center gap-3 shrink-0">
-          <Link :href="route('billing.index', { plan: 'growth' })"
+          <Link v-if="can('billing.manage')" :href="route('billing.index', { plan: 'growth' })"
             class="text-xs font-semibold text-red-900 bg-red-200 hover:bg-red-300 px-3 py-1 rounded-lg transition whitespace-nowrap">
             Upgrade now
           </Link>
@@ -51,7 +51,7 @@
       </div>
 
       <!-- Starter plan upgrade nudge -->
-      <div v-if="isStarterPlan && !isDismissed('upgrade')"
+      <div v-if="isStarterPlan && can('billing.manage') && !isDismissed('upgrade')"
         class="flex items-center justify-between gap-3 px-4 py-2.5 bg-gradient-to-r from-amber-50 to-orange-50 border-b border-amber-200 text-sm">
         <div class="flex items-center gap-2 min-w-0">
           <svg class="w-4 h-4 text-amber-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -110,7 +110,9 @@ import axios from 'axios'
 import Sidebar from './Sidebar.vue'
 import Topbar from './Topbar.vue'
 import FlashMessage from '../ui/FlashMessage.vue'
+import { useCan } from '@/admin/composables/useCan.js'
 
+const can = useCan()
 const sidebarCollapsed  = ref(false)
 const mobileSidebarOpen = ref(false)
 

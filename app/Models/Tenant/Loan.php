@@ -4,6 +4,7 @@ namespace App\Models\Tenant;
 
 use App\Enums\LoanStatus;
 use App\Enums\PaymentMethod;
+use App\Exceptions\LoanActionException;
 use App\Jobs\RecalculateCreditScoreJob;
 use Database\Factories\Tenant\LoanFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -20,6 +21,16 @@ class Loan extends Model
 
     protected static function booted(): void
     {
+        // Every way a loan gets created (staff, borrower app, open API, offers,
+        // marketplace, top-ups) refuses a blacklisted borrower.
+        static::creating(function (Loan $loan) {
+            $borrower = $loan->borrower_id ? Borrower::find($loan->borrower_id) : null;
+
+            if ($borrower?->is_blacklisted) {
+                throw LoanActionException::invalid("{$borrower->full_name} is blacklisted and can't be given a loan.");
+            }
+        });
+
         static::updated(function (Loan $loan) {
             if ($loan->wasChanged('status') && in_array($loan->status->value, ['completed', 'defaulted', 'written_off'])) {
                 dispatch(new RecalculateCreditScoreJob($loan->borrower_id));
@@ -57,6 +68,7 @@ class Loan extends Model
         'repayment_schedule',
         'penalty_rate',
         'grace_period_days',
+        'agent_id',
         'disbursement_method',
         'disbursement_account',
         'disbursement_reference',
@@ -118,6 +130,12 @@ class Loan extends Model
     public function borrower(): BelongsTo
     {
         return $this->belongsTo(Borrower::class);
+    }
+
+    /** The agent / DSA who brought the application in (earns a commission on disbursement). */
+    public function agent(): BelongsTo
+    {
+        return $this->belongsTo(Agent::class);
     }
 
     public function loanType(): BelongsTo

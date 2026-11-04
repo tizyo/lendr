@@ -76,7 +76,8 @@ class RiskPolicy extends Model
     {
         $max = (int) $this->value;
         $active = Loan::where('borrower_id', $ctx['borrower_id'] ?? 0)
-            ->whereIn('status', ['disbursed', 'active'])
+            // Every loan still owing counts, not only the up-to-date ones.
+            ->whereIn('status', ['disbursed', 'active', 'defaulted', 'frozen'])
             ->count();
 
         return $active >= $max

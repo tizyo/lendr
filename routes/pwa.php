@@ -28,6 +28,7 @@ Route::get('/loans', [AppController::class, 'loans'])->name('loans');
 Route::get('/payments', [AppController::class, 'payments'])->name('payments');
 Route::get('/notifications', [AppController::class, 'notifications'])->name('notifications');
 Route::get('/profile', [AppController::class, 'profile'])->name('profile');
+Route::get('/credit-score', [AppController::class, 'creditScore'])->name('credit-score');
 
 // KYC
 Route::get('/kyc', [AppController::class, 'kycOnboarding'])->name('kyc.onboarding');

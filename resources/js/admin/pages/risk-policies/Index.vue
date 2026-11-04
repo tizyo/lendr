@@ -1,8 +1,9 @@
 <template>
+  <AppLayout>
   <div class="max-w-5xl mx-auto py-8 px-4 space-y-6">
     <div class="flex items-center justify-between">
       <h1 class="text-2xl font-bold">Risk Management Policies</h1>
-      <button @click="openCreate" class="bg-green-600 text-white rounded px-4 py-2 text-sm hover:bg-green-700">
+      <button v-if="can('risk.manage')" @click="openCreate" class="bg-green-600 text-white rounded px-4 py-2 text-sm hover:bg-green-700">
         + New Policy
       </button>
     </div>
@@ -34,7 +35,7 @@
               <span :class="p.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'"
                 class="px-2 py-0.5 rounded-full text-xs">{{ p.is_active ? 'Active' : 'Inactive' }}</span>
             </td>
-            <td class="px-4 py-3 flex gap-2">
+            <td v-if="can('risk.manage')" class="px-4 py-3 flex gap-2">
               <button @click="editPolicy(p)" class="text-xs text-green-700 hover:underline">Edit</button>
               <button @click="deletePolicy(p)" class="text-xs text-red-600 hover:underline">Delete</button>
             </td>
@@ -93,11 +94,16 @@
       </div>
     </div>
   </div>
+  </AppLayout>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue'
 import axios from 'axios'
+import AppLayout from '@/admin/components/layout/AppLayout.vue'
+import { useCan } from '@/admin/composables/useCan.js'
+
+const can = useCan()
 
 const policies  = ref([])
 const ruleTypes = ref([])

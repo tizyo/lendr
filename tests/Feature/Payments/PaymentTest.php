@@ -211,10 +211,11 @@ test('a payment can be reversed by a user with payments.delete permission', func
 
     $this->actingAs($user)
         ->withHeaders(['Accept' => 'application/json'])
-        ->deleteJson(route('api.v1.payments.destroy', $payment))
+        ->deleteJson(route('api.v1.payments.destroy', $payment), ['reason' => 'Entered on the wrong loan'])
         ->assertOk();
 
     $this->assertSoftDeleted('payments', ['id' => $payment->id]);
+    expect($payment->fresh() ?? Payment::withTrashed()->find($payment->id))->reversal_reason->toBe('Entered on the wrong loan');
 
     $updated = $loan->fresh();
     expect((float) $updated->outstanding_balance)->toBe(6000.0)

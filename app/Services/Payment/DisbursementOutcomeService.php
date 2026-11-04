@@ -74,6 +74,11 @@ class DisbursementOutcomeService
             $this->fund->reverseDisbursement($loan, $userId, $reason);
             $this->reverseGl($loan, $userId);
 
+            // No money reached the borrower, so the agent hasn't earned anything yet.
+            \App\Models\Tenant\AgentCommission::where('loan_id', $loan->id)
+                ->whereIn('status', ['pending', 'approved'])
+                ->update(['status' => 'reversed']);
+
             $loan->schedule()->delete();
             $loan->update([
                 'status' => LoanStatus::Approved->value,

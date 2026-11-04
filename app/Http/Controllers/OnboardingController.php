@@ -67,7 +67,7 @@ class OnboardingController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
-        $centralDomain = env('CENTRAL_DOMAIN', 'localhost');
+        $centralDomain = config('tenancy.central_domain');
 
         $usesSharedPortal = in_array($request->input('plan'), self::SHARED_PORTAL_PLANS);
 

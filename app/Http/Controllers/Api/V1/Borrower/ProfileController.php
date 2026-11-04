@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\Api\V1\Borrower;
 
-use App\Enums\LoanStatus;
 use App\Http\Controllers\Api\V1\BaseApiController;
 use App\Jobs\InitiateMobileMoneyPaymentJob;
 use App\Models\Tenant\Borrower;
@@ -135,10 +134,19 @@ class ProfileController extends BaseApiController
         /** @var Borrower $borrower */
         $borrower = $request->user();
 
+        // The score is the one on the borrower's record (what staff and the risk
+        // policies see); the factors are worked out from this workspace's records,
+        // and stand in for the score until one has been recorded.
+        $scoring = app(\App\Services\CreditScoringService::class);
+        $breakdown = $scoring->breakdown($borrower);
+        $score = $borrower->credit_score !== null ? (int) $borrower->credit_score : $breakdown['score'];
+
         return $this->success([
-            'score' => $borrower->credit_score,
-            'band' => $this->scoreBand($borrower->credit_score),
-            'updated_at' => null, // Populated when credit scoring engine (P6) is built
+            ...$breakdown,
+            'score' => $score,
+            'score_band' => $scoring->scoreBand($score),
+            'band' => $scoring->scoreBand($score), // older app builds read "band"
+            'last_updated' => now()->toIso8601String(),
         ], 'OK');
     }
 
@@ -201,12 +209,13 @@ class ProfileController extends BaseApiController
             return $this->error('Loan not found.', 404);
         }
 
-        if (! in_array($loan->status->value, [LoanStatus::Active->value, LoanStatus::Disbursed->value])) {
+        // Defaulted and frozen loans still take repayments (the borrower is catching up).
+        if (! in_array($loan->status, \App\Services\Payment\PaymentService::PAYABLE_STATUSES, true)) {
             return $this->error('This loan is not eligible for payment.', 422);
         }
 
-        if ((float) $data['amount'] > (float) $loan->outstanding_balance) {
-            return $this->error('Amount exceeds outstanding balance.', 422);
+        if ((float) $data['amount'] > (float) $loan->outstanding_balance + (float) $loan->penalty_balance) {
+            return $this->error('Amount exceeds what is owed on this loan.', 422);
         }
 
         // Check for duplicate pending intent on the same loan
@@ -250,23 +259,5 @@ class ProfileController extends BaseApiController
             'expires_at' => $intent->expires_at->toDateTimeString(),
             'message' => 'A payment prompt has been sent to your phone. Please approve it within 30 minutes.',
         ], 'Payment initiated.', 202);
-    }
-
-    private function scoreBand(?int $score): string
-    {
-        if (! $score) {
-            return 'unrated';
-        }
-        if ($score < 550) {
-            return 'poor';
-        }
-        if ($score < 650) {
-            return 'fair';
-        }
-        if ($score < 750) {
-            return 'good';
-        }
-
-        return 'excellent';
     }
 }

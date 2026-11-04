@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Webhook;
 
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -19,7 +18,7 @@ class ZamtelWebhookController extends BaseWebhookController
 
     protected function verifySignature(Request $request): bool
     {
-        $secret = DB::table('settings')->where('key', 'zamtel_webhook_secret')->value('value');
+        $secret = \App\Support\TenantSettings::get('zamtel_webhook_secret');
 
         if (! $secret) {
             Log::warning('[Webhook:zamtel_kwacha] No webhook secret configured — rejecting unsigned request', ['ip' => $request->ip()]);

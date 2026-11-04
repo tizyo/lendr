@@ -3,4 +3,4 @@
 use App\Http\Controllers\Admin\GlLedgerAdminController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('gl-ledger', [GlLedgerAdminController::class, 'index'])->name('gl-ledger.index');
+Route::get('gl-ledger', [GlLedgerAdminController::class, 'index'])->name('gl-ledger.index')->middleware('permission:accounting.view');

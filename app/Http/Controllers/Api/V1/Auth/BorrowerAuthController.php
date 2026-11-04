@@ -203,6 +203,19 @@ class BorrowerAuthController extends BaseApiController
         return $this->success(['token' => $token], 'Token refreshed.');
     }
 
+    // ─── Logout ───────────────────────────────────────────────────────────────
+
+    public function logout(Request $request): JsonResponse
+    {
+        $token = $request->user()->currentAccessToken();
+
+        if ($token instanceof \Laravel\Sanctum\PersonalAccessToken) {
+            $token->delete();
+        }
+
+        return $this->success(null, 'Logged out successfully.');
+    }
+
     // ─── Helpers ──────────────────────────────────────────────────────────────
 
     private function normalisePhone(string $phone): string

@@ -8,7 +8,6 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -197,12 +196,20 @@ class InitiateMobileMoneyPaymentJob implements ShouldQueue
         $requestUuid = (string) Str::uuid();
 
         // Step 2 — request to pay
+        $headers = [
+            'X-Reference-Id' => $requestUuid,
+            'X-Target-Environment' => $env,
+            'Ocp-Apim-Subscription-Key' => $subscriptionKey,
+        ];
+
+        // MTN only calls back when told where: this workspace's webhook, with the
+        // callback key (MTN can't add our header to its callback).
+        if (($tenantId = tenant('id')) && ($callbackKey = $this->setting('mtn_callback_api_key'))) {
+            $headers['X-Callback-Url'] = route('api.v1.webhooks.tenant', ['provider' => 'mtn', 'tenant' => $tenantId]).'?key='.rawurlencode($callbackKey);
+        }
+
         $response = Http::withToken($token)
-            ->withHeaders([
-                'X-Reference-Id' => $requestUuid,
-                'X-Target-Environment' => $env,
-                'Ocp-Apim-Subscription-Key' => $subscriptionKey,
-            ])
+            ->withHeaders($headers)
             ->post("{$baseUrl}/collection/v1_0/requesttopay", [
                 'amount' => (string) (float) $intent->amount,
                 'currency' => 'ZMW',
@@ -293,12 +300,13 @@ class InitiateMobileMoneyPaymentJob implements ShouldQueue
     {
         $msg = "Provider '{$intent->provider}' does not support push-pay".($reason ? ": {$reason}" : '');
         Log::warning("[MoMo] {$msg}", ['ref' => $intent->reference]);
-        // Leave intent in 'pending' — borrower will need to pay manually
+        // Nothing was sent to the payer's phone: say so instead of leaving it "pending" for ever.
+        $intent->update(['status' => 'failed', 'provider_response' => json_encode(['error' => $msg])]);
     }
 
     private function setting(string $key, mixed $default = null): mixed
     {
-        return DB::table('settings')->where('key', $key)->value('value') ?? $default;
+        return \App\Support\TenantSettings::get($key) ?? $default; // decrypts credentials
     }
 
     private function e164(string $phone): string

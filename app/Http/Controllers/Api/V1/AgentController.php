@@ -108,14 +108,13 @@ class AgentController extends BaseApiController
     // POST /api/v1/agent-commissions/{commission}/approve
     public function approveCommission(Request $request, AgentCommission $agentCommission): JsonResponse
     {
-        if ($agentCommission->status !== 'pending') {
+        // Conditional update: two approvers clicking at once can't both succeed.
+        $updated = AgentCommission::whereKey($agentCommission->id)->where('status', 'pending')
+            ->update(['status' => 'approved', 'approved_by' => auth()->id(), 'updated_at' => now()]);
+
+        if (! $updated) {
             return $this->error('Only pending commissions can be approved.', 422);
         }
-
-        $agentCommission->update([
-            'status' => 'approved',
-            'approved_by' => auth()->id(),
-        ]);
 
         return $this->success(['commission' => $agentCommission->fresh()]);
     }
@@ -123,19 +122,17 @@ class AgentController extends BaseApiController
     // POST /api/v1/agent-commissions/{commission}/pay
     public function payCommission(Request $request, AgentCommission $agentCommission): JsonResponse
     {
-        if ($agentCommission->status !== 'approved') {
-            return $this->error('Only approved commissions can be paid.', 422);
-        }
-
         $data = $request->validate([
-            'paid_date' => 'required|date',
+            'paid_date' => 'required|date|before_or_equal:today',
             'payment_reference' => 'nullable|string|max:100',
         ]);
 
-        $agentCommission->update(array_merge($data, [
-            'status' => 'paid',
-            'paid_by' => auth()->id(),
-        ]));
+        $updated = AgentCommission::whereKey($agentCommission->id)->where('status', 'approved')
+            ->update([...$data, 'status' => 'paid', 'paid_by' => auth()->id(), 'updated_at' => now()]);
+
+        if (! $updated) {
+            return $this->error('Only approved commissions can be paid.', 422);
+        }
 
         return $this->success(['commission' => $agentCommission->fresh()]);
     }

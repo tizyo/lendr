@@ -30,6 +30,12 @@ return [
      */
     'subdomains' => (bool) env('TENANT_SUBDOMAINS', false),
 
+    /*
+     * The platform's own domain: workspace subdomains are <subdomain>.central_domain.
+     * Read through config(): env() returns null in code once config is cached.
+     */
+    'central_domain' => env('CENTRAL_DOMAIN', 'lendr.app'),
+
     'central_domains' => [
         '127.0.0.1',
         'localhost',

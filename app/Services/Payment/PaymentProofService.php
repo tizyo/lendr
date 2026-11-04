@@ -118,7 +118,7 @@ class PaymentProofService
                 'reference' => $proof->bank_reference ?: "PROOF-{$proof->id}",
                 'notes' => "Bank deposit verified from borrower-uploaded proof #{$proof->id}",
                 'recorded_by' => $reviewer->id,
-            ]);
+            ], allowOverpayment: true); // the money is already in the bank: keep any excess as a credit
 
             $proof->update([
                 'status' => PaymentProof::APPROVED,
