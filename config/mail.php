@@ -14,9 +14,13 @@ return [
     |
     */
 
-    // "platform" = deliver via the provider configured in Landlord → Platform
-    // Settings → Email (Resend / SMTP); falls back to MAIL_FALLBACK_MAILER.
-    'default' => env('MAIL_MAILER', 'platform'),
+    // Always "platform": deliver via the provider configured in Landlord → Platform
+    // Settings → Email (Resend / SMTP), read on every send. MAIL_MAILER only picks
+    // the fallback for when nothing is configured there. It used to pick the
+    // default itself, and a production .env left on "smtp" (127.0.0.1:1025) sent
+    // every verification, welcome and trial email into a local mail catcher that
+    // isn't there, while the Resend key saved in Platform Settings went unused.
+    'default' => 'platform',
 
     /*
     |--------------------------------------------------------------------------
@@ -70,7 +74,9 @@ return [
 
         'platform' => [
             'transport' => 'platform',
-            'fallback' => env('MAIL_FALLBACK_MAILER', 'log'),
+            // Used only while Platform Settings → Email is empty: MAIL_FALLBACK_MAILER,
+            // else whatever MAIL_MAILER names (smtp, array in tests…), else the log.
+            'fallback' => env('MAIL_FALLBACK_MAILER', in_array(env('MAIL_MAILER'), [null, '', 'platform'], true) ? 'log' : env('MAIL_MAILER')),
         ],
 
         'sendmail' => [
