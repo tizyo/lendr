@@ -39,3 +39,13 @@ it('gives every workspace the tables its own requests write to', function () {
         DB::purge('tenant_schema_check');
     }
 });
+
+it('queues jobs in the central database even from inside a workspace', function () {
+    // The database queue used to follow the default connection, which inside a
+    // workspace is the workspace's own database (no jobs table): a job queued
+    // there failed or was stored where the worker never looks.
+    expect(config('queue.connections.database.connection'))->toBe(config('database.central_connection'));
+
+    $built = (new \Illuminate\Queue\Connectors\DatabaseConnector(app('db')))->connect(config('queue.connections.database'));
+    expect($built->getDatabase()->getName())->toBe(config('database.central_connection'));
+});

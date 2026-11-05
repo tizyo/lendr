@@ -37,7 +37,11 @@ return [
 
         'database' => [
             'driver' => 'database',
-            'connection' => env('DB_QUEUE_CONNECTION'),
+            // Always the central database. Left unset, it followed the default
+            // connection, which inside a workspace is the workspace's own database
+            // (no jobs table), so a job queued there could fail to queue or be stored
+            // where the worker never looks. stancl tags each job with its workspace.
+            'connection' => env('DB_QUEUE_CONNECTION', env('DB_CONNECTION', 'mysql')),
             'table' => env('DB_QUEUE_TABLE', 'jobs'),
             'queue' => env('DB_QUEUE', 'default'),
             'retry_after' => (int) env('DB_QUEUE_RETRY_AFTER', 90),
