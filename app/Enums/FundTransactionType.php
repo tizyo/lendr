@@ -13,6 +13,7 @@ enum FundTransactionType: string
     case DisburseReversal = 'disburse_reversal'; // payout failed — funds returned
     case RepaymentReversal = 'repayment_reversal'; // a recorded repayment was reversed
     case PenaltyReversal = 'penalty_reversal';
+    case Commission = 'commission'; // an agent's commission paid out
 
     public function label(): string
     {
@@ -26,6 +27,7 @@ enum FundTransactionType: string
             self::DisburseReversal => 'Disbursement reversal',
             self::RepaymentReversal => 'Repayment reversal',
             self::PenaltyReversal => 'Penalty reversal',
+            self::Commission => 'Agent commission',
         };
     }
 
@@ -36,6 +38,6 @@ enum FundTransactionType: string
 
     public function isDebit(): bool
     {
-        return in_array($this, [self::Disburse, self::Withdrawal, self::RepaymentReversal, self::PenaltyReversal]);
+        return in_array($this, [self::Disburse, self::Withdrawal, self::RepaymentReversal, self::PenaltyReversal, self::Commission]);
     }
 }

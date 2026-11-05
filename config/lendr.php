@@ -7,6 +7,6 @@ return [
     | expired screens, platform emails). Set SUPPORT_EMAIL to the mailbox you
     | actually read.
     */
-    'support_email' => env('SUPPORT_EMAIL', 'support@lendr.app'),
+    'support_email' => env('SUPPORT_EMAIL', 'support@riskcape.com'),
 
 ];

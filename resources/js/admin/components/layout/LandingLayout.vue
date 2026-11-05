@@ -100,7 +100,7 @@
               <a href="#" aria-label="Facebook"  class="w-8 h-8 bg-white/10 rounded-lg flex items-center justify-center hover:bg-blue-600 transition text-xs font-bold">f</a>
               <a href="#" aria-label="YouTube"   class="w-8 h-8 bg-white/10 rounded-lg flex items-center justify-center hover:bg-blue-600 transition text-xs font-bold">▶</a>
             </div>
-            <p class="text-xs text-white/40">support@lendr.app</p>
+            <p class="text-xs text-white/40">support@riskcape.com</p>
           </div>
 
           <!-- Solutions -->

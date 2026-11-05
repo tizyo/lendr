@@ -53,7 +53,7 @@
         <p class="text-neutral-500 mb-6">Our support team responds within 2 business hours during working hours.</p>
         <div class="flex flex-col sm:flex-row gap-3 justify-center">
           <a href="/contact" class="bg-blue-600 hover:bg-blue-500 text-white px-6 py-3 rounded-xl font-bold transition text-sm">Open a support ticket</a>
-          <a href="mailto:support@lendr.app" class="border border-neutral-300 hover:border-neutral-400 text-neutral-700 px-6 py-3 rounded-xl font-medium transition text-sm">Email support@lendr.app</a>
+          <a href="mailto:support@riskcape.com" class="border border-neutral-300 hover:border-neutral-400 text-neutral-700 px-6 py-3 rounded-xl font-medium transition text-sm">Email support@riskcape.com</a>
         </div>
       </div>
     </section>

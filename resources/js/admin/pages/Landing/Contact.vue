@@ -79,7 +79,7 @@
           <div class="bg-neutral-50 rounded-2xl p-6 border border-neutral-200">
             <p class="font-bold text-neutral-800 mb-2">Book a Demo</p>
             <p class="text-sm text-neutral-600 mb-4">Want to see LENDR live? Book a 30-minute demo with our team and we'll walk you through the platform tailored to your lending use case.</p>
-            <a href="mailto:support@lendr.app?subject=Demo%20Request"
+            <a href="mailto:support@riskcape.com?subject=Demo%20Request"
               class="inline-block bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold px-4 py-2 rounded-lg transition">
               Request a demo
             </a>
@@ -109,7 +109,7 @@ function submit() {
 }
 
 const contactDetails = [
-  { icon: '📧', label: 'Email',    value: 'support@lendr.app' },
+  { icon: '📧', label: 'Email',    value: 'support@riskcape.com' },
   { icon: '📍', label: 'Address',  value: 'Lusaka, Zambia' },
   { icon: '🏢', label: 'Company',  value: 'RISKCAPE Enterprises Limited' },
   { icon: '🌍', label: 'Region',   value: 'Sub-Saharan Africa' },

@@ -87,6 +87,7 @@ class GlAccount extends Model
             ['code' => '5001', 'name' => 'Provision for Bad Debt', 'type' => 'expense'],
             ['code' => '5002', 'name' => 'Operating Expenses',     'type' => 'expense'],
             ['code' => '5003', 'name' => 'Write-Off Expense',      'type' => 'expense'],
+            ['code' => '5004', 'name' => 'Agent Commission Expense', 'type' => 'expense'],
         ];
     }
 }

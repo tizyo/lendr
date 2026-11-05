@@ -5,7 +5,10 @@ use App\Enums\UserRole;
 use App\Models\Tenant\Expense;
 use App\Models\Tenant\ExpenseCategory;
 use App\Models\Tenant\FundBalance;
+use App\Models\Tenant\FundTransaction;
+use App\Models\Tenant\GlJournalEntry;
 use App\Models\Tenant\User;
+use App\Services\FinancialStatementService;
 use Spatie\Permission\Models\Permission;
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -208,6 +211,46 @@ test('approving an expense debits the fund balance', function () {
 
     expect((float) FundBalance::current()->available_balance)->toEqual(4000.0);
     expect((float) FundBalance::current()->total_expenses)->toEqual(1000.0);
+});
+
+test('approving an expense posts it to the ledger on its expense date, once', function () {
+    $user = expUser(['expenses.approve']);
+    $expense = Expense::factory()->pending()->create([
+        'submitted_by' => $user->id,
+        'amount' => 750,
+        'expense_date' => now()->subDays(5)->toDateString(),
+    ]);
+    FundBalance::current()->update(['available_balance' => 5000]);
+
+    $this->actingAs($user)->postJson(route('api.v1.expenses.approve', $expense))->assertOk();
+    $this->actingAs($user)->postJson(route('api.v1.expenses.approve', $expense))->assertStatus(422);
+
+    $entry = GlJournalEntry::with('lines.account')->where('source_type', Expense::class)->where('source_id', $expense->id)->sole();
+    expect($entry->isBalanced())->toBeTrue()
+        ->and($entry->entry_date->toDateString())->toBe(now()->subDays(5)->toDateString())
+        ->and($entry->lines->firstWhere('side', 'debit')->account->code)->toBe('5002')
+        ->and((float) $entry->lines->firstWhere('side', 'debit')->amount)->toBe(750.0)
+        ->and($entry->lines->firstWhere('side', 'credit')->account->code)->toBe('1001');
+
+    // And it now shows on the income statement.
+    $pl = app(FinancialStatementService::class)->incomeStatement(now()->subMonth()->toDateString(), now()->toDateString());
+    expect((float) $pl['total_expenses'])->toBe(750.0);
+});
+
+test('expenses approved before the ledger fix are posted once by the backfill', function () {
+    $user = expUser(['expenses.approve']);
+    $old = Expense::factory()->approved()->create(['submitted_by' => $user->id, 'approved_by' => $user->id, 'amount' => 300]);
+    $draft = Expense::factory()->draft()->create(['submitted_by' => $user->id, 'amount' => 999]);
+
+    $backfill = require database_path('migrations/tenant/2026_11_04_160000_post_approved_expenses_to_ledger.php');
+    $backfill->up();
+    $backfill->up(); // running it again changes nothing
+
+    expect(GlJournalEntry::where('source_type', Expense::class)->where('source_id', $old->id)->count())->toBe(1)
+        ->and(GlJournalEntry::where('source_type', Expense::class)->where('source_id', $draft->id)->exists())->toBeFalse()
+        ->and(GlJournalEntry::where('source_type', Expense::class)->value('created_by'))->toBe($user->id)
+        // Only the ledger: the fund was already debited when it was approved.
+        ->and(FundTransaction::count())->toBe(0);
 });
 
 test('approving requires expenses.approve permission', function () {

@@ -4,9 +4,13 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Models\Tenant\Agent;
 use App\Models\Tenant\AgentCommission;
+use App\Models\Tenant\FundBalance;
 use App\Models\Tenant\Loan;
+use App\Services\FundService;
+use App\Services\GlLedgerService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class AgentController extends BaseApiController
 {
@@ -127,14 +131,47 @@ class AgentController extends BaseApiController
             'payment_reference' => 'nullable|string|max:100',
         ]);
 
-        $updated = AgentCommission::whereKey($agentCommission->id)->where('status', 'approved')
-            ->update([...$data, 'status' => 'paid', 'paid_by' => auth()->id(), 'updated_at' => now()]);
+        // One unit: the commission is marked paid, the money leaves the fund and the
+        // ledger records it, or none of it happens.
+        $error = DB::transaction(function () use ($agentCommission, $data) {
+            // Locked and re-checked: a double click must not pay (or debit the fund) twice.
+            $commission = AgentCommission::whereKey($agentCommission->id)->lockForUpdate()->first();
+            if (! $commission || $commission->status !== 'approved') {
+                return 'Only approved commissions can be paid.';
+            }
 
-        if (! $updated) {
-            return $this->error('Only approved commissions can be paid.', 422);
+            $amount = (string) $commission->commission_amount;
+            $available = (string) (FundBalance::lockForUpdate()->first()?->available_balance ?? 0);
+            if (bccomp($available, $amount, 2) < 0) {
+                return sprintf(
+                    'Not enough in the fund to pay this commission: K %s needed, K %s available. Record a fund deposit first (Funding → Fund Management).',
+                    number_format((float) $amount, 2),
+                    number_format((float) $available, 2),
+                );
+            }
+
+            $commission->update([...$data, 'status' => 'paid', 'paid_by' => auth()->id()]);
+            $commission->loadMissing(['agent:id,agent_number,first_name,last_name', 'loan:id,loan_number']);
+
+            $description = trim(sprintf(
+                'Agent commission: %s %s (%s) — loan %s',
+                $commission->agent?->first_name,
+                $commission->agent?->last_name,
+                $commission->agent?->agent_number,
+                $commission->loan?->loan_number ?? '#'.$commission->loan_id,
+            ));
+
+            app(FundService::class)->recordAgentCommission($commission, auth()->id(), $description);
+            app(GlLedgerService::class)->postAgentCommission($commission, $description);
+
+            return null;
+        });
+
+        if ($error) {
+            return $this->error($error, 422);
         }
 
-        return $this->success(['commission' => $agentCommission->fresh()]);
+        return $this->success(['commission' => $agentCommission->fresh()], 'Commission paid and posted to the ledger.');
     }
 
     // GET /api/v1/agents/{agent}/loans

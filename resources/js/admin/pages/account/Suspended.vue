@@ -61,7 +61,7 @@ import { Link, usePage } from '@inertiajs/vue3'
 const props = defineProps({
   status:     { type: String, default: 'suspended' },
   tenantName: { type: String, default: '' },
-  supportEmail: { type: String, default: 'support@lendr.app' },
+  supportEmail: { type: String, default: 'support@riskcape.com' },
 })
 
 const isCancelled = computed(() => props.status === 'cancelled')

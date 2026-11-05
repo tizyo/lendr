@@ -12,7 +12,7 @@ use Minishlink\WebPush\VAPID;
  */
 class GenerateWebPushKeysCommand extends Command
 {
-    protected $signature = 'lendr:webpush-keys {--subject=mailto:support@lendr.app : Contact URI push services can reach you on}';
+    protected $signature = 'lendr:webpush-keys {--subject=mailto:support@riskcape.com : Contact URI push services can reach you on}';
 
     protected $description = 'Generate VAPID keys for borrower PWA push notifications';
 

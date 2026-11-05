@@ -76,6 +76,45 @@ class GlLedgerService
     }
 
     /**
+     * Agent commission paid: DR Agent Commission Expense | CR Cash on Hand, on the
+     * date it was paid (cash basis, like interest and fees on the income side).
+     */
+    public function postAgentCommission(object $commission, string $description): GlJournalEntry
+    {
+        return $this->post(
+            $description,
+            [
+                ['account_code' => '5004', 'side' => 'debit',  'amount' => (float) $commission->commission_amount, 'notes' => $commission->payment_reference],
+                ['account_code' => '1001', 'side' => 'credit', 'amount' => (float) $commission->commission_amount, 'notes' => $commission->payment_reference],
+            ],
+            $commission,
+            Carbon::parse($commission->paid_date)->toDateString(),
+            auth()->id(),
+        );
+    }
+
+    /**
+     * Approved expense: DR Operating Expenses | CR Cash on Hand, on the expense's own
+     * date. The fund was debited on approval but the ledger never heard of it, so
+     * the trial balance and P&L showed no expenses at all.
+     */
+    public function postExpense(object $expense, ?int $createdBy = null): GlJournalEntry
+    {
+        $notes = trim(implode(' · ', array_filter([$expense->vendor ?? null, $expense->receipt_reference ?? null]))) ?: null;
+
+        return $this->post(
+            "Expense {$expense->expense_number}: {$expense->title}",
+            [
+                ['account_code' => '5002', 'side' => 'debit',  'amount' => (float) $expense->amount, 'notes' => $notes],
+                ['account_code' => '1001', 'side' => 'credit', 'amount' => (float) $expense->amount, 'notes' => $notes],
+            ],
+            $expense,
+            Carbon::parse($expense->expense_date ?? now())->toDateString(),
+            $createdBy ?? auth()->id(),
+        );
+    }
+
+    /**
      * Payment received: DR Cash on Hand for the whole amount, CR each part where it
      * belongs — Loans Receivable (principal), Interest Income, Fee Income, Penalty
      * Income, and any overpayment held as a customer credit (Accounts Payable).

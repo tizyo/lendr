@@ -169,6 +169,7 @@ class ExpenseController extends BaseApiController
             ]);
 
             $this->fund->recordExpense($expense, (float) $expense->amount, auth()->id());
+            app(\App\Services\GlLedgerService::class)->postExpense($expense);
 
             return true;
         });

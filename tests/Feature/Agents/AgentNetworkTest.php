@@ -177,6 +177,7 @@ test('can pay an approved commission', function () {
     $agent = makeAgent();
     $loan = agentLoan();
     $commission = makeAgentCommission($agent, $loan, ['status' => 'approved']);
+    fundTheBook(); // the payout comes out of the fund
 
     $resp = $this->actingAs($admin)
         ->postJson(route('api.v1.agent-commissions.pay', $commission), [

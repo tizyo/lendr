@@ -143,8 +143,10 @@ import { ref, onMounted } from 'vue'
 import axios from 'axios'
 import AppLayout from '@/admin/components/layout/AppLayout.vue'
 import { useCan } from '@/admin/composables/useCan.js'
+import { useToast } from '@/admin/composables/useToast.js'
 
 const can = useCan()
+const toast = useToast()
 
 const activeTab  = ref('agents')
 const agents     = ref({ data: [] })
@@ -203,7 +205,7 @@ async function approveComm(c) {
   try {
     await axios.post(`/api/v1/agent-commissions/${c.id}/approve`)
   } catch (e) {
-    alert(e.response?.data?.message ?? 'Could not approve this commission.')
+    toast.error(e.response?.data?.message ?? 'Could not approve this commission.')
   }
   await loadCommissions()
 }
@@ -213,9 +215,10 @@ async function payComm(c) {
   if (!date) return
   const reference = prompt('Payment reference (optional):', '') ?? ''
   try {
-    await axios.post(`/api/v1/agent-commissions/${c.id}/pay`, { paid_date: date, payment_reference: reference || null })
+    const { data } = await axios.post(`/api/v1/agent-commissions/${c.id}/pay`, { paid_date: date, payment_reference: reference || null })
+    toast.success(data?.message ?? 'Commission paid.')
   } catch (e) {
-    alert(e.response?.data?.message ?? 'Could not record this payment.')
+    toast.error(e.response?.data?.message ?? 'Could not record this payment.')
   }
   await loadCommissions()
 }

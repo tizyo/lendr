@@ -7,6 +7,9 @@ use App\Models\Tenant\Agent;
 use App\Models\Tenant\AgentCommission;
 use App\Models\Tenant\Borrower;
 use App\Models\Tenant\DisbursementLog;
+use App\Models\Tenant\FundBalance;
+use App\Models\Tenant\FundTransaction;
+use App\Models\Tenant\GlJournalEntry;
 use App\Models\Tenant\InAppNotification;
 use App\Models\Tenant\InsuranceClaim;
 use App\Models\Tenant\InsuranceProduct;
@@ -96,6 +99,7 @@ it('takes the commission back when the mobile-money payout fails', function () {
 });
 
 it('lets a commission be approved and paid once each', function () {
+    fundTheBook(1000);
     $commission = AgentCommission::create(['agent_id' => activeAgent()->id, 'loan_id' => commissionedLoan(activeAgent(['phone' => '0971112233']))->id,
         'disbursed_amount' => 5000, 'commission_amount' => 100, 'status' => 'pending']);
     Sanctum::actingAs($this->admin);
@@ -105,8 +109,48 @@ it('lets a commission be approved and paid once each', function () {
     $this->postJson(route('api.v1.agent-commissions.approve', $commission))->assertUnprocessable();
     $this->postJson(route('api.v1.agent-commissions.pay', $commission), ['paid_date' => now()->addDay()->toDateString()])->assertUnprocessable();
     $this->postJson(route('api.v1.agent-commissions.pay', $commission), ['paid_date' => now()->toDateString()])->assertOk();
+    $this->postJson(route('api.v1.agent-commissions.pay', $commission), ['paid_date' => now()->toDateString()])->assertUnprocessable();
 
-    expect($commission->fresh()->status)->toBe('paid');
+    expect($commission->fresh()->status)->toBe('paid')
+        // Paid once: one debit from the fund, one journal entry.
+        ->and(FundTransaction::where('type', 'commission')->count())->toBe(1)
+        ->and(GlJournalEntry::where('source_type', AgentCommission::class)->count())->toBe(1);
+});
+
+it('pays a commission out of the fund and posts it to the ledger', function () {
+    fundTheBook(1000);
+    $commission = AgentCommission::create(['agent_id' => activeAgent()->id, 'loan_id' => commissionedLoan(activeAgent(['phone' => '0971112244']))->id,
+        'disbursed_amount' => 5000, 'commission_amount' => 150, 'status' => 'approved']);
+    Sanctum::actingAs($this->admin);
+
+    $this->postJson(route('api.v1.agent-commissions.pay', $commission), ['paid_date' => now()->subDays(2)->toDateString(), 'payment_reference' => 'MM-778'])
+        ->assertOk();
+
+    $fund = FundBalance::current()->fresh();
+    expect((float) $fund->available_balance)->toBe(850.0)
+        ->and((float) $fund->total_expenses)->toBe(150.0); // so the fund still reconciles
+
+    $entry = GlJournalEntry::with('lines.account')->where('source_type', AgentCommission::class)->where('source_id', $commission->id)->sole();
+    expect($entry->entry_date->toDateString())->toBe(now()->subDays(2)->toDateString())
+        ->and($entry->isBalanced())->toBeTrue()
+        ->and($entry->lines->firstWhere('side', 'debit')->account->code)->toBe('5004')
+        ->and((float) $entry->lines->firstWhere('side', 'debit')->amount)->toBe(150.0)
+        ->and($entry->lines->firstWhere('side', 'credit')->account->code)->toBe('1001');
+});
+
+it('refuses to pay a commission the fund cannot cover, and changes nothing', function () {
+    fundTheBook(50);
+    $commission = AgentCommission::create(['agent_id' => activeAgent()->id, 'loan_id' => commissionedLoan(activeAgent(['phone' => '0971112255']))->id,
+        'disbursed_amount' => 5000, 'commission_amount' => 100, 'status' => 'approved']);
+    Sanctum::actingAs($this->admin);
+
+    $this->postJson(route('api.v1.agent-commissions.pay', $commission), ['paid_date' => now()->toDateString()])
+        ->assertUnprocessable()
+        ->assertJsonFragment(['message' => 'Not enough in the fund to pay this commission: K 100.00 needed, K 50.00 available. Record a fund deposit first (Funding → Fund Management).']);
+
+    expect($commission->fresh()->status)->toBe('approved')
+        ->and((float) FundBalance::current()->fresh()->available_balance)->toBe(50.0)
+        ->and(GlJournalEntry::where('source_type', AgentCommission::class)->exists())->toBeFalse();
 });
 
 // ─── Risk policies ───────────────────────────────────────────────────────────

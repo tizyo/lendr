@@ -136,6 +136,18 @@ class FundService
         });
     }
 
+    /** Pay an agent's commission out of the fund. */
+    public function recordAgentCommission(Model $commission, ?int $userId, string $description): FundTransaction
+    {
+        return DB::transaction(fn () => $this->debit(
+            (float) $commission->commission_amount,
+            FundTransactionType::Commission,
+            $commission,
+            $userId,
+            $description,
+        ));
+    }
+
     /**
      * Reverse a deposit (when reversal is needed).
      */
@@ -239,7 +251,8 @@ class FundService
 
         $fields += match ($type) {
             FundTransactionType::Disburse => ['total_disbursed' => (float) $this->bcround(bcadd((string) $balance->total_disbursed, (string) $amount, 10))],
-            FundTransactionType::Withdrawal => ['total_expenses' => (float) $this->bcround(bcadd((string) $balance->total_expenses, (string) $amount, 10))],
+            // A commission is money out like any expense, so deposits − disbursed − expenses + repaid still reconciles.
+            FundTransactionType::Withdrawal, FundTransactionType::Commission => ['total_expenses' => (float) $this->bcround(bcadd((string) $balance->total_expenses, (string) $amount, 10))],
             // Undo the repayment in the totals too, so the fund still reconciles.
             FundTransactionType::RepaymentReversal => ['total_repaid' => (float) $this->bcround(bcsub((string) $balance->total_repaid, (string) $amount, 10))],
             FundTransactionType::PenaltyReversal => ['total_penalties' => (float) $this->bcround(bcsub((string) $balance->total_penalties, (string) $amount, 10))],
