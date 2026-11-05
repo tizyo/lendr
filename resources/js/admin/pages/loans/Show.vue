@@ -940,15 +940,7 @@ import axios from 'axios'
 import AppLayout from '@/admin/components/layout/AppLayout.vue'
 import { useCan } from '@/admin/composables/useCan.js'
 import LoanStatusBadge from '@/admin/components/loans/LoanStatusBadge.vue'
-
-// Inline detail row component
-const DetailRow = {
-  props: { label: String, value: String },
-  template: `<div class="flex justify-between gap-4">
-    <dt class="text-neutral-500 shrink-0">{{ label }}</dt>
-    <dd class="text-neutral-900 font-medium text-right">{{ value }}</dd>
-  </div>`,
-}
+import DetailRow from '@/admin/components/loans/DetailRow.vue'
 
 const props = defineProps({
   loan: Object,

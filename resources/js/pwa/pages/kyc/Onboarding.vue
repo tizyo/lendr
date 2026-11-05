@@ -308,50 +308,11 @@ import { router } from '@inertiajs/vue3'
 import axios from 'axios'
 import { usePwaAuthStore } from '@/pwa/stores/auth.js'
 
-// ─── Sub-components ───────────────────────────────────────────
-const FormField = {
-  props: ['label', 'modelValue', 'placeholder', 'error', 'disabled', 'type'],
-  emits: ['update:modelValue'],
-  template: `
-    <div>
-      <label class="block text-sm font-medium text-gray-700 mb-1.5">{{ label }}</label>
-      <input
-        :value="modelValue"
-        :type="type || 'text'"
-        :placeholder="placeholder"
-        :disabled="disabled"
-        @input="$emit('update:modelValue', $event.target.value)"
-        class="input w-full"
-        :class="[error ? 'border-red-400' : '', disabled ? 'bg-gray-50 text-gray-400' : '']"
-      />
-      <p v-if="error" class="mt-1 text-xs text-red-600">{{ error }}</p>
-    </div>
-  `,
-}
-
-const ReviewSection = {
-  props: ['title'],
-  template: `
-    <div class="bg-gray-50 rounded-xl overflow-hidden">
-      <div class="px-4 py-2.5 bg-gray-100 border-b border-gray-200">
-        <h4 class="text-xs font-semibold text-gray-500 uppercase tracking-wide">{{ title }}</h4>
-      </div>
-      <div class="px-4 py-3 space-y-2">
-        <slot />
-      </div>
-    </div>
-  `,
-}
-
-const ReviewRow = {
-  props: ['label', 'value'],
-  template: `
-    <div class="flex justify-between gap-3">
-      <span class="text-xs text-gray-500 shrink-0">{{ label }}</span>
-      <span class="text-xs text-gray-900 font-medium text-right">{{ value || '—' }}</span>
-    </div>
-  `,
-}
+// Sub-components live in their own files: the app ships Vue's runtime-only build,
+// so the inline `template:` strings these used to be never rendered (no KYC inputs).
+import FormField from '@/pwa/components/kyc/FormField.vue'
+import ReviewSection from '@/pwa/components/kyc/ReviewSection.vue'
+import ReviewRow from '@/pwa/components/kyc/ReviewRow.vue'
 
 // ─── State ────────────────────────────────────────────────────
 const auth       = usePwaAuthStore()
