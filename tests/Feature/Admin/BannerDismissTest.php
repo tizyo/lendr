@@ -24,5 +24,6 @@ it('only accepts the known banners', function () {
 });
 
 it('needs a signed-in user', function () {
-    $this->post(route('banners.dismiss', 'trial'))->assertRedirect(route('login'));
+    // Tests run on the shared host, whose sign-in page is the portal's.
+    $this->post(route('banners.dismiss', 'trial'))->assertRedirect(route('portal.login'));
 });

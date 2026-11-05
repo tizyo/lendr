@@ -50,6 +50,12 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->append(\App\Http\Middleware\SecurityHeaders::class);
 
+        // Signed-out staff on the shared host (Starter/Trial) sign in at /portal/login;
+        // /login there has no workspace field, so it could never let them back in.
+        $middleware->redirectGuestsTo(fn (\Illuminate\Http\Request $request) => in_array($request->getHost(), config('tenancy.central_domains', []), true)
+            ? route('portal.login')
+            : route('login'));
+
         $middleware->web(append: [
             HandleInertiaRequests::class,
             AddLinkHeadersForPreloadedAssets::class,

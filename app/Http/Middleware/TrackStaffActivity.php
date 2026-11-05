@@ -6,7 +6,6 @@ use App\Models\Landlord\ImpersonationSession;
 use App\Models\Tenant\User;
 use Closure;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Cache;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
@@ -26,7 +25,8 @@ class TrackStaffActivity
         $response = $next($request);
 
         if ($request->isMethod('GET') && $response->isSuccessful() && tenancy()->initialized) {
-            rescue(fn () => $this->track($request), report: false);
+            // Never fails the page, but a broken tracker must show up in the logs.
+            rescue(fn () => $this->track($request));
         }
 
         return $response;
@@ -42,11 +42,17 @@ class TrackStaffActivity
             return;
         }
 
-        $supportSession = $request->session()->has(ImpersonationSession::SESSION_KEY);
-        $key = 'staff-nav:'.tenant('id').':'.$user->id;
+        $session = $request->session();
+        $supportSession = $session->has(ImpersonationSession::SESSION_KEY);
 
-        if (Cache::get($key) !== $route) {
-            Cache::put($key, $route, self::REPEAT_WINDOW_SECONDS);
+        // Remembered in the session, not the cache: inside a workspace every cache
+        // call is tagged, which only Redis/Memcached support.
+        $last = $session->get('staff_nav_last');
+        $repeat = is_array($last) && ($last['route'] ?? null) === $route
+            && ($last['at'] ?? 0) > now()->timestamp - self::REPEAT_WINDOW_SECONDS;
+
+        if (! $repeat) {
+            $session->put('staff_nav_last', ['route' => $route, 'at' => now()->timestamp]);
 
             activity('navigation')
                 ->causedBy($user)

@@ -83,7 +83,7 @@ test('staff can logout', function () {
 
     $this->actingAs($user)
         ->post(route('logout'))
-        ->assertRedirect(route('login'));
+        ->assertRedirect(route('portal.login')); // the shared host's sign-in page
 
     $this->assertGuest();
 });

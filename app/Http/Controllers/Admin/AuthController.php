@@ -120,7 +120,10 @@ class AuthController extends Controller
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        return redirect()->route('login');
+        // Shared-portal workspaces sign in at /portal/login; /login on this host has no workspace field.
+        $onPortal = in_array($request->getHost(), config('tenancy.central_domains', []), true);
+
+        return redirect()->route($onPortal ? 'portal.login' : 'login');
     }
 
     public function show2faChallenge(): Response

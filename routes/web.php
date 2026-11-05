@@ -92,9 +92,8 @@ Route::name('portal.')->group(function () {
         Route::post('/portal/reset-password', [AuthController::class, 'resetPortalPassword'])->name('password.update');
     });
 
-    Route::post('/portal/logout', [AuthController::class, 'portalLogout'])
-        ->middleware('auth')
-        ->name('logout');
+    // /portal/logout lives in the tenant group below: out here the workspace isn't
+    // known, so 'auth' never found the user and the session was never ended.
 });
 
 Route::post('/onboarding/resend-verification', [AuthController::class, 'resendVerification'])
@@ -126,6 +125,10 @@ Route::middleware([InitializeTenancy::class])->group(function () {
     Route::post('/logout', [AuthController::class, 'logout'])
         ->middleware('auth')
         ->name('logout');
+
+    Route::post('/portal/logout', [AuthController::class, 'portalLogout'])
+        ->middleware('auth')
+        ->name('portal.logout');
 
     // ─── Billing (auth only — bypasses tenant.status so expired tenants can pay) ──
     Route::middleware(['auth', 'permission:billing.manage'])->group(function () {

@@ -77,6 +77,29 @@ it('asks for the 2FA code after a portal sign-in, then lands on the portal dashb
         ->and(Activity::where('log_name', 'auth')->where('causer_id', $user->id)->count())->toBe(1);
 });
 
+it('really signs a portal user out, records it, and sends them to the portal sign-in', function () {
+    $tenant = portal2faTenant();
+    $user = User::factory()->create(['role' => UserRole::SuperAdmin, 'is_active' => true, 'password' => 'Secret#12345']);
+
+    $this->post('/portal/login', ['workspace' => $tenant->slug, 'email' => $user->email, 'password' => 'Secret#12345'])
+        ->assertRedirect(route('portal.dashboard'));
+    portal2faReset();
+
+    // /portal/logout sat outside the workspace routes: 'auth' never found the user,
+    // redirected, and the session stayed signed in (Suspended / Trial-ended pages use it).
+    $this->post(route('portal.logout'))->assertRedirect(route('portal.login'));
+    portal2faReset();
+
+    $this->assertGuest('web');
+    $this->get('/portal/dashboard')->assertRedirect(route('portal.login'));
+    expect(Activity::where('log_name', 'auth')->where('causer_id', $user->id)->pluck('description')->all())
+        ->toBe(['Signed in', 'Signed out']);
+});
+
+it('sends a signed-out visitor on a workspace subdomain to that subdomain\'s sign-in', function () {
+    $this->get('http://acme.lendr.test/borrowers')->assertRedirect('http://acme.lendr.test/login');
+});
+
 it('still signs a portal user without 2FA straight in, and records it', function () {
     $tenant = portal2faTenant();
     $user = User::factory()->create(['role' => UserRole::SuperAdmin, 'is_active' => true, 'password' => 'Secret#12345']);

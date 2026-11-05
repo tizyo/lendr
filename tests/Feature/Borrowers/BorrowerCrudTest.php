@@ -141,5 +141,5 @@ test('borrower with active loans cannot be deleted', function () {
 
 test('unauthenticated user is redirected to login', function () {
     $this->get(route('borrowers.index'))
-        ->assertRedirect(route('login'));
+        ->assertRedirect(route('portal.login')); // the shared host's sign-in page
 });
