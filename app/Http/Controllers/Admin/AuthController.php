@@ -370,7 +370,13 @@ class AuthController extends Controller
     {
         $request->validate(['email' => ['required', 'email']]);
 
-        Password::sendResetLink($request->only('email'));
+        try {
+            Password::sendResetLink(['email' => strtolower(trim($request->email))]);
+        } catch (\Throwable $e) {
+            report($e);
+
+            throw ValidationException::withMessages(['email' => 'We couldn\'t send the reset email just now. Please try again in a few minutes.']);
+        }
 
         return back()->with('status', 'If an account with that email exists, we\'ve sent a password reset link.');
     }
@@ -423,13 +429,13 @@ class AuthController extends Controller
             'email' => ['required', 'email'],
         ]);
 
-        $tenant = Tenant::where('slug', $request->workspace)->first();
+        $tenant = Tenant::where('slug', strtolower(trim($request->workspace)))->first();
 
         // Any workspace: the portal hands subdomain workspaces over after sign-in.
         if ($tenant && $tenant->isEmailVerified()) {
             tenancy()->initialize($tenant);
 
-            $workspace = $request->workspace;
+            $workspace = $tenant->slug;
 
             // Override the reset URL to include workspace for portal re-init.
             ResetPassword::createUrlUsing(function ($notifiable, string $token) use ($workspace) {
@@ -440,11 +446,16 @@ class AuthController extends Controller
                 ]);
             });
 
-            Password::sendResetLink(['email' => $request->email]);
+            try {
+                Password::sendResetLink(['email' => strtolower(trim($request->email))]);
+            } catch (\Throwable $e) {
+                report($e);
 
-            ResetPassword::createUrlUsing(null); // restore default
-
-            tenancy()->end();
+                throw ValidationException::withMessages(['email' => 'We couldn\'t send the reset email just now. Please try again in a few minutes.']);
+            } finally {
+                ResetPassword::createUrlUsing(null); // restore default
+                tenancy()->end();
+            }
         }
 
         return back()->with('status', 'If an account with that email exists in that workspace, we\'ve sent a reset link.');
@@ -469,7 +480,7 @@ class AuthController extends Controller
             'password' => ['required', 'confirmed', PasswordRules::min(8)->mixedCase()->numbers()],
         ]);
 
-        $tenant = Tenant::where('slug', $request->workspace)->firstOrFail();
+        $tenant = Tenant::where('slug', strtolower(trim($request->workspace)))->firstOrFail();
 
         tenancy()->initialize($tenant);
 
