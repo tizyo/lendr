@@ -257,7 +257,7 @@ it('creates a live, verified workspace and builds its database after the respons
     Bus::fake();
     app('auth')->forgetGuards();
     $landlord = LandlordUser::factory()->create(['is_active' => true]);
-    statusTenant('active', ['slug' => 'acme-finance']);
+    statusTenant('active', ['slug' => 'acmefinanc']); // the ID its name would make is taken
 
     $this->withToken($landlord->createToken('landlord-session')->plainTextToken)
         ->postJson('/api/v1/landlord/tenants', [
@@ -266,8 +266,8 @@ it('creates a live, verified workspace and builds its database after the respons
         ])
         ->assertCreated();
 
-    $tenant = Tenant::where('name', 'Acme Finance')->latest('created_at')->firstOrFail();
-    expect($tenant->slug)->toBe('acme-finance-2')
+    $tenant = Tenant::where('name', 'ACME FINANCE')->latest('created_at')->firstOrFail(); // names are stored in capitals
+    expect($tenant->slug)->toBe('acmefinan2') // 3-10 letters/digits, numbered when taken
         ->and($tenant->status)->toBe('active')
         ->and($tenant->email_verified_at)->not->toBeNull()
         ->and($tenant->domains()->value('domain'))->toBe('acme.'.config('tenancy.central_domain'));

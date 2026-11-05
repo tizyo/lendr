@@ -60,7 +60,7 @@ it('uses the lender\'s brand colour inside their workspace', function () {
 
     expect($brand['color'])->toBe('#16A34A')
         ->and($brand['on_color'])->toBe('#FFFFFF')
-        ->and($brand['name'])->toBe('Kafue Credit');
+        ->and($brand['name'])->toBe('KAFUE CREDIT'); // names are stored in capitals
 });
 
 it('renders the plain fallback pages too', function (int $status, string $title) {

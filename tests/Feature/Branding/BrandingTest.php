@@ -43,7 +43,7 @@ test('admin can update branding settings', function () {
         ->assertOk();
 
     $resp = $this->getJson(route('api.v1.branding.show'))->assertOk();
-    expect($resp->json('data.company_name'))->toBe('MicroBank');
+    expect($resp->json('data.company_name'))->toBe('MICROBANK'); // company names are stored in capitals
     expect($resp->json('data.primary_color'))->toBe('#1B5E20');
     expect($resp->json('data.support_email'))->toBe('support@microbank.com');
 })->group('branding');
