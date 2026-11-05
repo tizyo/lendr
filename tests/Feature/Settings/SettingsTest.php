@@ -75,7 +75,7 @@ test('settings can be updated', function () {
         ])
         ->assertOk();
 
-    expect(DB::table('settings')->where('key', 'company_name')->value('value'))->toBe('Lendr MFI');
+    expect(DB::table('settings')->where('key', 'company_name')->value('value'))->toBe('LENDR MFI'); // company names are stored in capitals
     expect(DB::table('settings')->where('key', 'currency')->value('value'))->toBe('ZMW');
 });
 

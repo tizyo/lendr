@@ -157,7 +157,17 @@
         <div class="p-6 space-y-4">
           <div>
             <label class="block text-sm font-medium text-neutral-700 mb-1">Company Name <span class="text-red-500">*</span></label>
-            <input v-model="createForm.name" type="text" class="w-full border border-neutral-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" />
+            <input v-model="createForm.name" @input="createForm.name = createForm.name.toUpperCase()" type="text" maxlength="100" class="w-full border border-neutral-300 rounded-lg px-3 py-2 text-sm uppercase focus:outline-none focus:ring-2 focus:ring-primary-500" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-neutral-700 mb-1">Workspace ID</label>
+            <input
+              v-model="createForm.slug"
+              @input="createForm.slug = cleanSlug(createForm.slug)"
+              type="text" maxlength="10" :placeholder="suggestedSlug || 'e.g. lungwe'"
+              class="w-full border border-neutral-300 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary-500"
+            />
+            <p class="text-xs text-neutral-400 mt-1">3–10 letters or numbers, no spaces or symbols. Leave blank to use {{ suggestedSlug || 'one made from the name' }}.</p>
           </div>
           <div>
             <label class="block text-sm font-medium text-neutral-700 mb-1">Plan <span class="text-red-500">*</span></label>
@@ -215,7 +225,7 @@
         <div class="p-6 space-y-4">
           <div>
             <label class="block text-sm font-medium text-neutral-700 mb-1">Name</label>
-            <input v-model="editForm.name" type="text" class="w-full border border-neutral-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" />
+            <input v-model="editForm.name" @input="editForm.name = editForm.name.toUpperCase()" type="text" maxlength="100" class="w-full border border-neutral-300 rounded-lg px-3 py-2 text-sm uppercase focus:outline-none focus:ring-2 focus:ring-primary-500" />
           </div>
           <div>
             <label class="block text-sm font-medium text-neutral-700 mb-1">Plan</label>
@@ -473,7 +483,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { Link, router } from '@inertiajs/vue3'
 import axios from 'axios'
 import LandlordLayout from '@/landlord/components/LandlordLayout.vue'
@@ -491,7 +501,13 @@ const filters    = reactive({ search: '', status: '', plan: '', page: 1 })
 const showCreate  = ref(false)
 const creating    = ref(false)
 const createError = ref('')
-const createForm  = reactive({ name: '', plan: 'starter', subdomain: '', currency: 'ZMW', timezone: 'Africa/Lusaka', admin_name: '', admin_email: '' })
+const createForm  = reactive({ name: '', slug: '', plan: 'starter', subdomain: '', currency: 'ZMW', timezone: 'Africa/Lusaka', admin_name: '', admin_email: '' })
+// Workspace ID: 3–10 lowercase letters/digits (the server applies the same rule).
+const cleanSlug = (value) => (value ?? '').toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 10)
+const suggestedSlug = computed(() => {
+  const s = cleanSlug(createForm.name)
+  return s.length >= 3 ? s : ''
+})
 
 // Edit
 const showEdit    = ref(false)
@@ -583,7 +599,7 @@ function changePage(page) {
 function closeCreate() {
   showCreate.value  = false
   createError.value = ''
-  Object.assign(createForm, { name: '', plan: 'starter', subdomain: '', currency: 'ZMW', timezone: 'Africa/Lusaka', admin_name: '', admin_email: '' })
+  Object.assign(createForm, { name: '', slug: '', plan: 'starter', subdomain: '', currency: 'ZMW', timezone: 'Africa/Lusaka', admin_name: '', admin_email: '' })
 }
 
 async function submitCreate() {

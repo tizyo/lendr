@@ -47,28 +47,34 @@
               <input
                 v-model="form.org_name"
                 type="text"
-                placeholder="Zambia MFI Ltd."
-                class="input w-full"
+                maxlength="100"
+                placeholder="ZAMBIA MFI LTD"
+                class="input w-full uppercase"
                 :class="{ 'border-red-400 focus:ring-red-400': form.errors.org_name }"
+                @input="onOrgNameInput"
               />
               <p v-if="form.errors.org_name" class="mt-1.5 text-xs text-red-600">{{ form.errors.org_name }}</p>
             </div>
 
             <!-- Workspace slug (always shown) -->
             <div>
-              <label class="block text-sm font-medium text-neutral-700 mb-1.5">Workspace name</label>
+              <label class="block text-sm font-medium text-neutral-700 mb-1.5">Workspace ID</label>
               <div class="flex items-stretch rounded-lg border overflow-hidden"
                    :class="form.errors.slug ? 'border-red-400' : 'border-neutral-300 focus-within:ring-2 focus-within:ring-primary-500 focus-within:border-transparent'">
                 <input
                   v-model="form.slug"
                   type="text"
+                  maxlength="10"
                   placeholder="zambiamfi"
-                  class="flex-1 px-3.5 py-2.5 text-sm outline-none"
-                  @input="form.slug = form.slug.toLowerCase().replace(/[^a-z0-9-]/g, '')"
+                  class="flex-1 px-3.5 py-2.5 text-sm outline-none font-mono"
+                  @input="onSlugInput"
                 />
+                <span class="px-3 flex items-center text-xs text-neutral-400 bg-neutral-50 border-l border-neutral-200">{{ form.slug.length }}/10</span>
               </div>
               <p v-if="form.errors.slug" class="mt-1.5 text-xs text-red-600">{{ form.errors.slug }}</p>
               <p v-else class="mt-1.5 text-xs text-neutral-400">
+                3–10 letters or numbers, no spaces or symbols.</p>
+              <p v-if="!form.errors.slug" class="mt-0.5 text-xs text-neutral-400">
                 <template v-if="selectedPlan?.subdomain">Used to identify your workspace</template>
                 <template v-else>You'll log in at <strong>{{ sharedPortalHost }}</strong> using this as your workspace ID</template>
               </p>
@@ -320,6 +326,21 @@ const selectedPlan = computed(() => props.plans.find(p => p.key === form.plan) ?
 
 const step1Fields = ['org_name', 'slug', 'subdomain', 'plan', 'currency', 'timezone']
 
+// Workspace ID: 3–10 lowercase letters/digits (the server applies the same rule).
+const cleanSlug = (value) => (value ?? '').toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 10)
+let slugTouched = false
+
+/** Names are stored in capitals; the ID follows the name until they type their own. */
+function onOrgNameInput() {
+  form.org_name = form.org_name.toUpperCase()
+  if (!slugTouched) form.slug = cleanSlug(form.org_name)
+}
+
+function onSlugInput() {
+  slugTouched = true
+  form.slug = cleanSlug(form.slug)
+}
+
 function goNext() {
   step1Fields.forEach(f => form.clearErrors(f))
 
@@ -328,11 +349,11 @@ function goNext() {
     return
   }
   if (! form.slug.trim()) {
-    form.setError('slug', 'Workspace name is required.')
+    form.setError('slug', 'Workspace ID is required.')
     return
   }
-  if (form.slug.length < 3) {
-    form.setError('slug', 'Workspace name must be at least 3 characters.')
+  if (! /^[a-z0-9]{3,10}$/.test(form.slug)) {
+    form.setError('slug', 'The workspace ID must be 3 to 10 letters or numbers, with no spaces or symbols.')
     return
   }
   if (selectedPlan.value?.subdomain && ! form.subdomain.trim()) {

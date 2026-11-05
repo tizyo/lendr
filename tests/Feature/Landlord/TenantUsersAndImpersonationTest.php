@@ -179,7 +179,7 @@ it('shows a tenant overview', function () {
 
     asLandlord()->getJson("/api/v1/landlord/tenants/{$tenant->id}/overview")
         ->assertOk()
-        ->assertJsonPath('data.tenant.name', 'Vozara Finance')
+        ->assertJsonPath('data.tenant.name', 'VOZARA FINANCE') // names are stored in capitals
         ->assertJsonPath('data.tenant.domains.0', 'vozara.lendr.test')
         ->assertJsonPath('data.tenant.login_url', 'https://vozara.lendr.test/login')
         ->assertJsonPath('data.stats.staff_total', 2)

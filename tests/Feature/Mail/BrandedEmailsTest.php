@@ -68,7 +68,7 @@ it('renders the new workspace welcome email', function () {
     $html = (new TenantWelcomeMail(brandedTenant(), 'https://app.lendr.test/login'))->render();
 
     expect($html)
-        ->toContain('Vozara Finance')
+        ->toContain('VOZARA FINANCE') // the workspace name is stored in capitals
         ->toContain('https://app.lendr.test/login')
         ->toContain('Get set up in four steps')
         ->toContain('vozara'); // shared-portal tenants sign in with their workspace ID
@@ -104,7 +104,7 @@ it('prefers the dedicated email header colour over the primary colour', function
 it('falls back to the tenant name when the branding name is still the LENDR placeholder', function () {
     enterTenantContext(['company_name' => 'LENDR']);
 
-    expect(app(EmailBrand::class)->current()['name'])->toBe('Vozara Finance');
+    expect(app(EmailBrand::class)->current()['name'])->toBe('VOZARA FINANCE');
 });
 
 it('uses dark button text on pale brand colours so buttons stay readable', function () {

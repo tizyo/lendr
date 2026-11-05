@@ -38,11 +38,17 @@ afterEach(function () {
 });
 
 // ─── Form helper ─────────────────────────────────────────────────────────────
+/** A free workspace ID: 10 lowercase letters/digits, the most the rule allows. */
+function onboardingSlug(): string
+{
+    return 'w'.substr(md5(uniqid('', true)), 0, 9);
+}
+
 function starterPayload(array $overrides = []): array
 {
     return array_merge([
         'org_name' => 'Test MFI',
-        'slug' => 'testmfi-'.uniqid(),
+        'slug' => onboardingSlug(),
         'plan' => 'starter',
         'currency' => 'ZMW',
         'timezone' => 'Africa/Lusaka',
@@ -75,7 +81,7 @@ test('success page redirects to onboarding when no session', function () {
 
 // ─── Starter plan (shared portal) ────────────────────────────────────────────
 test('starter plan creates tenant and superadmin user', function () {
-    $payload = starterPayload(['slug' => 'starter-e2e-'.uniqid()]);
+    $payload = starterPayload(['slug' => onboardingSlug()]);
 
     $response = $this->post(route('onboarding.store'), $payload);
 
@@ -104,7 +110,7 @@ test('builds the workspace database after the response, not inside the request',
     // Production kills a request after 30s; a fresh tenant's migrations take longer.
     Bus::fake();
 
-    $this->post(route('onboarding.store'), starterPayload(['slug' => 'deferred-'.uniqid()]))
+    $this->post(route('onboarding.store'), starterPayload(['slug' => onboardingSlug()]))
         ->assertRedirect(route('onboarding.success'));
 
     Bus::assertDispatchedAfterResponse(ProvisionOnboardedTenant::class);
@@ -113,7 +119,7 @@ test('builds the workspace database after the response, not inside the request',
 test('a failed build frees the workspace name and sends no verification email', function () {
     Mail::fake();
     Event::listen(TenantCreated::class, fn () => throw new RuntimeException('Migration failed'));
-    $payload = starterPayload(['slug' => 'failed-'.uniqid()]);
+    $payload = starterPayload(['slug' => onboardingSlug()]);
 
     $this->post(route('onboarding.store'), $payload)->assertRedirect(route('onboarding.success'));
 
@@ -123,7 +129,7 @@ test('a failed build frees the workspace name and sends no verification email', 
 
 test('a built workspace gets its verification email', function () {
     Mail::fake();
-    $payload = starterPayload(['slug' => 'mailed-'.uniqid()]);
+    $payload = starterPayload(['slug' => onboardingSlug()]);
 
     $this->post(route('onboarding.store'), $payload);
 
@@ -131,7 +137,7 @@ test('a built workspace gets its verification email', function () {
 });
 
 test('success page shows tenant details after onboarding', function () {
-    $payload = starterPayload(['slug' => 'success-e2e-'.uniqid()]);
+    $payload = starterPayload(['slug' => onboardingSlug()]);
 
     $this->post(route('onboarding.store'), $payload);
 
@@ -142,13 +148,13 @@ test('success page shows tenant details after onboarding', function () {
             ->where('slug', $payload['slug'])
             ->where('plan', 'starter')
             ->where('adminEmail', $payload['admin_email'])
-            ->where('orgName', $payload['org_name']),
+            ->where('orgName', strtoupper($payload['org_name'])), // names are stored in capitals
         );
 });
 
 // ─── Growth plan (custom subdomain) ──────────────────────────────────────────
 test('growth plan creates tenant with custom subdomain', function () {
-    $slug = 'growth-e2e-'.uniqid();
+    $slug = onboardingSlug();
     $subdomain = 'growth-'.uniqid();
     $payload = starterPayload([
         'plan' => 'growth',
@@ -176,12 +182,43 @@ test('onboarding requires all required fields', function () {
 });
 
 test('duplicate slug is rejected', function () {
-    $slug = 'dup-slug-'.uniqid();
+    $slug = onboardingSlug();
     $payload = starterPayload(['slug' => $slug]);
 
     $this->post(route('onboarding.store'), $payload);
     $this->post(route('onboarding.store'), starterPayload(['slug' => $slug]))
         ->assertSessionHasErrors('slug');
+});
+
+test('a workspace ID is 3 to 10 letters or numbers, nothing else', function (string $slug) {
+    $this->post(route('onboarding.store'), starterPayload(['slug' => $slug]))
+        ->assertSessionHasErrors(['slug' => 'The workspace ID must be 3 to 10 letters or numbers, with no spaces or symbols.']);
+
+    expect(Tenant::count())->toBe(0);
+})->with([
+    'a hyphen' => 'lungwe-ln',
+    'a space' => 'lungwe ln',
+    'too long' => 'lungweloans',
+    'too short' => 'ab',
+    'a symbol' => 'lungwe$',
+    'an underscore' => 'lun_gwe',
+]);
+
+test('the company name is stored in capitals, the ID and email in lower case', function () {
+    $this->post(route('onboarding.store'), starterPayload([
+        'org_name' => '  Lungwe   loans ltd ',
+        'slug' => 'LUNGWE2',
+        'admin_email' => 'Owner@Lungwe.ZM',
+    ]))->assertRedirect(route('onboarding.success'));
+
+    $tenant = Tenant::sole();
+    expect($tenant->name)->toBe('LUNGWE LOANS LTD')
+        ->and($tenant->slug)->toBe('lungwe2')
+        ->and($tenant->admin_email)->toBe('owner@lungwe.zm');
+
+    // …and stays that way when edited afterwards.
+    $tenant->update(['name' => 'Lungwe Finance']);
+    expect($tenant->fresh()->name)->toBe('LUNGWE FINANCE');
 });
 
 test('reserved subdomain is rejected for growth plan', function () {
@@ -216,7 +253,7 @@ test('shared portal login page is accessible without tenant context', function (
 
 test('session-based tenancy resolves correct tenant after portal login', function () {
     // Create a starter tenant
-    $slug = 'session-e2e-'.uniqid();
+    $slug = onboardingSlug();
     $payload = starterPayload([
         'slug' => $slug,
         'admin_email' => 'portal@sessiontest.com',

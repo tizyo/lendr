@@ -133,11 +133,18 @@ class TenantSettings
         }
 
         // The staff API caches the grouped settings; whichever screen saved, drop it.
-        \Illuminate\Support\Facades\Cache::forget('tenant_settings_'.tenant('id'));
+        // rescue(): inside a workspace the cache is tagged, which a file/database store
+        // refuses — that must never undo a save that already happened.
+        rescue(fn () => \Illuminate\Support\Facades\Cache::forget('tenant_settings_'.tenant('id')));
     }
 
     public static function put(string $key, mixed $value): void
     {
+        // Company names are always upper case, like the workspace's own name.
+        if ($key === 'company_name' && is_string($value)) {
+            $value = mb_strtoupper(trim(preg_replace('/\s+/', ' ', $value)));
+        }
+
         if (self::isSecret($key) && is_string($value) && $value !== '') {
             $value = self::PREFIX.Crypt::encryptString($value);
         }

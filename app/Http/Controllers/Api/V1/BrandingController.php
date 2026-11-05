@@ -74,12 +74,15 @@ class BrandingController extends BaseApiController
 
         foreach ($data as $key => $value) {
             if ($value !== null) {
-                DB::table('settings')->updateOrInsert(
-                    ['key' => $key],
-                    ['value' => $value, 'updated_at' => now()],
-                );
+                \App\Support\TenantSettings::put($key, $value); // normalises company_name to capitals
             }
         }
+
+        // Settings and branding are cached for ten minutes; show the change now.
+        rescue(function () {
+            \Illuminate\Support\Facades\Cache::forget('tenant_settings_'.tenant('id'));
+            \Illuminate\Support\Facades\Cache::forget('tenant_branding_'.tenant('id'));
+        });
 
         return $this->success(null, 'Branding updated.');
     }

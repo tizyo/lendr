@@ -68,7 +68,7 @@ it('tells borrowers plainly when the lender has not switched the app on', functi
         ->assertInertia(fn (Assert $page) => $page
             ->component('Error')
             ->where('title', 'App not available yet')
-            ->where('message', fn ($m) => str_contains($m, 'Cashplus')));
+            ->where('message', fn ($m) => str_contains($m, 'CASHPLUS'))); // company names are stored in capitals
 });
 
 it('preselects the plan on Billing when sent from the upgrade button', function () {

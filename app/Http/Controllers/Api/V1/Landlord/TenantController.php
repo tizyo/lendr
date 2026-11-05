@@ -59,8 +59,14 @@ class TenantController extends BaseApiController
     {
         $centralDomain = config('tenancy.central_domain');
 
+        if (is_string($request->input('slug'))) {
+            $request->merge(['slug' => strtolower(trim($request->input('slug')))]);
+        }
+
         $data = $request->validate([
             'name' => ['required', 'string', 'max:100'],
+            // Optional: made from the name when left blank.
+            'slug' => ['nullable', 'string', 'regex:'.Tenant::SLUG_PATTERN, Rule::unique('tenants', 'slug')],
             'plan' => ['required', Rule::in(['starter', 'growth', 'enterprise'])],
             'currency' => ['nullable', 'string', 'size:3'],
             'timezone' => ['nullable', 'timezone:all'],
@@ -74,14 +80,13 @@ class TenantController extends BaseApiController
             // The workspace's first Super Admin, invited by email once its database exists.
             'admin_name' => ['nullable', 'required_with:admin_email', 'string', 'max:255'],
             'admin_email' => ['nullable', 'email', 'max:191'],
+        ], [
+            'slug.regex' => Tenant::SLUG_RULE_MESSAGE,
+            'slug.unique' => 'This workspace ID is already taken.',
         ]);
 
         // Slugs identify a workspace at the shared-portal login, so they must be unique.
-        $base = Str::slug($data['name']) ?: 'workspace';
-        $slug = $base;
-        for ($i = 2; Tenant::where('slug', $slug)->exists(); $i++) {
-            $slug = "{$base}-{$i}";
-        }
+        $slug = $data['slug'] ?? Tenant::availableSlug($data['name']);
 
         // Just the record: creating and migrating its database outlasts the request
         // limit, so ProvisionTenantDatabase does it once the landlord has the answer.

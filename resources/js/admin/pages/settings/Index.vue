@@ -28,7 +28,7 @@
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label class="label">Company Name</label>
-              <input v-model="form.company_name" type="text" class="input w-full" />
+              <input v-model="form.company_name" @input="form.company_name = form.company_name.toUpperCase()" type="text" maxlength="100" class="input w-full uppercase" />
             </div>
             <div>
               <label class="label">Phone</label>

@@ -41,6 +41,64 @@ class Tenant extends BaseTenant implements TenantWithDatabase
         'verified_at' => 'datetime',
     ];
 
+    /**
+     * The workspace ID typed at the shared-portal sign-in: 3–10 lowercase letters
+     * or digits — no spaces, hyphens or other symbols.
+     */
+    public const SLUG_PATTERN = '/^[a-z0-9]{3,10}$/';
+
+    public const SLUG_RULE_MESSAGE = 'The workspace ID must be 3 to 10 letters or numbers, with no spaces or symbols.';
+
+    // ─── Stored the same way however they arrive (sign-up, landlord, edits) ──
+
+    /** Company names are always upper case. */
+    protected function name(): \Illuminate\Database\Eloquent\Casts\Attribute
+    {
+        return \Illuminate\Database\Eloquent\Casts\Attribute::make(
+            set: fn ($value) => is_string($value) ? mb_strtoupper(trim(preg_replace('/\s+/', ' ', $value))) : $value,
+        );
+    }
+
+    protected function slug(): \Illuminate\Database\Eloquent\Casts\Attribute
+    {
+        return \Illuminate\Database\Eloquent\Casts\Attribute::make(
+            set: fn ($value) => is_string($value) ? strtolower(trim($value)) : $value,
+        );
+    }
+
+    protected function adminEmail(): \Illuminate\Database\Eloquent\Casts\Attribute
+    {
+        return \Illuminate\Database\Eloquent\Casts\Attribute::make(
+            set: fn ($value) => is_string($value) ? strtolower(trim($value)) : $value,
+        );
+    }
+
+    /**
+     * A free workspace ID made from a company name: its letters and digits, cut to
+     * fit, with a number on the end when taken ("Lungwe Loans" → "lungweloan",
+     * then "lungweloa2").
+     */
+    public static function availableSlug(string $name): string
+    {
+        $base = substr(preg_replace('/[^a-z0-9]/', '', strtolower(\Illuminate\Support\Str::ascii($name))), 0, 10);
+        $base = match (true) {
+            $base === '' => 'workspace',
+            strlen($base) < 3 => str_pad($base, 3, '0'), // "AB" → "ab0"
+            default => $base,
+        };
+
+        if (! static::where('slug', $base)->exists()) {
+            return $base;
+        }
+
+        for ($i = 2; ; $i++) {
+            $candidate = substr($base, 0, 10 - strlen((string) $i)).$i;
+            if (! static::where('slug', $candidate)->exists()) {
+                return $candidate;
+            }
+        }
+    }
+
     /** Plans that share the app portal (no custom subdomain). */
     public function usesSharedPortal(): bool
     {

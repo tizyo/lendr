@@ -71,15 +71,22 @@ class OnboardingController extends Controller
 
         $usesSharedPortal = in_array($request->input('plan'), self::SHARED_PORTAL_PLANS);
 
+        // The workspace ID and email are stored lower case (the name upper case, by
+        // Tenant): "LUNGWE" typed in capitals is the same ID, not an error.
+        $request->merge(array_filter([
+            'slug' => is_string($request->input('slug')) ? strtolower(trim($request->input('slug'))) : null,
+            'admin_email' => is_string($request->input('admin_email')) ? strtolower(trim($request->input('admin_email'))) : null,
+        ], fn ($v) => $v !== null));
+
         $rules = [
             'org_name' => ['required', 'string', 'max:100'],
             'slug' => [
                 'required',
-                'regex:/^[a-z0-9][a-z0-9\-]{1,28}[a-z0-9]$/',
-                'max:30',
+                'string',
+                'regex:'.Tenant::SLUG_PATTERN,
                 function ($attr, $value, $fail) {
                     if (DB::table('tenants')->where('slug', $value)->exists()) {
-                        $fail('This workspace name is already taken.');
+                        $fail('This workspace ID is already taken.');
                     }
                 },
             ],
@@ -112,7 +119,7 @@ class OnboardingController extends Controller
             ];
         }
 
-        $data = $request->validate($rules);
+        $data = $request->validate($rules, ['slug.regex' => Tenant::SLUG_RULE_MESSAGE]);
 
         $slug = strtolower($data['slug']);
 
@@ -151,7 +158,7 @@ class OnboardingController extends Controller
             ->with('slug', $slug)
             ->with('plan', $data['plan'])
             ->with('login_url', $loginUrl)
-            ->with('org_name', $data['org_name'])
+            ->with('org_name', $tenant->name)
             ->with('admin_email', $data['admin_email'])
             ->with('needs_verification', true);
     }
