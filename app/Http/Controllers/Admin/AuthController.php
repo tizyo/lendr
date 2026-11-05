@@ -107,11 +107,15 @@ class AuthController extends Controller
             return redirect()->route('2fa.challenge');
         }
 
+        $user->recordSignIn('web');
+
         return redirect()->intended(route('dashboard'));
     }
 
     public function logout(Request $request): RedirectResponse
     {
+        $this->recordSignOut($request);
+
         Auth::logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
@@ -133,6 +137,21 @@ class AuthController extends Controller
             return redirect()->route('login');
         }
 
+        // A portal sign-in: nobody is signed in yet, so InitializeTenancy couldn't
+        // pick the workspace from the session. It was set aside for this step.
+        $portalTenantId = $request->session()->get('2fa_tenant_id');
+        if ($portalTenantId && ! tenancy()->initialized) {
+            $portalTenant = Tenant::find($portalTenantId);
+
+            if (! $portalTenant) {
+                $request->session()->forget(['2fa_user_id', '2fa_tenant_id']);
+
+                return redirect()->route('portal.login');
+            }
+
+            tenancy()->initialize($portalTenant);
+        }
+
         $user = User::findOrFail($userId);
 
         $valid = $user->two_factor_secret &&
@@ -145,10 +164,27 @@ class AuthController extends Controller
         }
 
         Auth::login($user);
-        $request->session()->forget('2fa_user_id');
+        $request->session()->forget(['2fa_user_id', '2fa_tenant_id']);
         $request->session()->regenerate();
 
-        return redirect()->intended(route('dashboard'));
+        if ($portalTenantId) {
+            $request->session()->put('tenant_id', $portalTenantId);
+            $request->session()->put('tenant_slug', tenancy()->tenant?->slug);
+        }
+
+        $user->recordSignIn('web');
+
+        return redirect()->intended(route($portalTenantId ? 'portal.dashboard' : 'dashboard'));
+    }
+
+    /** "Signed out" in the activity log; a support session's end is logged by ImpersonationController. */
+    private function recordSignOut(Request $request): void
+    {
+        $user = Auth::user();
+
+        if ($user instanceof User && tenancy()->initialized && ! $request->session()->has(\App\Models\Landlord\ImpersonationSession::SESSION_KEY)) {
+            rescue(fn () => activity('auth')->causedBy($user)->performedOn($user)->log('Signed out'));
+        }
     }
 
     // ─── Shared-portal login (Starter / Trial — app.localhost / app.lendr.app) ──
@@ -205,9 +241,22 @@ class AuthController extends Controller
             ]);
         }
 
+        // 2FA applies here too. The portal used to sign a 2FA user straight in on
+        // their password alone; now it hands over to the same challenge as a subdomain.
+        if ($user->hasRole2faEnabled()) {
+            $request->session()->regenerate();
+            $request->session()->put('2fa_user_id', $user->id);
+            $request->session()->put('2fa_tenant_id', $tenant->id);
+            Auth::logout();
+            tenancy()->end();
+
+            return redirect()->route('2fa.challenge');
+        }
+
         $request->session()->regenerate();
         $request->session()->put('tenant_id', $tenant->id);
         $request->session()->put('tenant_slug', $tenant->slug);
+        $user->recordSignIn('web');
 
         return redirect()->intended(route('portal.dashboard'));
     }
@@ -297,6 +346,8 @@ class AuthController extends Controller
 
     public function portalLogout(Request $request): RedirectResponse
     {
+        $this->recordSignOut($request);
+
         Auth::logout();
         $request->session()->forget(['tenant_id', 'tenant_slug']);
         $request->session()->invalidate();

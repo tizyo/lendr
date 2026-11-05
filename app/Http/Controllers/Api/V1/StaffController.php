@@ -146,6 +146,7 @@ class StaffController extends BaseApiController
     public function activity(User $staff): JsonResponse
     {
         $logs = Activity::causedBy($staff)
+            ->where(fn ($q) => $q->whereNull('log_name')->orWhere('log_name', '!=', 'navigation'))
             ->latest()
             ->limit(50)
             ->get()

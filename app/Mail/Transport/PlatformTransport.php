@@ -2,6 +2,7 @@
 
 namespace App\Mail\Transport;
 
+use App\Mail\Listeners\RecordOutgoingEmail;
 use App\Models\Landlord\PlatformEmailConfig;
 use Illuminate\Mail\MailManager;
 use Symfony\Component\Mailer\Envelope;
@@ -27,7 +28,14 @@ class PlatformTransport implements TransportInterface
 
     public function send(RawMessage $message, ?Envelope $envelope = null): ?SentMessage
     {
-        return $this->resolve()->send($message, $envelope);
+        try {
+            return $this->resolve()->send($message, $envelope);
+        } catch (\Throwable $e) {
+            // The email log shows support why it never arrived.
+            RecordOutgoingEmail::failed($message, $e);
+
+            throw $e;
+        }
     }
 
     private function resolve(): TransportInterface

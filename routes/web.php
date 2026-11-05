@@ -135,7 +135,7 @@ Route::middleware([InitializeTenancy::class])->group(function () {
     });
 
     // ─── Authenticated Admin ────────────────────────────────────────────
-    Route::middleware(['auth', 'tenant.status', \App\Http\Middleware\EnforceStaffSecurity::class])->group(function () {
+    Route::middleware(['auth', 'tenant.status', \App\Http\Middleware\EnforceStaffSecurity::class, \App\Http\Middleware\TrackStaffActivity::class])->group(function () {
         Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
         Route::get('/portal/dashboard', [DashboardController::class, 'index'])->name('portal.dashboard');
         Route::post('/banners/{banner}/dismiss', DismissBannerController::class)

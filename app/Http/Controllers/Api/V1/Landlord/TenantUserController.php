@@ -38,7 +38,17 @@ class TenantUserController extends BaseApiController
         $stats = $this->inTenant($tenant, function () {
             $openLoans = Loan::whereIn('status', [LoanStatus::Disbursed, LoanStatus::Active]);
 
+            // Before the login-tracking migration has run on this workspace there's nothing to show.
+            $lastLogin = rescue(fn () => User::whereNotNull('last_login_at')->orderByDesc('last_login_at')->first(['id', 'name', 'last_login_at']), null, false);
+            $lastSeen = rescue(fn () => User::max('last_seen_at'), null, false);
+
             return [
+                'last_login' => $lastLogin ? [
+                    'user_id' => $lastLogin->id,
+                    'name' => $lastLogin->name,
+                    'at' => $lastLogin->last_login_at->toIso8601String(),
+                ] : null,
+                'last_seen_at' => $lastSeen ? \Illuminate\Support\Carbon::parse($lastSeen)->toIso8601String() : null,
                 'staff_total' => User::count(),
                 'staff_active' => User::where('is_active', true)->count(),
                 'borrowers' => Borrower::count(),
@@ -273,6 +283,82 @@ class TenantUserController extends BaseApiController
             },
             'two_factor' => $user->hasRole2faEnabled(),
             'created_at' => $user->created_at?->toDateString(),
+            'last_login_at' => $user->last_login_at?->toIso8601String(),
+            'last_seen_at' => $user->last_seen_at?->toIso8601String(),
         ];
+    }
+
+    /**
+     * GET /v1/landlord/tenants/{id}/activity?user_id= — what the workspace's staff
+     * did: sign-ins, screens opened and records changed, newest first.
+     */
+    public function activity(Request $request, string $id): JsonResponse
+    {
+        $tenant = Tenant::findOrFail($id);
+        $userId = $request->integer('user_id') ?: null;
+        $limit = min(max($request->integer('limit', 60), 10), 200);
+
+        return $this->success($this->inTenant($tenant, function () use ($userId, $limit) {
+            $entries = \Spatie\Activitylog\Models\Activity::query()
+                ->with('causer:id,name')
+                ->where('causer_type', (new User)->getMorphClass())
+                ->when($userId, fn ($q) => $q->where('causer_id', $userId))
+                ->latest('id')
+                ->limit($limit)
+                ->get();
+
+            return $entries->map(fn ($entry) => $this->formatActivity($entry))->all();
+        }));
+    }
+
+    private function formatActivity(\Spatie\Activitylog\Models\Activity $entry): array
+    {
+        $props = $entry->properties;
+        $subject = $entry->subject_type ? Str::headline(class_basename($entry->subject_type)) : null;
+
+        [$kind, $label, $detail] = match ($entry->log_name) {
+            'auth' => ['auth', $entry->description, collect([
+                ($props['channel'] ?? null) === 'app' ? 'Mobile app' : (($props['channel'] ?? null) === 'web' ? 'Web' : null),
+                $props['ip'] ?? null,
+            ])->filter()->implode(' · ')],
+            'navigation' => ['navigation', $this->screenLabel((string) ($props['route'] ?? $entry->description)), $props['path'] ?? null],
+            default => ['change', match ($entry->description) {
+                'created', 'updated', 'deleted', 'restored' => Str::ucfirst($entry->description).' '.Str::lower((string) $subject),
+                default => Str::ucfirst($entry->description),
+            }, $subject && $entry->subject_id ? $subject.' #'.$entry->subject_id : null],
+        };
+
+        return [
+            'id' => $entry->id,
+            'at' => $entry->created_at?->toIso8601String(),
+            'user_id' => $entry->causer_id,
+            'user_name' => $entry->causer?->name,
+            'kind' => $kind,
+            'label' => $label,
+            'detail' => $detail ?: null,
+            // Done by LENDR support while signed in as this user.
+            'via_support' => $props['impersonated_by'] ?? null,
+        ];
+    }
+
+    /** "loans.show" → "Viewed loan details", "settings.index" → "Opened Settings". */
+    private function screenLabel(string $route): string
+    {
+        $parts = array_values(array_filter(explode('.', $route), fn ($p) => $p !== 'portal'));
+
+        if ($parts === [] || $parts === ['dashboard']) {
+            return 'Opened Dashboard';
+        }
+
+        $action = count($parts) > 1 ? array_pop($parts) : 'index';
+        $thing = Str::of(implode(' ', $parts))->replace(['-', '_'], ' ')->squish();
+
+        return match ($action) {
+            'index' => 'Opened '.$thing->title(),
+            'show' => 'Viewed '.$thing->singular()->lower().' details',
+            'create' => 'Opened the new '.$thing->singular()->lower().' form',
+            'edit' => 'Opened the '.$thing->singular()->lower().' edit form', // the save itself is a "change" entry
+            default => 'Opened '.$thing->title().' · '.Str::of($action)->replace(['-', '_'], ' ')->title(),
+        };
     }
 }

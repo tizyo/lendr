@@ -5,6 +5,7 @@ namespace App\Providers;
 use App\Auth\ActiveUserProvider;
 use App\Http\Middleware\InitializeTenancy;
 use App\Mail\Listeners\ApplyPlatformSender;
+use App\Mail\Listeners\RecordOutgoingEmail;
 use App\Mail\Transport\PlatformTransport;
 use App\Mail\Transport\ResendTransport;
 use App\Models\Landlord\ImpersonationSession;
@@ -15,6 +16,7 @@ use Illuminate\Auth\Events\Login;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Mail\Events\MessageSending;
+use Illuminate\Mail\Events\MessageSent;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Mail;
@@ -94,6 +96,9 @@ class AppServiceProvider extends ServiceProvider
             (string) ($config['fallback'] ?? 'log'),
         ));
         Event::listen(MessageSending::class, ApplyPlatformSender::class);
+        // After the sender is applied, so the log shows who it really came from.
+        Event::listen(MessageSending::class, [RecordOutgoingEmail::class, 'sending']);
+        Event::listen(MessageSent::class, [RecordOutgoingEmail::class, 'sent']);
 
         // Email look: tenant branding in tenant context, platform branding otherwise.
         View::composer(['emails.*', 'components.email.*'], function ($view) {

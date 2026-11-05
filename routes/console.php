@@ -178,3 +178,17 @@ Schedule::command(AccrueSavingsInterestCommand::class)
     ->withoutOverlapping()
     ->runInBackground()
     ->appendOutputTo(storage_path('logs/savings-interest.log'));
+
+// 03:30 daily — email log older than six months (bodies hold workspace data)
+Schedule::command('model:prune', ['--model' => [\App\Models\Landlord\EmailLog::class]])
+    ->dailyAt('03:30')
+    ->withoutOverlapping()
+    ->runInBackground()
+    ->appendOutputTo(storage_path('logs/prune.log'));
+
+// 03:45 daily — staff screen visits older than 90 days (the audit trail itself is kept)
+Schedule::command(\App\Commands\PruneStaffNavigationCommand::class)
+    ->dailyAt('03:45')
+    ->withoutOverlapping()
+    ->runInBackground()
+    ->appendOutputTo(storage_path('logs/prune.log'));

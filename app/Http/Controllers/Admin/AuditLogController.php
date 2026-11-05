@@ -13,6 +13,8 @@ class AuditLogController extends Controller
     public function index(Request $request): Response
     {
         $logs = Activity::query()
+            // Screen visits are LENDR's usage data, not part of the workspace's audit trail.
+            ->where(fn ($q) => $q->whereNull('log_name')->orWhere('log_name', '!=', 'navigation'))
             ->with('causer:id,name')
             ->when($request->causer_id, fn ($q, $id) => $q->where('causer_id', $id))
             ->when($request->event, fn ($q, $e) => $q->where('description', $e))

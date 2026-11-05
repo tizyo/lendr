@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\V1\Landlord\ImpersonationController;
 use App\Http\Controllers\Api\V1\Landlord\PlanConfigController;
 use App\Http\Controllers\Api\V1\Landlord\PlatformSettingsController;
 use App\Http\Controllers\Api\V1\Landlord\SupportController;
+use App\Http\Controllers\Api\V1\Landlord\TenantEmailController;
 use App\Http\Controllers\Api\V1\Landlord\TenantUserController;
 use Illuminate\Support\Facades\Route;
 
@@ -60,6 +61,15 @@ Route::prefix('v1/landlord')->name('landlord.')->group(function () {
         Route::post('tenants/{id}/users/{userId}/suspend', [TenantUserController::class, 'suspend'])->name('tenants.users.suspend');
         Route::post('tenants/{id}/users/{userId}/activate', [TenantUserController::class, 'activate'])->name('tenants.users.activate');
         Route::post('tenants/{id}/users/{userId}/resend-invite', [TenantUserController::class, 'resendInvite'])->name('tenants.users.resend-invite');
+        Route::get('tenants/{id}/activity', [TenantUserController::class, 'activity'])->name('tenants.activity');
+
+        // Emails sent to the workspace's owner and staff: delivery, resend, write to them
+        Route::get('tenants/{id}/emails', [TenantEmailController::class, 'index'])->name('tenants.emails.index');
+        Route::post('tenants/{id}/emails', [TenantEmailController::class, 'send'])->name('tenants.emails.send')->middleware('throttle:20,1');
+        Route::post('tenants/{id}/emails/refresh', [TenantEmailController::class, 'refresh'])->name('tenants.emails.refresh')->middleware('throttle:10,1');
+        Route::post('tenants/{id}/emails/onboarding', [TenantEmailController::class, 'onboarding'])->name('tenants.emails.onboarding')->middleware('throttle:10,1');
+        Route::get('tenants/{id}/emails/{logId}', [TenantEmailController::class, 'show'])->whereNumber('logId')->name('tenants.emails.show');
+        Route::post('tenants/{id}/emails/{logId}/resend', [TenantEmailController::class, 'resend'])->whereNumber('logId')->name('tenants.emails.resend')->middleware('throttle:10,1');
 
         // Support sessions ("sign in as")
         Route::post('tenants/{id}/users/{userId}/impersonate', [ImpersonationController::class, 'start'])->name('tenants.users.impersonate');

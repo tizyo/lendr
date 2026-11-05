@@ -58,6 +58,8 @@ class User extends Authenticatable
             'is_active' => 'boolean',
             'force_password_reset' => 'boolean',
             'password_changed_at' => 'datetime',
+            'last_login_at' => 'datetime',
+            'last_seen_at' => 'datetime',
             'role' => UserRole::class,
         ];
     }
@@ -79,6 +81,32 @@ class User extends Authenticatable
                 $role = Role::firstOrCreate(['name' => $user->role->value, 'guard_name' => 'web']);
                 $user->syncRoles([$role]);
             }
+        });
+    }
+
+    /**
+     * A finished sign-in (after 2FA): stamps last_login_at and writes "Signed in" to
+     * the activity log, so the landlord can see when the workspace was last used
+     * and what happened next. Saved quietly: no "updated" audit entry, no role sync.
+     */
+    public function recordSignIn(string $channel): void
+    {
+        // Never stands between someone and their sign-in (e.g. a workspace whose
+        // migrations haven't run yet).
+        rescue(function () use ($channel) {
+            $request = request();
+
+            $this->forceFill([
+                'last_login_at' => now(),
+                'last_login_ip' => $request?->ip(),
+                'last_seen_at' => now(),
+            ])->saveQuietly();
+
+            activity('auth')
+                ->causedBy($this)
+                ->performedOn($this)
+                ->withProperties(['channel' => $channel, 'ip' => $request?->ip(), 'agent' => \Illuminate\Support\Str::limit((string) $request?->userAgent(), 180, '')])
+                ->log('Signed in');
         });
     }
 

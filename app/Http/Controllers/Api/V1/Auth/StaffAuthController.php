@@ -69,7 +69,7 @@ class StaffAuthController extends BaseApiController
         }
 
         $token = $user->createToken($device)->plainTextToken;
-        $user->updateQuietly(['last_login_at' => now()]);
+        $user->recordSignIn('app');
 
         return $this->success([
             'token' => $token,
@@ -215,7 +215,7 @@ class StaffAuthController extends BaseApiController
         $device = $request->input('device', $request->userAgent() ?? 'api');
         $token = $user->createToken($device)->plainTextToken;
 
-        $user->updateQuietly(['last_login_at' => now()]);
+        $user->recordSignIn('app');
 
         return $this->success([
             'token' => $token,

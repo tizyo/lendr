@@ -52,6 +52,11 @@ class ResendTransport extends AbstractTransport
         if (! $response->successful()) {
             throw new \RuntimeException('Resend delivery failed: '.($response->json('message') ?? $response->body()));
         }
+
+        // Resend's id for this email, so its delivery status can be looked up later.
+        if (is_string($id = $response->json('id')) && $id !== '') {
+            $message->setMessageId($id);
+        }
     }
 
     /** @param  Address[]  $addresses */

@@ -16,6 +16,8 @@ class AuditLogController extends BaseApiController
     public function index(Request $request): JsonResponse
     {
         $logs = Activity::query()
+            // Screen visits are LENDR's usage data, not part of the workspace's audit trail.
+            ->where(fn ($q) => $q->whereNull('log_name')->orWhere('log_name', '!=', 'navigation'))
             ->with('causer:id,name')
             ->when($request->subject_type, fn ($q, $t) => $q->where('subject_type', 'like', "%{$t}%"))
             ->when($request->causer_id, fn ($q, $id) => $q->where('causer_id', $id))
@@ -44,6 +46,8 @@ class AuditLogController extends BaseApiController
     public function export(Request $request): Response
     {
         $logs = Activity::query()
+            // Screen visits are LENDR's usage data, not part of the workspace's audit trail.
+            ->where(fn ($q) => $q->whereNull('log_name')->orWhere('log_name', '!=', 'navigation'))
             ->with('causer:id,name')
             ->when($request->subject_type, fn ($q, $t) => $q->where('subject_type', 'like', "%{$t}%"))
             ->when($request->causer_id, fn ($q, $id) => $q->where('causer_id', $id))
